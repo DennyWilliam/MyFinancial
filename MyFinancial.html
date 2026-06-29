@@ -1115,12 +1115,12 @@ function renderDash() {
       <div class="kpi-meta">${mt.filter(t=>t.type==='expense').length} transaksi bulan ini</div>
     </div>
     <div class="kpi ${net>=0?'kpi-blue':'kpi-red'}">
-      <div class="kpi-lbl"><span class="kpi-lbl-icon">💰</span>Cashflow Bersih</div>
+      <div class="kpi-lbl"><span class="kpi-lbl-icon">💰</span>Net Cash Flow</div>
       <div class="kpi-val">Rp ${fmtS(Math.abs(net))}</div>
       <div class="kpi-meta">${net>=0?'✓ Surplus':'⚠ Defisit'}</div>
     </div>
     <div class="kpi kpi-amber">
-      <div class="kpi-lbl"><span class="kpi-lbl-icon">📈</span>Total Investasi</div>
+      <div class="kpi-lbl"><span class="kpi-lbl-icon">📈</span>Total Investment</div>
       <div class="kpi-val">Rp ${fmtS(port)}</div>
       <div class="kpi-meta">${S.investments.length} instrumen</div>
     </div>`;
