@@ -458,6 +458,9 @@ window.addEventListener('load', function(){
         <button class="btn btn-sm" onclick="document.getElementById('restoreFile').click()" title="Restore JSON">📂 Restore</button>
         <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="importAllData(event)">
         <button class="btn btn-green btn-sm" onclick="exportExcel()" title="Export ke Excel">📊 Export Excel</button>
+        <button class="btn btn-sm" id="ghSyncBtn" onclick="syncToGitHub()" title="Sync ke GitHub" style="background:#24292f;color:#fff;border-color:#444">
+          <span id="ghSyncIcon">🐙</span> <span id="ghSyncTxt">GitHub</span>
+        </button>
         <button class="btn btn-primary" onclick="go('import',null)">✨ AI Import</button>
       </div>
     </header>
@@ -470,18 +473,18 @@ window.addEventListener('load', function(){
         <div class="charts-row">
           <div class="chart-card">
             <div class="chart-head">
-              <div class="chart-title"><span class="chart-title-icon">📊</span>Income vs Pengeluaran</div>
+              <div class="chart-title"><span class="chart-title-icon">📊</span>Income vs Outcome</div>
               <div class="chart-sub">6 bulan terakhir</div>
             </div>
             <div style="display:flex;gap:14px;margin-bottom:12px;font-size:11px">
-              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--green);display:inline-block"></span>Pemasukan</span>
-              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--red);display:inline-block"></span>Pengeluaran</span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--green);display:inline-block"></span>Income</span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--red);display:inline-block"></span>Outcome</span>
             </div>
             <div style="position:relative;height:210px"><canvas id="barChart" role="img" aria-label="Income vs expense bar chart">Bar chart</canvas></div>
           </div>
           <div class="chart-card">
             <div class="chart-head">
-              <div class="chart-title"><span class="chart-title-icon">🍩</span>Kategori Pengeluaran</div>
+              <div class="chart-title"><span class="chart-title-icon">🍩</span>Kategori Outcome</div>
               <div class="chart-sub">Bulan ini</div>
             </div>
             <div id="donutLegend" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;font-size:11px"></div>
@@ -591,7 +594,7 @@ window.addEventListener('load', function(){
               <div style="padding:16px">
                 <div class="form-grid">
                   <div class="fg"><label>Tanggal</label><input type="date" id="mDate"></div>
-                  <div class="fg"><label>Tipe</label><select id="mType" onchange="updateCats()"><option value="expense">Pengeluaran</option><option value="income">Pemasukan</option><option value="investment">Investasi</option></select></div>
+                  <div class="fg"><label>Tipe</label><select id="mType" onchange="updateCats()"><option value="expense">Outcome</option><option value="income">Income</option><option value="investment">Investasi</option></select></div>
                   <div class="fg full"><label>Deskripsi</label><input type="text" id="mDesc" placeholder="cth: Indomaret, Grab, Gaji..."></div>
                   <div class="fg"><label>Kategori</label><select id="mCat"></select></div>
                   <div class="fg"><label>Jumlah (Rp)</label><input type="number" id="mAmt" placeholder="0" min="0"></div>
@@ -616,7 +619,7 @@ window.addEventListener('load', function(){
       <div class="page" id="page-transaksi">
         <div class="sec-head"><div class="sec-title">Semua Transaksi</div></div>
         <div class="filter-row">
-          <select id="fType" onchange="renderTx()"><option value="">Semua tipe</option><option value="income">Pemasukan</option><option value="expense">Pengeluaran</option><option value="investment">Investasi</option></select>
+          <select id="fType" onchange="renderTx()"><option value="">Semua tipe</option><option value="income">Income</option><option value="expense">Outcome</option><option value="investment">Investasi</option></select>
           <select id="fMonth" onchange="renderTx()"></select>
           <select id="fCat" onchange="renderTx()"><option value="">Semua kategori</option></select>
           <input type="text" id="fSearch" placeholder="🔍 Cari deskripsi..." oninput="renderTx()" style="flex:1">
@@ -691,8 +694,8 @@ window.addEventListener('load', function(){
                   <div class="fg full">
                     <label>Tipe</label>
                     <select id="newCatType">
-                      <option value="expense">Pengeluaran</option>
-                      <option value="income">Pemasukan</option>
+                      <option value="expense">Outcome</option>
+                      <option value="income">Income</option>
                       <option value="investment">Investasi</option>
                     </select>
                   </div>
@@ -720,8 +723,8 @@ window.addEventListener('load', function(){
               <div class="card-head">
                 <div class="card-title"><span class="card-title-icon">🏷️</span>Kategori Tersimpan</div>
                 <div style="display:flex;gap:6px">
-                  <button class="btn btn-sm" onclick="filterKatType('expense')" id="kfexp" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5">Pengeluaran</button>
-                  <button class="btn btn-sm" onclick="filterKatType('income')" id="kfinc" style="background:#dcfce7;color:#059669;border-color:#86efac">Pemasukan</button>
+                  <button class="btn btn-sm" onclick="filterKatType('expense')" id="kfexp" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5">Outcome</button>
+                  <button class="btn btn-sm" onclick="filterKatType('income')" id="kfinc" style="background:#dcfce7;color:#059669;border-color:#86efac">Income</button>
                   <button class="btn btn-sm" onclick="filterKatType('investment')" id="kfinv" style="background:#ede9fe;color:#7c3aed;border-color:#c4b5fd">Investasi</button>
                 </div>
               </div>
@@ -843,6 +846,44 @@ window.addEventListener('load', function(){
             <div class="page" id="page-settings">
         <div class="sec-head"><div class="sec-title">Settings</div></div>
 
+        <!-- GitHub Sync -->
+        <div class="settings-section">
+          <div class="settings-title">🐙 GitHub Sync</div>
+          <div class="settings-sub">Backup data otomatis ke GitHub repo kamu. Setup sekali, klik sync kapanpun.</div>
+
+          <div class="alert alert-info" style="margin-bottom:14px">
+            <span class="alert-icon">📋</span>
+            <div style="font-size:11.5px">
+              <strong>Cara setup (sekali saja):</strong><br>
+              1. Buat repo baru di GitHub (bisa private) — contoh: <code style="background:var(--bg4);padding:1px 5px;border-radius:3px">my-financial-data</code><br>
+              2. Buka <strong>github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)</strong><br>
+              3. Generate token baru → centang scope <strong>repo</strong> → Copy token<br>
+              4. Isi form di bawah → Simpan
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="fg full">
+              <label>Personal Access Token (PAT)</label>
+              <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+            </div>
+            <div class="fg">
+              <label>Username/Repo</label>
+              <input type="text" id="ghRepo" placeholder="username/my-financial-data">
+            </div>
+            <div class="fg">
+              <label>Branch</label>
+              <input type="text" id="ghBranch" placeholder="main">
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-primary" onclick="saveGitHubConfig()">✅ Simpan Config</button>
+            <button class="btn" onclick="syncToGitHub()">🐙 Test Sync Sekarang</button>
+            <span id="ghConfigStatus" style="font-size:12px;color:var(--text3)"></span>
+          </div>
+          <div id="ghLastSync" style="font-size:11px;color:var(--text3);margin-top:8px"></div>
+        </div>
+
         <div class="settings-section">
           <div class="settings-title">✨ AI Import — API Key Anthropic</div>
           <div class="settings-sub">Diperlukan untuk fitur AI Import. Daftar gratis di <strong>console.anthropic.com</strong> → API Keys</div>
@@ -934,6 +975,7 @@ let S = {
   ],
   asetSnapshots: {},
   transfers: [],
+  github: {token:'', repo:'', branch:'main'},
   topups: [],
   apiKey: ''
 };
@@ -993,6 +1035,7 @@ function loadState() {
       S.rekening        = p.rekening      || S.rekening;
       S.asetSnapshots   = p.asetSnapshots || {};
       S.transfers       = p.transfers      || [];
+      S.github          = p.github         || {token:'',repo:'',branch:'main'};
       S.topups        = p.topups        || [];
       S.apiKey        = p.apiKey        || '';
       S.categories    = p.categories    || null;
@@ -1005,8 +1048,10 @@ function loadState() {
   if(!S.rekening)      S.rekening      = [{id:'bca1147',name:'BCA 1147',type:'bank',balance:0,note:''},{id:'cash',name:'Cash',type:'cash',balance:0,note:''}];
   if(!S.asetSnapshots) S.asetSnapshots = {};
   if(!S.transfers)      S.transfers = [];
+  if(!S.github)         S.github = {token:'',repo:'',branch:'main'};
   if (S.apiKey) document.getElementById('apiIn').value = S.apiKey;
   updateImportAlert();
+  updateGitHubUI();
 }
 
 function persist() {
@@ -1060,12 +1105,12 @@ function renderDash() {
 
   document.getElementById('kpiGrid').innerHTML = `
     <div class="kpi kpi-green">
-      <div class="kpi-lbl"><span class="kpi-lbl-icon">⬇</span>Pemasukan</div>
+      <div class="kpi-lbl"><span class="kpi-lbl-icon">⬇</span>Income</div>
       <div class="kpi-val">Rp ${fmtS(inc)}</div>
       <div class="kpi-meta">${mt.filter(t=>t.type==='income').length} transaksi bulan ini</div>
     </div>
     <div class="kpi kpi-red">
-      <div class="kpi-lbl"><span class="kpi-lbl-icon">⬆</span>Pengeluaran</div>
+      <div class="kpi-lbl"><span class="kpi-lbl-icon">⬆</span>Outcome</div>
       <div class="kpi-val">Rp ${fmtS(exp)}</div>
       <div class="kpi-meta">${mt.filter(t=>t.type==='expense').length} transaksi bulan ini</div>
     </div>
@@ -1090,8 +1135,8 @@ function renderDash() {
   barCI = new Chart(document.getElementById('barChart'),{
     type:'bar',
     data:{labels,datasets:[
-      {label:'Pemasukan',data:iD,backgroundColor:'rgba(62,207,142,0.75)',borderRadius:4,borderSkipped:false},
-      {label:'Pengeluaran',data:eD,backgroundColor:'rgba(241,107,107,0.75)',borderRadius:4,borderSkipped:false}
+      {label:'Income',data:iD,backgroundColor:'rgba(62,207,142,0.75)',borderRadius:4,borderSkipped:false},
+      {label:'Outcome',data:eD,backgroundColor:'rgba(241,107,107,0.75)',borderRadius:4,borderSkipped:false}
     ]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
       x:{ticks:{color:'#9ca3af',font:{size:11},autoSkip:false},grid:{color:'rgba(0,0,0,0.06)'}},
@@ -1124,7 +1169,7 @@ function renderDash() {
         <td style="color:var(--text3);white-space:nowrap">${t.date}</td>
         <td style="font-weight:500">${t.description||'-'}</td>
         <td style="color:var(--text2)">${t.account||'-'}</td>
-        <td><span class="badge ${t.type==='income'?'badge-in':t.type==='investment'?'badge-inv':'badge-out'}">${t.type==='income'?'Masuk':t.type==='investment'?'Investasi':'Keluar'}</span></td>
+        <td><span class="badge ${t.type==='income'?'badge-in':t.type==='investment'?'badge-inv':'badge-out'}">${t.type==='income'?'Income':t.type==='investment'?'Investasi':'Outcome'}</span></td>
         <td><span class="badge badge-cat">${t.category||'-'}</span></td>
         <td style="text-align:right;white-space:nowrap" class="${t.type==='income'?'amount-pos':'amount-neg'}">Rp ${fmt(t.amount)}</td>
       </tr>`).join('')
@@ -1195,7 +1240,7 @@ function renderTx() {
         <td style="color:var(--text3);white-space:nowrap">${t.date}</td>
         <td style="font-weight:500">${t.description||'-'}</td>
         <td style="color:var(--text2)">${t.account||'-'}</td>
-        <td><span class="badge ${t.type==='income'?'badge-in':t.type==='investment'?'badge-inv':'badge-out'}">${t.type==='income'?'Masuk':t.type==='investment'?'Investasi':'Keluar'}</span></td>
+        <td><span class="badge ${t.type==='income'?'badge-in':t.type==='investment'?'badge-inv':'badge-out'}">${t.type==='income'?'Income':t.type==='investment'?'Investasi':'Outcome'}</span></td>
         <td><span class="badge badge-cat">${t.category||'-'}</span></td>
         <td class="${t.type==='income'?'amount-pos':'amount-neg'}" style="text-align:right;white-space:nowrap">Rp ${fmt(t.amount)}</td>
         <td><button class="del-btn" onclick="delTx(${t.id})">🗑</button></td>
@@ -1312,7 +1357,7 @@ function renderPnL(){
 
   // ── SECTION: PENDAPATAN ─────────────────────────────────
   rows.push(`<tr style="background:var(--bg3)">
-    <td colspan="${months.length+1}" style="padding:8px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text);border-top:2px solid var(--border2)">PENDAPATAN</td>
+    <td colspan="${months.length+1}" style="padding:8px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text);border-top:2px solid var(--border2)">INCOME</td>
   </tr>`);
 
   // income category rows
@@ -1327,7 +1372,7 @@ function renderPnL(){
 
   // TOTAL PENDAPATAN row
   rows.push(`<tr style="background:var(--bg3)">
-    <td style="font-weight:700;font-size:13px;color:var(--text);padding-left:14px;border-top:2px solid var(--border2);position:sticky;left:0;background:var(--bg3)">Total Pendapatan</td>
+    <td style="font-weight:700;font-size:13px;color:var(--text);padding-left:14px;border-top:2px solid var(--border2);position:sticky;left:0;background:var(--bg3)">Total Income</td>
     ${months.map(m=>{const v=sumMT(m,'income');return totalStyle(v,'var(--text)');}).join('')}
   </tr>`);
 
@@ -1336,7 +1381,7 @@ function renderPnL(){
 
   // ── SECTION: PENGELUARAN ───────────────────────────────
   rows.push(`<tr style="background:var(--bg3)">
-    <td colspan="${months.length+1}" style="padding:8px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text);border-top:2px solid var(--border2)">PENGELUARAN</td>
+    <td colspan="${months.length+1}" style="padding:8px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text);border-top:2px solid var(--border2)">OUTCOME</td>
   </tr>`);
 
   // expense category rows
@@ -1351,7 +1396,7 @@ function renderPnL(){
 
   // TOTAL PENGELUARAN row
   rows.push(`<tr style="background:var(--bg3)">
-    <td style="font-weight:700;font-size:13px;color:var(--text);padding-left:14px;border-top:2px solid var(--border2);position:sticky;left:0;background:var(--bg3)">Total Pengeluaran</td>
+    <td style="font-weight:700;font-size:13px;color:var(--text);padding-left:14px;border-top:2px solid var(--border2);position:sticky;left:0;background:var(--bg3)">Total Outcome</td>
     ${months.map(m=>{const v=sumMT(m,'expense');return totalStyle(v,'var(--text)');}).join('')}
   </tr>`);
 
@@ -1508,7 +1553,7 @@ function parseBCAText(raw){
         .replace(/\b\d{4}\b/g,'')   // branch code
         .replace(/\s{2,}/g,' ').trim();
       desc=cleanDesc(desc);
-      if(!desc) desc=type==='income'?'Transfer Masuk':'Pengeluaran';
+      if(!desc) desc=type==='income'?'Transfer Masuk':'Outcome';
 
       items.push({date, description:desc, amount, type, category:guessCat(desc,type)});
     }
@@ -1585,7 +1630,7 @@ function parseBCAText(raw){
         .replace(/\d[\d,]*\.\d{2}/g,'')
         .replace(/\s{2,}/g,' ')
         .trim();
-      const desc = cleanDesc(rawDesc) || (type==='income'?'Transfer Masuk':'Pengeluaran');
+      const desc = cleanDesc(rawDesc) || (type==='income'?'Transfer Masuk':'Outcome');
 
       items.push({date:ownerDate, description:desc, amount, type, category:guessCat(desc,type)});
     }
@@ -1872,7 +1917,7 @@ function renderKategori(){
     btn.style.opacity = t===katFilter ? '1' : '0.6';
   });
 
-  const typeLabel = {expense:'Pengeluaran',income:'Pemasukan',investment:'Investasi'};
+  const typeLabel = {expense:'Outcome',income:'Income',investment:'Investasi'};
   const typeBg = {expense:'#fee2e2',income:'#dcfce7',investment:'#ede9fe'};
   const typeColor = {expense:'#dc2626',income:'#059669',investment:'#7c3aed'};
 
@@ -2389,6 +2434,197 @@ function renderTransferHistory(){
 }
 
 // ═══════════════════════════════════════
+// GITHUB SYNC
+// ═══════════════════════════════════════
+
+function saveGitHubConfig(){
+  const token  = document.getElementById('ghToken').value.trim();
+  const repo   = document.getElementById('ghRepo').value.trim();
+  const branch = document.getElementById('ghBranch').value.trim() || 'main';
+  if(!token || !repo){
+    document.getElementById('ghConfigStatus').textContent = '⚠️ Token dan Repo wajib diisi';
+    document.getElementById('ghConfigStatus').style.color = 'var(--amber)';
+    return;
+  }
+  if(!repo.includes('/')){
+    document.getElementById('ghConfigStatus').textContent = '⚠️ Format repo: username/nama-repo';
+    document.getElementById('ghConfigStatus').style.color = 'var(--amber)';
+    return;
+  }
+  S.github = {token, repo, branch};
+  persist();
+  document.getElementById('ghConfigStatus').textContent = '✅ Config tersimpan';
+  document.getElementById('ghConfigStatus').style.color = 'var(--green)';
+  updateGitHubUI();
+}
+
+function updateGitHubUI(){
+  const configured = S.github && S.github.token && S.github.repo;
+  const btn = document.getElementById('ghSyncBtn');
+  const lastEl = document.getElementById('ghLastSync');
+  if(btn){
+    btn.style.opacity = configured ? '1' : '0.5';
+    btn.title = configured
+      ? `Sync ke ${S.github.repo}`
+      : 'Setup GitHub di Settings dulu';
+  }
+  // populate settings fields if exist
+  const tkEl = document.getElementById('ghToken');
+  const rpEl = document.getElementById('ghRepo');
+  const brEl = document.getElementById('ghBranch');
+  if(tkEl && S.github.token) tkEl.value = S.github.token;
+  if(rpEl && S.github.repo)  rpEl.value = S.github.repo;
+  if(brEl && S.github.branch) brEl.value = S.github.branch;
+  // show last sync time
+  if(lastEl && S.github.lastSync){
+    lastEl.textContent = `Terakhir sync: ${new Date(S.github.lastSync).toLocaleString('id-ID')} — ${S.github.repo}`;
+  }
+}
+
+async function syncToGitHub(){
+  const {token, repo, branch} = S.github || {};
+  if(!token || !repo){
+    alert('Setup GitHub dulu di Settings → GitHub Sync');
+    go('settings', null);
+    return;
+  }
+
+  // Set button loading state
+  const syncBtn = document.getElementById('ghSyncBtn');
+  const syncTxt = document.getElementById('ghSyncTxt');
+  const syncIcon = document.getElementById('ghSyncIcon');
+  if(syncBtn) syncBtn.disabled = true;
+  if(syncTxt) syncTxt.textContent = 'Syncing...';
+  if(syncIcon) syncIcon.textContent = '⏳';
+
+  try{
+    const filename = 'data/my_financial_data.json';
+    const content  = JSON.stringify(S, null, 2);
+    const encoded  = btoa(unescape(encodeURIComponent(content))); // base64 UTF-8
+
+    // Step 1: get current file SHA (needed to update existing file)
+    let sha = null;
+    const getRes = await fetch(
+      `https://api.github.com/repos/${repo}/contents/${filename}?ref=${branch}`,
+      { headers:{
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      }
+    );
+    if(getRes.ok){
+      const existing = await getRes.json();
+      sha = existing.sha;
+    } else if(getRes.status !== 404){
+      const err = await getRes.json();
+      throw new Error(`GET file failed: ${err.message}`);
+    }
+
+    // Step 2: commit file (create or update)
+    const now = new Date().toLocaleString('id-ID');
+    const body = {
+      message: `MyFinancial backup — ${now}`,
+      content: encoded,
+      branch: branch
+    };
+    if(sha) body.sha = sha; // required for update
+
+    const putRes = await fetch(
+      `https://api.github.com/repos/${repo}/contents/${filename}`,
+      {
+        method: 'PUT',
+        headers:{
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      }
+    );
+
+    if(!putRes.ok){
+      const err = await putRes.json();
+      throw new Error(`Push failed: ${err.message}`);
+    }
+
+    const result = await putRes.json();
+
+    // Step 3: also push Excel summary as CSV for easy viewing on GitHub
+    await pushCSVSummary(token, repo, branch);
+
+    // Success
+    S.github.lastSync = new Date().toISOString();
+    persist();
+
+    if(syncTxt) syncTxt.textContent = 'Synced ✓';
+    if(syncIcon) syncIcon.textContent = '✅';
+    setTimeout(()=>{
+      if(syncTxt) syncTxt.textContent = 'GitHub';
+      if(syncIcon) syncIcon.textContent = '🐙';
+    }, 3000);
+
+    updateGitHubUI();
+    const ghLastEl = document.getElementById('ghLastSync');
+    if(ghLastEl) ghLastEl.textContent = `✅ Sync berhasil: ${now} → ${repo}/${filename}`;
+    const statusEl = document.getElementById('ghConfigStatus');
+    if(statusEl){ statusEl.textContent = `✅ Sync berhasil ${now}`; statusEl.style.color='var(--green)'; }
+
+  } catch(err){
+    console.error('GitHub sync error:', err);
+    if(syncTxt) syncTxt.textContent = 'Error';
+    if(syncIcon) syncIcon.textContent = '❌';
+    setTimeout(()=>{
+      if(syncTxt) syncTxt.textContent = 'GitHub';
+      if(syncIcon) syncIcon.textContent = '🐙';
+    }, 4000);
+    const msg = err.message || String(err);
+    const statusEl = document.getElementById('ghConfigStatus');
+    if(statusEl){ statusEl.textContent = '❌ '+msg; statusEl.style.color='var(--red)'; }
+    alert('❌ GitHub sync gagal:\n' + msg + '\n\nPastikan:\n• Token punya scope "repo"\n• Nama repo benar (username/repo)\n• Repo sudah dibuat di GitHub');
+  } finally{
+    if(syncBtn) syncBtn.disabled = false;
+  }
+}
+
+async function pushCSVSummary(token, repo, branch){
+  // Push a simple CSV of transactions for human-readable view on GitHub
+  try{
+    const txs = [...S.transactions].sort((a,b)=>a.date.localeCompare(b.date));
+    const rows = [
+      ['Tanggal','Deskripsi','Kategori','Tipe','Rekening','Jumlah'],
+      ...txs.map(t=>[
+        t.date, t.description||'', t.category||'',
+        t.type==='income'?'Income':t.type==='investment'?'Investasi':'Outcome',
+        t.account||'', t.amount||0
+      ])
+    ];
+    const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const encoded = btoa(unescape(encodeURIComponent(csv)));
+    const filename = 'data/transaksi.csv';
+
+    // get sha
+    let sha = null;
+    const getRes = await fetch(
+      `https://api.github.com/repos/${repo}/contents/${filename}?ref=${branch}`,
+      {headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json'}}
+    );
+    if(getRes.ok) sha = (await getRes.json()).sha;
+
+    const body = {
+      message: `Update transaksi CSV — ${new Date().toLocaleDateString('id-ID')}`,
+      content: encoded, branch
+    };
+    if(sha) body.sha = sha;
+
+    await fetch(`https://api.github.com/repos/${repo}/contents/${filename}`,{
+      method:'PUT',
+      headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+  } catch(e){ console.warn('CSV push skipped:', e.message); }
+}
+
+// ═══════════════════════════════════════
 // EXPORT EXCEL (SheetJS)
 // ═══════════════════════════════════════
 function exportExcel(){
@@ -2408,7 +2644,7 @@ function exportExcel(){
       t.date,
       t.description||'',
       t.category||'',
-      t.type==='income'?'Pemasukan':t.type==='investment'?'Investasi':'Pengeluaran',
+      t.type==='income'?'Income':t.type==='investment'?'Investasi':'Outcome',
       t.account||'',
       t.amount||0
     ]);
@@ -2436,14 +2672,14 @@ function exportExcel(){
   const pnlRows = [];
   pnlRows.push(['KATEGORI', ...months]);                          // header
 
-  pnlRows.push(['PENDAPATAN', ...months.map(m=>sumMT(m,'income'))]);
+  pnlRows.push(['INCOME', ...months.map(m=>sumMT(m,'income'))]);
   incomeCats.forEach(cat=>{
     const row = [cat, ...months.map(m=>sumMT(m,'income',cat))];
     if(row.slice(1).some(v=>v>0)) pnlRows.push(row);
   });
   pnlRows.push(['']);                                             // spacer
 
-  pnlRows.push(['PENGELUARAN', ...months.map(m=>sumMT(m,'expense'))]);
+  pnlRows.push(['OUTCOME', ...months.map(m=>sumMT(m,'expense'))]);
   expenseCats.forEach(cat=>{
     const row = [cat, ...months.map(m=>sumMT(m,'expense',cat))];
     if(row.slice(1).some(v=>v>0)) pnlRows.push(row);
@@ -2543,7 +2779,7 @@ function exportPnLCSV(){
   const months=[...new Set(txs.map(t=>mk(t.date)))].sort();
   const cats=[...new Set(txs.map(t=>t.category).filter(Boolean))].sort();
   const h=['Kategori',...months];
-  const inc=['PENDAPATAN',...months.map(m=>txs.filter(t=>mk(t.date)===m&&t.type==='income').reduce((a,b)=>a+b.amount,0))];
+  const inc=['INCOME',...months.map(m=>txs.filter(t=>mk(t.date)===m&&t.type==='income').reduce((a,b)=>a+b.amount,0))];
   const catR=cats.map(c=>[c,...months.map(m=>txs.filter(t=>mk(t.date)===m&&t.category===c).reduce((a,b)=>a+b.amount,0))]);
   const net=['NET',...months.map(m=>{const i=txs.filter(t=>mk(t.date)===m&&t.type==='income').reduce((a,b)=>a+b.amount,0);const e=txs.filter(t=>mk(t.date)===m&&t.type!=='income').reduce((a,b)=>a+b.amount,0);return i-e;})];
   const csv=[h,inc,...catR,net].map(r=>r.join(',')).join('\n');
