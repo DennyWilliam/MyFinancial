@@ -347,6 +347,7 @@ input[readonly]{color:var(--text2)}
 @keyframes rot{to{transform:rotate(360deg)}}
 
 ::-webkit-scrollbar{width:4px;height:4px}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 #pnlTable tr:not([style*="background"]):hover td{background:rgba(0,0,0,0.02)}
 #pnlTable td,#pnlTable th{border-right:1px solid var(--border)}
 #pnlTable td:first-child,#pnlTable th:first-child{border-left:none}
@@ -898,6 +899,19 @@ window.addEventListener('load', function(){
         </div>
 
         <div class="settings-section">
+          <div class="settings-title">🔐 Ubah PIN</div>
+          <div class="settings-sub">PIN dipakai Denny & Lauren untuk masuk ke app. Default: 1992</div>
+          <div class="form-grid">
+            <div class="fg"><label>PIN Lama</label><input type="password" id="oldPin" placeholder="••••" maxlength="6"></div>
+            <div class="fg"><label>PIN Baru</label><input type="password" id="newPin" placeholder="••••" maxlength="6"></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-primary" onclick="changePin()">🔐 Ubah PIN</button>
+            <span id="pinChangeStatus" style="font-size:12px;color:var(--text3)"></span>
+          </div>
+        </div>
+
+        <div class="settings-section">
           <div class="settings-title">💾 Backup &amp; Restore Data</div>
           <div class="settings-sub">Data tersimpan di browser (localStorage). Export rutin untuk mencegah kehilangan data.</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -954,6 +968,36 @@ window.addEventListener('load', function(){
       <button class="btn btn-primary" onclick="saveTU()">✅ Simpan</button>
     </div>
   </div>
+</div>
+
+<!-- PIN OVERLAY -->
+<div id="pinOverlay" style="
+  position:fixed;inset:0;background:#f5f6f8;
+  display:flex;align-items:center;justify-content:center;
+  z-index:9999;flex-direction:column;gap:20px;
+">
+  <div style="text-align:center;margin-bottom:8px">
+    <div style="font-size:32px;margin-bottom:8px">💰</div>
+    <div style="font-size:20px;font-weight:800;color:#111827;letter-spacing:-0.5px">My Financial</div>
+    <div style="font-size:12px;color:#9ca3af;margin-top:4px">by Denny · GII Commerce</div>
+  </div>
+  <div style="background:#fff;border:1px solid #e4e6eb;border-radius:14px;padding:28px 32px;width:320px;box-shadow:0 4px 24px rgba(0,0,0,0.08)">
+    <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:6px">Masukkan PIN</div>
+    <div style="font-size:12px;color:#9ca3af;margin-bottom:16px">Akses hanya untuk Denny & Lauren</div>
+    <input type="password" id="pinInput" maxlength="6" placeholder="••••••"
+      style="width:100%;padding:12px 14px;font-size:20px;letter-spacing:8px;text-align:center;
+        border:1px solid #e4e6eb;border-radius:8px;outline:none;font-family:monospace;
+        background:#f8f9fb;color:#111827"
+      onkeydown="if(event.key==='Enter')checkPin()"
+      oninput="this.style.borderColor='#e4e6eb';document.getElementById('pinErr').textContent=''">
+    <div id="pinErr" style="color:#dc2626;font-size:12px;margin-top:8px;min-height:16px;text-align:center"></div>
+    <button onclick="checkPin()" style="
+      width:100%;margin-top:12px;padding:12px;
+      background:#2563eb;color:#fff;border:none;border-radius:8px;
+      font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;
+    ">Masuk</button>
+  </div>
+  <div style="font-size:11px;color:#d1d5db">Lupa PIN? Hubungi Denny</div>
 </div>
 
 <script>
@@ -2765,6 +2809,21 @@ async function pushCSVSummary(token, repo, branch){
   } catch(e){ console.warn('CSV push skipped:', e.message); }
 }
 
+// ── CHANGE PIN ───────────────────────────────────────────────
+function changePin(){
+  const oldPin = document.getElementById('oldPin').value.trim();
+  const newPin = document.getElementById('newPin').value.trim();
+  const status = document.getElementById('pinChangeStatus');
+  const savedPin = localStorage.getItem('mf_pin') || CORRECT_PIN;
+  if(oldPin !== savedPin){ status.textContent='❌ PIN lama salah'; status.style.color='var(--red)'; return; }
+  if(newPin.length < 4){ status.textContent='⚠️ PIN minimal 4 digit'; status.style.color='var(--amber)'; return; }
+  localStorage.setItem('mf_pin', newPin);
+  status.textContent='✅ PIN berhasil diubah';
+  status.style.color='var(--green)';
+  document.getElementById('oldPin').value='';
+  document.getElementById('newPin').value='';
+}
+
 // ═══════════════════════════════════════
 // EXPORT EXCEL (SheetJS)
 // ═══════════════════════════════════════
@@ -2956,9 +3015,49 @@ function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 
 // ═══════════════════════════════════════
+// PIN AUTHENTICATION
+// ═══════════════════════════════════════
+const CORRECT_PIN = '1992'; // PIN default — bisa diubah di Settings
+
+function checkPin(){
+  const input = document.getElementById('pinInput').value.trim();
+  const err   = document.getElementById('pinErr');
+  // Check against saved PIN or default
+  const savedPin = localStorage.getItem('mf_pin') || CORRECT_PIN;
+  if(input === savedPin){
+    document.getElementById('pinOverlay').style.display = 'none';
+    localStorage.setItem('mf_authed', Date.now()); // remember for 8 hours
+    loadState();
+  } else {
+    err.textContent = 'PIN salah, coba lagi';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+    // shake animation
+    const box = document.getElementById('pinInput');
+    box.style.borderColor = '#dc2626';
+    box.style.animation = 'shake 0.3s';
+    setTimeout(()=>box.style.animation='', 400);
+  }
+}
+
+function checkAutoAuth(){
+  // Auto-bypass PIN if authenticated within last 8 hours
+  const lastAuth = parseInt(localStorage.getItem('mf_authed')||'0');
+  const eightHours = 8 * 60 * 60 * 1000;
+  if(Date.now() - lastAuth < eightHours){
+    document.getElementById('pinOverlay').style.display = 'none';
+    loadState();
+  } else {
+    // Show PIN screen, focus input
+    setTimeout(()=>document.getElementById('pinInput').focus(), 100);
+  }
+}
+
+// ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
-loadState();
+// Don't call loadState() directly — go through PIN check
+checkAutoAuth();
 document.getElementById('mDate').value=today();
 document.getElementById('tuDate').value=today();
 updateCats();
