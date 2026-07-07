@@ -2611,7 +2611,13 @@ async function supaLoad(){
       // ensure defaults
       if(!S.categories)    S.categories   = JSON.parse(JSON.stringify(DEFAULT_CATS));
       if(!S.keywordRules)  S.keywordRules = JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES));
-      if(!S.rekening)      S.rekening     = [];
+      if(!S.rekening || S.rekening.length===0) S.rekening = [
+        {id:'bca1147',   name:'BCA 1147',        type:'bank',         balance:0, note:'Rekening utama Denny'},
+        {id:'bca4500',   name:'BCA 4500 Petra',  type:'bank',         balance:0, note:'Rekening Lauren'},
+        {id:'superbank', name:'Superbank',        type:'bank',         balance:0, note:'Deposito'},
+        {id:'ccbca',     name:'Kartu Kredit BCA', type:'kartu_kredit', balance:0, note:''},
+        {id:'cash',      name:'Cash',             type:'cash',         balance:0, note:''},
+      ];
       if(!S.asetSnapshots) S.asetSnapshots= {};
       if(!S.transfers)     S.transfers    = [];
       if(!S.github)        S.github       = {token:'',repo:'',branch:'main'};
