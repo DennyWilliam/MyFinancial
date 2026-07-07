@@ -841,7 +841,7 @@ window.addEventListener('load', function(){
         <div class="kpi-grid" id="asetKpi" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-bottom:18px"></div>
 
         <!-- Category cards grid -->
-        <div id="asetCards" style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px"></div>
+        <div id="asetCards" style="margin-bottom:18px"></div>
 
         <!-- Detail panel (hidden by default, shown when card clicked) -->
         <div id="asetDetail" style="display:none">
@@ -2240,10 +2240,10 @@ function saveRekEdit(i){
 // Default aset structure: S.asetItems = { sec_key: [{name, value, note, history:[{month,value}]}] }
 const ASET_DEFS = [
   {key:'tabungan',  label:'Tabungan',    icon:'🏦', auto:true,  note:'Otomatis dari rekening'},
+  {key:'deposito',  label:'Deposito',    icon:'🏛️', auto:false},
   {key:'saham_idx', label:'Saham Indo',  icon:'📊', auto:false},
   {key:'saham_us',  label:'Saham Luar',  icon:'🌍', auto:false},
   {key:'crypto',    label:'Crypto',      icon:'₿',  auto:false},
-  {key:'deposito',  label:'Deposito',    icon:'🏛️', auto:false},
   {key:'asuransi',  label:'Asuransi',    icon:'🛡️', auto:false},
   {key:'piutang',   label:'Piutang',     icon:'📤', auto:false},
   {key:'utang',     label:'Utang',       icon:'📥', auto:false, isLiability:true},
@@ -2337,34 +2337,97 @@ function renderAsetKpi(){
 }
 
 function renderAsetCards(){
-  const cards = ASET_DEFS.map(def=>{
+  // Build table: rows = categories, cols = months
+  // Collect all months from history across all items
+  const allMonths = [...new Set(
+    ASET_DEFS.flatMap(def=>
+      (S.asetItems[def.key]||[]).flatMap(item=>(item.history||[]).map(h=>h.month))
+    )
+  )].sort();
+
+  // Always include current month
+  const nowM = today().slice(0,7);
+  if(!allMonths.includes(nowM)) allMonths.push(nowM);
+
+  // Show last 6 months max
+  const months = allMonths.slice(-6);
+
+  const container = document.getElementById('asetCards');
+  if(!container) return;
+
+  // Helper: get value for a category in a month
+  function getCatMonthVal(def, month){
     const items = S.asetItems[def.key]||[];
-    const total = getAsetTotal(def.key);
+    return items.reduce((sum, item)=>{
+      const h = (item.history||[]).find(x=>x.month===month);
+      // fallback: if no history for this month but it's current month, use item.value
+      const v = h ? h.value : (month===nowM ? (item.value||0) : 0);
+      return sum + v;
+    }, 0);
+  }
+
+  // Format month label: 2026-06 → Jun 26
+  function fmtMonth(m){
+    const d = new Date(m+'-01');
+    return d.toLocaleDateString('id-ID',{month:'short',year:'2-digit'});
+  }
+
+  const isLastMonth = (m) => m === months[months.length-1];
+
+  let html = `<div style="background:#fff;border:0.5px solid var(--border);border-radius:12px;overflow:hidden">
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:500px">
+    <thead>
+      <tr style="background:var(--bg3);border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:11px 16px;font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;min-width:150px">Kategori</th>
+        ${months.map(m=>`<th style="text-align:right;padding:11px 16px;font-size:12px;font-weight:600;color:${isLastMonth(m)?'var(--accent)':'var(--text3)'};min-width:100px">${fmtMonth(m)}</th>`).join('')}
+        <th style="width:60px"></th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  ASET_DEFS.forEach((def, idx)=>{
     const isLiab = def.isLiability;
-    return `
-      <div onclick="toggleAsetCard('${def.key}')" style="
-        background:#fff;border:1px solid var(--border);border-radius:12px;
-        padding:16px 18px;cursor:pointer;transition:all 0.15s;
-        display:flex;align-items:center;justify-content:space-between;
-      " id="asetcard_${def.key}"
-        onmouseenter="this.style.borderColor='var(--border2)';this.style.background='var(--bg3)'"
-        onmouseleave="this.style.borderColor='var(--border)';this.style.background='#fff'">
-        <div style="display:flex;align-items:center;gap:12px">
-          <span style="font-size:22px">${def.icon}</span>
-          <div>
-            <div style="font-weight:600;font-size:14px;color:var(--text)">${def.label}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px">${def.auto?'Otomatis dari rekening':items.length+' item'}</div>
-          </div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-weight:700;font-size:15px;font-family:var(--mono);color:${isLiab?'var(--red)':'var(--text)'}">
-            ${isLiab?'- ':''}Rp ${fmtS(total)}
-          </div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">klik untuk detail</div>
-        </div>
-      </div>`;
+    const isSep = idx > 0 && !ASET_DEFS[idx-1].isLiability && isLiab;
+    const bg = idx%2===0 ? '#fff' : 'var(--bg3)';
+    const borderTop = isSep ? 'border-top:2px solid var(--border2)' : '';
+
+    html += `<tr style="background:${bg};${borderTop}" onclick="showAsetDetail('${def.key}','${def.label}')" 
+      style="cursor:pointer" onmouseenter="this.style.background='var(--bg4)'" 
+      onmouseleave="this.style.background='${bg}'">
+      <td style="padding:12px 16px;font-size:14px;font-weight:500;color:${isLiab?'var(--red)':'var(--text)'}">
+        <span style="margin-right:8px">${def.icon}</span>${def.label}
+        ${def.auto?'<span style="font-size:10px;color:var(--text3);margin-left:6px">auto</span>':''}
+      </td>
+      ${months.map(m=>{
+        const v = getCatMonthVal(def, m);
+        const last = isLastMonth(m);
+        return `<td style="text-align:right;padding:12px 16px;font-size:14px;font-weight:${last?'600':'400'};
+          color:${isLiab?'var(--red)':'var(--text)'}">
+          ${v ? (isLiab?'- ':'')+'Rp '+fmtS(v) : '<span style="color:var(--text3)">—</span>'}
+        </td>`;
+      }).join('')}
+      <td style="padding:12px 8px;text-align:center;font-size:12px;color:var(--text3)">›</td>
+    </tr>`;
   });
-  document.getElementById('asetCards').innerHTML = cards.join('');
+
+  // Net Worth row
+  html += `<tr style="background:var(--accent-glow);border-top:2px solid var(--border2)">
+    <td style="padding:13px 16px;font-size:14px;font-weight:700;color:var(--accent)">Net Worth</td>
+    ${months.map(m=>{
+      const aset = ASET_DEFS.filter(d=>!d.isLiability).reduce((a,d)=>a+getCatMonthVal(d,m),0);
+      const utang = getCatMonthVal({key:'utang'},m);
+      const nw = aset - utang;
+      const last = isLastMonth(m);
+      return `<td style="text-align:right;padding:13px 16px;font-size:${last?'15':'14'}px;font-weight:${last?'700':'500'};color:var(--accent)">
+        Rp ${fmtS(nw)}
+      </td>`;
+    }).join('')}
+    <td></td>
+  </tr>`;
+
+  html += `</tbody></table></div></div>`;
+  container.innerHTML = html;
 }
 
 function toggleAsetCard(key){
