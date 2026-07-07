@@ -1210,6 +1210,10 @@ function go(name, el) {
   if (name === 'pnl')         renderPnL();
   if (name === 'investasi')   renderInv();
   if (name === 'manual')      updateCats();
+  if (name === 'rekening')    setTimeout(renderRekening, 50);
+  if (name === 'kategori')    { katFilter='expense'; setTimeout(renderKategori, 50); }
+  if (name === 'aset')        setTimeout(renderAset, 50);
+  if (name === 'transfer')    initTransfer();
 }
 
 // ═══════════════════════════════════════
