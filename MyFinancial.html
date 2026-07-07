@@ -831,17 +831,39 @@ window.addEventListener('load', function(){
       <div class="page" id="page-aset">
         <div class="sec-head">
           <div class="sec-title">Laporan Aset</div>
-          <div class="sec-sub">Snapshot kekayaan bersih — update tiap bulan</div>
+          <div class="sec-sub">Kekayaan bersih — update kapanpun ada perubahan</div>
         </div>
-        <div class="kpi-grid" id="asetKpi" style="grid-template-columns:repeat(4,1fr)"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-          <div style="font-size:12px;color:var(--text3)">Scroll kanan untuk lihat semua bulan</div>
-          <button class="btn btn-primary" onclick="openAsetModal()">➕ Update Bulan Ini</button>
+
+        <!-- KPI 3 cards -->
+        <div class="kpi-grid" id="asetKpi" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-bottom:18px"></div>
+
+        <!-- Category cards grid -->
+        <div id="asetCards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:18px"></div>
+
+        <!-- Detail panel (hidden by default, shown when card clicked) -->
+        <div id="asetDetail" style="display:none">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title" id="asetDetailTitle"></div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px">Riwayat per bulan</div>
+              </div>
+              <button class="btn btn-sm" onclick="closeAsetDetail()">✕ Tutup</button>
+            </div>
+            <div style="overflow-x:auto">
+              <table id="asetDetailTable" style="border-collapse:collapse;width:100%">
+                <thead><tr id="asetDetailHead"></tr></thead>
+                <tbody id="asetDetailBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
+
+        <!-- History table -->
         <div class="card">
           <div class="card-head">
-            <div class="card-title"><span class="card-title-icon">🏛️</span>Riwayat Aset per Bulan</div>
-            <button class="btn btn-sm" onclick="exportAsetCSV()">⬇ Export CSV</button>
+            <div class="card-title"><span>🏛️</span>Semua Aset — Riwayat Bulanan</div>
+            <button class="btn btn-sm" onclick="exportAsetCSV()">⬇ CSV</button>
           </div>
           <div style="overflow-x:auto">
             <table id="asetHistTable" style="border-collapse:collapse">
@@ -971,6 +993,44 @@ window.addEventListener('load', function(){
     <div class="modal-foot">
       <button class="btn" onclick="closeModal('tuModal')">Batal</button>
       <button class="btn btn-primary" onclick="saveTU()">✅ Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ASET ITEM MODAL -->
+<div class="overlay" id="asetItemModal">
+  <div class="modal" style="width:440px">
+    <div class="modal-title" id="asetItemTitle">Edit Item Aset</div>
+    <div class="modal-sub" id="asetItemSub">Update nilai terbaru</div>
+    <input type="hidden" id="asetItemSec">
+    <input type="hidden" id="asetItemIdx">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="fg"><label>Nama Item</label><input type="text" id="asetItemName" placeholder="cth: BCA 1147, IPOT..."></div>
+      <div class="fg"><label>Nilai Sekarang (Rp)</label><input type="number" id="asetItemVal" placeholder="0" min="0"></div>
+      <div class="fg"><label>Catatan</label><input type="text" id="asetItemNote" placeholder="opsional"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('asetItemModal')">Batal</button>
+      <button class="btn" style="color:var(--red);border-color:rgba(220,38,38,0.3)" onclick="deleteAsetItem()">🗑 Hapus</button>
+      <button class="btn btn-primary" onclick="saveAsetItem()">✅ Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD ASET CATEGORY MODAL -->
+<div class="overlay" id="asetAddModal">
+  <div class="modal" style="width:400px">
+    <div class="modal-title">Tambah Item Baru</div>
+    <div class="modal-sub" id="asetAddSub">Tambah ke kategori aset</div>
+    <input type="hidden" id="asetAddSec">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="fg"><label>Nama Item</label><input type="text" id="asetAddName" placeholder="cth: BBCA, Ethereum..."></div>
+      <div class="fg"><label>Nilai Sekarang (Rp)</label><input type="number" id="asetAddVal" placeholder="0" min="0"></div>
+      <div class="fg"><label>Catatan</label><input type="text" id="asetAddNote" placeholder="opsional"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('asetAddModal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveAsetAdd()">✅ Tambah</button>
     </div>
   </div>
 </div>
@@ -1113,6 +1173,7 @@ function loadState() {
     {id:'cash',      name:'Cash',             type:'cash',         balance:0, note:''},
   ];
   if(!S.asetSnapshots) S.asetSnapshots = {};
+  if(!S.asetItems)      S.asetItems = {};
   if(!S.transfers)      S.transfers = [];
   if(!S.github)         S.github = {token:'',repo:'',branch:'main'};
   if (S.apiKey) document.getElementById('apiIn').value = S.apiKey;
@@ -2118,7 +2179,7 @@ function addRekening(){
   if(!name){alert('Isi nama rekening!');return;}
   if(!S.rekening) S.rekening=[];
   S.rekening.push({id:'rek_'+Date.now(), name, type, balance, note});
-  persist(); renderRekening(); updateCats();
+  persist(); syncTabunganFromRekening(); renderRekening(); updateCats();
   document.getElementById('newRekName').value='';
   document.getElementById('newRekBal').value='';
   document.getElementById('newRekNote').value='';
@@ -2162,260 +2223,257 @@ function saveRekEdit(i){
     });
     if(count>0) console.log(`Updated ${count} transactions: rekening "${oldName}" → "${newName}"`);
   }
-  persist(); renderRekening(); updateCats();
+  persist(); syncTabunganFromRekening(); renderRekening(); updateCats();
 }
 
 // ═══════════════════════════════════════
-// ASET MANAGEMENT
+// ASET MANAGEMENT — card-based, item-level edit
 // ═══════════════════════════════════════
-// Snapshot structure: S.asetSnapshots[YYYY-MM] = {
-//   tunai: [{name,value,note}],
-//   saham: [{name,value,note}],
-//   deposito: [{name,value,note}],
-//   emas: [{name,value,note}],
-//   lainnya: [{name,value,note}],
-//   utang: [{name,value,note}],
-//   piutang: [{name,value,note}],
-// }
 
-const ASET_SECTIONS = [
-  {key:'tunai',     label:'Tunai & Bank',     icon:'🏦'},
-  {key:'saham',     label:'Saham & Reksa Dana',icon:'📊'},
-  {key:'deposito',  label:'Deposito',          icon:'🏛️'},
-  {key:'emas',      label:'Emas',              icon:'💛'},
-  {key:'lainnya',   label:'Aset Lainnya',      icon:'🏠'},
-  {key:'piutang',   label:'Piutang',           icon:'📤'},
-  {key:'utang',     label:'Utang / Liabilitas',icon:'📥'},
+// Default aset structure: S.asetItems = { sec_key: [{name, value, note, history:[{month,value}]}] }
+const ASET_DEFS = [
+  {key:'tabungan',  label:'Tabungan',    icon:'🏦', auto:true,  note:'Otomatis dari rekening'},
+  {key:'saham_idx', label:'Saham Indo',  icon:'📊', auto:false},
+  {key:'saham_us',  label:'Saham Luar',  icon:'🌍', auto:false},
+  {key:'crypto',    label:'Crypto',      icon:'₿',  auto:false},
+  {key:'deposito',  label:'Deposito',    icon:'🏛️', auto:false},
+  {key:'asuransi',  label:'Asuransi',    icon:'🛡️', auto:false},
+  {key:'piutang',   label:'Piutang',     icon:'📤', auto:false},
+  {key:'utang',     label:'Utang',       icon:'📥', auto:false, isLiability:true},
 ];
 
-function today_ym(){ return new Date().toISOString().slice(0,7); }
+function initAsetItems(){
+  if(!S.asetItems) S.asetItems = {};
+  ASET_DEFS.forEach(def=>{
+    if(!S.asetItems[def.key]) S.asetItems[def.key] = [];
+  });
+  // Auto-sync tabungan from rekening
+  syncTabunganFromRekening();
+}
+
+function syncTabunganFromRekening(){
+  if(!S.rekening) return;
+  // Map rekening to tabungan items (non-credit card)
+  const bankRek = (S.rekening||[]).filter(r=>r.type!=='kartu_kredit');
+  const ccRek   = (S.rekening||[]).filter(r=>r.type==='kartu_kredit');
+  // update tabungan items
+  S.asetItems['tabungan'] = bankRek.map(r=>({
+    name: r.name, value: r.balance||0, note: r.note||'', auto:true
+  }));
+  // update utang from kartu kredit
+  if(!S.asetItems['utang']) S.asetItems['utang'] = [];
+  ccRek.forEach(r=>{
+    const existing = S.asetItems['utang'].find(i=>i.name===r.name);
+    if(!existing) S.asetItems['utang'].push({name:r.name, value:r.balance||0, note:'Kartu Kredit'});
+  });
+}
+
+function getAsetTotal(key){
+  return (S.asetItems[key]||[]).reduce((a,b)=>a+(b.value||0),0);
+}
+
+function getTotalAset(){
+  return ASET_DEFS.filter(d=>!d.isLiability).reduce((a,d)=>a+getAsetTotal(d.key),0);
+}
+
+function getTotalUtang(){
+  return getAsetTotal('utang');
+}
 
 function renderAset(){
+  initAsetItems();
   renderAsetKpi();
+  renderAsetCards();
   renderAsetTable();
 }
 
 function renderAsetKpi(){
-  const snaps = Object.keys(S.asetSnapshots).sort();
-  if(!snaps.length){
-    document.getElementById('asetKpi').innerHTML=
-      `<div class="kpi" style="grid-column:1/-1;text-align:center;color:var(--text3);padding:20px">
-        Belum ada snapshot — klik "➕ Update Bulan Ini" untuk mulai mencatat aset
-      </div>`;
-    return;
-  }
-  const latest = S.asetSnapshots[snaps[snaps.length-1]];
-  const sumSec = (snap,key) => (snap[key]||[]).reduce((a,b)=>a+(b.value||0),0);
-  const totalAset = ['tunai','saham','deposito','emas','lainnya','piutang']
-    .reduce((a,k)=>a+sumSec(latest,k),0);
-  const totalUtang = sumSec(latest,'utang');
+  const totalAset = getTotalAset();
+  const totalUtang = getTotalUtang();
   const netWorth = totalAset - totalUtang;
-  const prev = snaps.length>1 ? S.asetSnapshots[snaps[snaps.length-2]] : null;
-  const prevNW = prev
-    ? ['tunai','saham','deposito','emas','lainnya','piutang'].reduce((a,k)=>a+sumSec(prev,k),0) - sumSec(prev,'utang')
-    : null;
+
+  // calc prev month net worth from history
+  const nowM = today().slice(0,7);
+  let prevNW = null;
+  const prevM = new Date(nowM+'-01');
+  prevM.setMonth(prevM.getMonth()-1);
+  const prevKey = prevM.toISOString().slice(0,7);
+
+  // check if any items have history for prevM
+  let prevTotal = 0, hasPrev = false;
+  ASET_DEFS.forEach(def=>{
+    (S.asetItems[def.key]||[]).forEach(item=>{
+      const h = (item.history||[]).find(x=>x.month===prevKey);
+      if(h){ hasPrev=true; if(!def.isLiability) prevTotal+=h.value; else prevTotal-=h.value; }
+    });
+  });
+  if(hasPrev) prevNW = prevTotal;
   const nwDiff = prevNW!==null ? netWorth-prevNW : null;
 
   document.getElementById('asetKpi').innerHTML = `
-    <div class="kpi" style="grid-column:span 1">
+    <div class="kpi">
       <div class="kpi-lbl">💰 Total Aset</div>
       <div class="kpi-val" style="font-size:20px">Rp ${fmtS(totalAset)}</div>
-      <div class="kpi-meta">Per ${snaps[snaps.length-1]}</div>
+      <div class="kpi-meta">Semua kategori</div>
     </div>
-    <div class="kpi" style="grid-column:span 1">
+    <div class="kpi">
       <div class="kpi-lbl">📥 Total Utang</div>
       <div class="kpi-val" style="font-size:20px">Rp ${fmtS(totalUtang)}</div>
       <div class="kpi-meta">Liabilitas</div>
     </div>
-    <div class="kpi" style="grid-column:span 2">
-      <div class="kpi-lbl">🏆 Net Worth (Aset − Utang)</div>
+    <div class="kpi" style="grid-column:span 2;border:1.5px solid var(--border2)">
+      <div class="kpi-lbl">🏆 Net Worth</div>
       <div class="kpi-val" style="font-size:22px">Rp ${fmtS(netWorth)}</div>
-      <div class="kpi-meta">${nwDiff!==null ? (nwDiff>=0?'▲ +':'▼ ')+'Rp '+fmtS(Math.abs(nwDiff))+' vs bulan lalu' : 'Snapshot pertama'}</div>
+      <div class="kpi-meta">${nwDiff!==null?(nwDiff>=0?'▲ +':'▼ ')+'Rp '+fmtS(Math.abs(nwDiff))+' vs bulan lalu':'Update rutin untuk lihat tren'}</div>
     </div>`;
 }
 
+function renderAsetCards(){
+  const cards = ASET_DEFS.map(def=>{
+    const items = S.asetItems[def.key]||[];
+    const total = getAsetTotal(def.key);
+    const isLiab = def.isLiability;
+    const itemList = items.length
+      ? items.map(item=>`
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:12px;color:var(--text2)">${item.name||'—'}</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:12px;font-family:var(--mono);font-weight:600;color:${isLiab?'var(--red)':'var(--text)'}">${isLiab?'-':''}Rp ${fmtS(item.value||0)}</span>
+              ${def.auto?'':`<button onclick="openEditAset('${def.key}',${items.indexOf(item)})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:2px 4px">✏️</button>`}
+            </div>
+          </div>`).join('')
+      : `<div style="padding:12px 0;text-align:center;color:var(--text3);font-size:12px">Belum ada item</div>`;
 
-function renderAsetTable(){
-  const snaps = Object.keys(S.asetSnapshots).sort();
-  const thead = document.getElementById('asetHistHead');
-  const tbody = document.getElementById('asetHistBody');
+    return `
+      <div class="card" style="margin-bottom:0;overflow:visible">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px">${def.icon}</span>
+            <div>
+              <div style="font-weight:700;font-size:13px">${def.label}</div>
+              <div style="font-size:11px;color:var(--text3)">${def.auto?'Auto dari rekening':items.length+' item'}</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:700;font-size:15px;font-family:var(--mono);color:${isLiab?'var(--red)':'var(--text)'}">${isLiab?'-':''}Rp ${fmtS(total)}</div>
+          </div>
+        </div>
+        <div style="padding:4px 16px 10px">
+          ${itemList}
+          <div style="display:flex;gap:6px;margin-top:10px">
+            ${def.auto?'':`<button class="btn btn-sm" style="flex:1;font-size:11px" onclick="openAddAset('${def.key}','${def.label}')">➕ Tambah</button>`}
+            <button class="btn btn-sm" style="flex:1;font-size:11px" onclick="showAsetDetail('${def.key}','${def.label}')">📈 Riwayat</button>
+          </div>
+        </div>
+      </div>`;
+  });
+  document.getElementById('asetCards').innerHTML = cards.join('');
+}
 
-  if(!snaps.length){
-    thead.innerHTML = '<th style="min-width:180px">Kategori / Item</th>';
-    tbody.innerHTML = '<tr><td style="padding:32px;text-align:center;color:var(--text3)">Belum ada data. Klik "➕ Update Bulan Ini".</td></tr>';
-    return;
+function showAsetDetail(key, label){
+  const items = S.asetItems[key]||[];
+  // collect all months from history
+  const allMonths = [...new Set(
+    items.flatMap(i=>(i.history||[]).map(h=>h.month))
+  )].sort();
+  if(!allMonths.length && items.length){
+    // no history yet, show current only
+    allMonths.push(today().slice(0,7));
   }
-
-  // header: sticky first col + one col per month
-  thead.innerHTML =
-    '<th style="min-width:180px;position:sticky;left:0;background:var(--bg3);z-index:1">Kategori / Item</th>' +
-    snaps.map(m=>`<th style="text-align:right;min-width:130px;padding-right:16px">${m}</th>`).join('');
-
-  const rows = [];
-  const stickyBase = 'position:sticky;left:0;background:';
-
-  ASET_SECTIONS.forEach(sec=>{
-    // check if any month has data for this section
-    const hasData = snaps.some(m=>(S.asetSnapshots[m][sec.key]||[]).length>0);
-    if(!hasData) return;
-
-    // section header row
-    rows.push(`<tr style="background:var(--bg3)">
-      <td colspan="${snaps.length+1}" style="font-size:11px;font-weight:700;text-transform:uppercase;
-        letter-spacing:0.8px;color:var(--text2);padding:8px 14px;
-        border-top:2px solid var(--border2)">${sec.icon} ${sec.label}</td>
-    </tr>`);
-
-    // collect all unique item names across months
-    const allNames = [...new Set(
-      snaps.flatMap(m=>(S.asetSnapshots[m][sec.key]||[]).map(i=>i.name||''))
-           .filter(Boolean)
-    )];
-
-    // item rows
-    allNames.forEach(name=>{
-      rows.push(`<tr>
-        <td style="padding-left:26px;color:var(--text2);font-size:13px;${stickyBase}var(--bg2)">${name}</td>
-        ${snaps.map(m=>{
-          const item = (S.asetSnapshots[m][sec.key]||[]).find(i=>i.name===name);
-          return item
-            ? `<td style="text-align:right;padding-right:16px;font-family:var(--mono);font-size:12.5px">Rp ${fmt(item.value||0)}</td>`
-            : `<td style="text-align:right;padding-right:16px;color:var(--text3)">—</td>`;
-        }).join('')}
-      </tr>`);
-    });
-
-    // section total row
-    rows.push(`<tr style="background:var(--bg3)">
-      <td style="padding-left:26px;font-weight:700;font-size:13px;border-top:1px solid var(--border);
-        ${stickyBase}var(--bg3)">Total ${sec.label}</td>
-      ${snaps.map(m=>{
-        const v=(S.asetSnapshots[m][sec.key]||[]).reduce((a,b)=>a+(b.value||0),0);
-        return `<td style="text-align:right;padding-right:16px;font-family:var(--mono);
-          font-weight:700;font-size:12.5px;border-top:1px solid var(--border)">
-          ${v ? 'Rp '+fmt(v) : '—'}</td>`;
-      }).join('')}
-    </tr>`);
+  document.getElementById('asetDetailTitle').textContent = label+' — Riwayat';
+  document.getElementById('asetDetailHead').innerHTML =
+    `<th style="min-width:140px;background:var(--bg3)">Item</th>`+
+    allMonths.map(m=>`<th style="text-align:right;min-width:110px;padding-right:14px">${m}</th>`).join('');
+  const rows = items.map(item=>{
+    const cells = allMonths.map(m=>{
+      const h = (item.history||[]).find(x=>x.month===m);
+      const v = h?h.value:(allMonths[allMonths.length-1]===m?item.value:null);
+      return `<td style="text-align:right;padding-right:14px;font-family:var(--mono);font-size:12.5px">${v!==null?'Rp '+fmt(v):'—'}</td>`;
+    }).join('');
+    return `<tr><td style="font-weight:500">${item.name}</td>${cells}</tr>`;
   });
-
-  // NET WORTH row
-  rows.push(`<tr style="background:var(--bg4)">
-    <td style="font-weight:800;font-size:13px;border-top:2px solid var(--border3);
-      ${stickyBase}var(--bg4)">NET WORTH</td>
-    ${snaps.map(m=>{
-      const snap = S.asetSnapshots[m];
-      const aset = ['tunai','saham','deposito','emas','lainnya','piutang']
-        .reduce((a,k)=>a+(snap[k]||[]).reduce((x,y)=>x+(y.value||0),0),0);
-      const utang = (snap.utang||[]).reduce((a,b)=>a+(b.value||0),0);
-      return `<td style="text-align:right;padding-right:16px;font-family:var(--mono);
-        font-weight:800;font-size:13px;border-top:2px solid var(--border3)">
-        Rp ${fmt(aset-utang)}</td>`;
-    }).join('')}
-  </tr>`);
-
-  tbody.innerHTML = rows.join('');
+  // total row
+  const totalCells = allMonths.map(m=>{
+    const v = items.reduce((a,item)=>{
+      const h=(item.history||[]).find(x=>x.month===m);
+      return a+(h?h.value:(allMonths[allMonths.length-1]===m?item.value:0));
+    },0);
+    return `<td style="text-align:right;padding-right:14px;font-family:var(--mono);font-weight:700;border-top:2px solid var(--border2)">Rp ${fmt(v)}</td>`;
+  }).join('');
+  rows.push(`<tr style="background:var(--bg3)"><td style="font-weight:700">Total</td>${totalCells}</tr>`);
+  document.getElementById('asetDetailBody').innerHTML = rows.join('');
+  document.getElementById('asetDetail').style.display='block';
+  document.getElementById('asetDetail').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function exportAsetCSV(){
-  const snaps = Object.keys(S.asetSnapshots).sort();
-  if(!snaps.length){alert('Belum ada data aset!');return;}
-  const rows = [['Kategori','Item',...snaps]];
-  ASET_SECTIONS.forEach(sec=>{
-    const allNames=[...new Set(snaps.flatMap(m=>(S.asetSnapshots[m][sec.key]||[]).map(i=>i.name||'')).filter(Boolean))];
-    allNames.forEach(name=>{
-      rows.push([sec.label, name, ...snaps.map(m=>{
-        const it=(S.asetSnapshots[m][sec.key]||[]).find(i=>i.name===name);
-        return it?(it.value||0):'';
-      })]);
-    });
-    rows.push([`Total ${sec.label}`,'',...snaps.map(m=>(S.asetSnapshots[m][sec.key]||[]).reduce((a,b)=>a+(b.value||0),0))]);
-  });
-  rows.push(['NET WORTH','',...snaps.map(m=>{
-    const snap=S.asetSnapshots[m];
-    const aset=['tunai','saham','deposito','emas','lainnya','piutang'].reduce((a,k)=>a+(snap[k]||[]).reduce((x,y)=>x+(y.value||0),0),0);
-    return aset-(snap.utang||[]).reduce((a,b)=>a+(b.value||0),0);
-  })]);
-  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
-  a.download='MyFinancial_Aset_'+today()+'.csv';
-  a.click();
+function closeAsetDetail(){
+  document.getElementById('asetDetail').style.display='none';
 }
 
-
-function openAsetModal(){
-  const m = today_ym();
-  document.getElementById('asetPeriod').value = m;
-  const existing = S.asetSnapshots[m] || {};
-  // build form sections
-  const autoItems = {
-    tunai: (S.rekening||[]).filter(r=>r.type!=='kartu_kredit').map(r=>({name:r.name,value:r.balance,note:''})),
-    saham: S.investments.slice(0,2).map(inv=>({name:inv.name,value:inv.value,note:''})),
-    deposito: S.investments.filter(inv=>inv.id==='superbank').map(inv=>({name:inv.name,value:inv.value,note:''})),
-    emas: S.investments.filter(inv=>inv.id==='emas').map(inv=>({name:inv.name,value:inv.value,note:''})),
-    utang: (S.rekening||[]).filter(r=>r.type==='kartu_kredit').map(r=>({name:r.name,value:r.balance,note:''})),
-  };
-  const sectionsHtml = ASET_SECTIONS.map(sec=>{
-    const items = existing[sec.key] || autoItems[sec.key] || [];
-    const rowsHtml = items.map((item,i)=>`
-      <div style="display:grid;grid-template-columns:1fr 130px 1fr auto;gap:6px;margin-bottom:6px" id="asecrow_${sec.key}_${i}">
-        <input type="text" placeholder="Nama item" value="${item.name||''}" class="aset-item-name" data-sec="${sec.key}" data-i="${i}" style="font-size:12px">
-        <input type="number" placeholder="Nilai Rp" value="${item.value||0}" class="aset-item-val" data-sec="${sec.key}" data-i="${i}" style="font-size:12px">
-        <input type="text" placeholder="Catatan" value="${item.note||''}" class="aset-item-note" data-sec="${sec.key}" data-i="${i}" style="font-size:12px">
-        <button onclick="removeAsetRow('${sec.key}',${i})" style="background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;padding:4px 7px;color:var(--text3)">✕</button>
-      </div>`).join('');
-    return `<div style="margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--text3);margin-bottom:6px">${sec.icon} ${sec.label}</div>
-      <div id="asec_${sec.key}">${rowsHtml}</div>
-      <button class="btn btn-sm" onclick="addAsetRow('${sec.key}')" style="margin-top:4px;font-size:11px">+ Tambah item</button>
-    </div>`;
-  }).join('<hr style="border:none;border-top:1px solid var(--border);margin:10px 0">');
-  document.getElementById('asetSections').innerHTML = sectionsHtml;
-  openModal('asetModal');
+// Edit existing item
+function openEditAset(sec, idx){
+  const item = (S.asetItems[sec]||[])[idx];
+  if(!item) return;
+  const def = ASET_DEFS.find(d=>d.key===sec);
+  document.getElementById('asetItemTitle').textContent = 'Edit — '+def.label;
+  document.getElementById('asetItemSub').textContent = 'Update nilai '+item.name;
+  document.getElementById('asetItemSec').value = sec;
+  document.getElementById('asetItemIdx').value = idx;
+  document.getElementById('asetItemName').value = item.name||'';
+  document.getElementById('asetItemVal').value = item.value||0;
+  document.getElementById('asetItemNote').value = item.note||'';
+  openModal('asetItemModal');
 }
 
-function addAsetRow(sec){
-  const container = document.getElementById(`asec_${sec}`);
-  const i = container.querySelectorAll('.aset-item-name').length;
-  const div = document.createElement('div');
-  div.style.cssText='display:grid;grid-template-columns:1fr 130px 1fr auto;gap:6px;margin-bottom:6px';
-  div.id=`asecrow_${sec}_${i}`;
-  div.innerHTML=`
-    <input type="text" placeholder="Nama item" value="" class="aset-item-name" data-sec="${sec}" data-i="${i}" style="font-size:12px">
-    <input type="number" placeholder="Nilai Rp" value="0" class="aset-item-val" data-sec="${sec}" data-i="${i}" style="font-size:12px">
-    <input type="text" placeholder="Catatan" value="" class="aset-item-note" data-sec="${sec}" data-i="${i}" style="font-size:12px">
-    <button onclick="this.parentElement.remove()" style="background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;padding:4px 7px;color:var(--text3)">✕</button>`;
-  container.appendChild(div);
+function saveAsetItem(){
+  const sec = document.getElementById('asetItemSec').value;
+  const idx = parseInt(document.getElementById('asetItemIdx').value);
+  const name = document.getElementById('asetItemName').value.trim();
+  const value = parseFloat(document.getElementById('asetItemVal').value)||0;
+  const note = document.getElementById('asetItemNote').value.trim();
+  if(!name){alert('Isi nama item!');return;}
+  const item = S.asetItems[sec][idx];
+  // save to history before update
+  const nowM = today().slice(0,7);
+  if(!item.history) item.history=[];
+  const existing = item.history.find(h=>h.month===nowM);
+  if(existing) existing.value=value; else item.history.push({month:nowM,value});
+  item.name=name; item.value=value; item.note=note;
+  persist(); closeModal('asetItemModal'); renderAset();
 }
 
-function removeAsetRow(sec,i){
-  const row=document.getElementById(`asecrow_${sec}_${i}`);
-  if(row) row.remove();
+function deleteAsetItem(){
+  const sec = document.getElementById('asetItemSec').value;
+  const idx = parseInt(document.getElementById('asetItemIdx').value);
+  if(!confirm('Hapus item ini?')) return;
+  S.asetItems[sec].splice(idx,1);
+  persist(); closeModal('asetItemModal'); renderAset();
 }
 
-function saveAsetSnapshot(){
-  const m = document.getElementById('asetPeriod').value;
-  if(!m){alert('Pilih periode!');return;}
-  const snap={};
-  ASET_SECTIONS.forEach(sec=>{
-    const container=document.getElementById(`asec_${sec.key}`);
-    if(!container){snap[sec.key]=[];return;}
-    const names=container.querySelectorAll('.aset-item-name');
-    const vals=container.querySelectorAll('.aset-item-val');
-    const notes=container.querySelectorAll('.aset-item-note');
-    const items=[];
-    for(let i=0;i<names.length;i++){
-      const name=(names[i].value||'').trim();
-      const value=parseFloat(vals[i]?.value)||0;
-      const note=(notes[i]?.value||'').trim();
-      if(name||value) items.push({name,value,note});
-    }
-    snap[sec.key]=items;
-  });
-  S.asetSnapshots[m]=snap;
-  persist(); closeModal('asetModal'); renderAset();
-  alert(`✅ Snapshot aset ${m} tersimpan!`);
+// Add new item
+function openAddAset(sec, label){
+  document.getElementById('asetAddSub').textContent = 'Tambah ke '+label;
+  document.getElementById('asetAddSec').value = sec;
+  document.getElementById('asetAddName').value='';
+  document.getElementById('asetAddVal').value='';
+  document.getElementById('asetAddNote').value='';
+  openModal('asetAddModal');
 }
+
+function saveAsetAdd(){
+  const sec = document.getElementById('asetAddSec').value;
+  const name = document.getElementById('asetAddName').value.trim();
+  const value = parseFloat(document.getElementById('asetAddVal').value)||0;
+  const note = document.getElementById('asetAddNote').value.trim();
+  if(!name){alert('Isi nama item!');return;}
+  const nowM = today().slice(0,7);
+  if(!S.asetItems[sec]) S.asetItems[sec]=[];
+  S.asetItems[sec].push({name,value,note,history:[{month:nowM,value}]});
+  persist(); closeModal('asetAddModal'); renderAset();
+}
+
+function today_ym(){ return new Date().toISOString().slice(0,7); }
+
 
 // ═══════════════════════════════════════
 // REKENING TOGGLE FORM
@@ -2641,6 +2699,7 @@ async function supaLoad(){
         {id:'cash',      name:'Cash',             type:'cash',         balance:0, note:''},
       ];
       if(!S.asetSnapshots) S.asetSnapshots= {};
+      if(!S.asetItems)    S.asetItems = {};
       if(!S.transfers)     S.transfers    = [];
       if(!S.github)        S.github       = {token:'',repo:'',branch:'main'};
       localStorage.setItem(STORE_KEY, JSON.stringify(S));
