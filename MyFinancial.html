@@ -1105,7 +1105,13 @@ function loadState() {
   // init defaults if not saved
   if(!S.categories)    S.categories    = JSON.parse(JSON.stringify(DEFAULT_CATS));
   if(!S.keywordRules)  S.keywordRules  = JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES));
-  if(!S.rekening)      S.rekening      = [{id:'bca1147',name:'BCA 1147',type:'bank',balance:0,note:''},{id:'cash',name:'Cash',type:'cash',balance:0,note:''}];
+  if(!S.rekening || S.rekening.length===0) S.rekening = [
+    {id:'bca1147',   name:'BCA 1147',        type:'bank',         balance:0, note:'Rekening utama Denny'},
+    {id:'bca4500',   name:'BCA 4500 Petra',  type:'bank',         balance:0, note:'Rekening Lauren'},
+    {id:'superbank', name:'Superbank',        type:'bank',         balance:0, note:'Deposito'},
+    {id:'ccbca',     name:'Kartu Kredit BCA', type:'kartu_kredit', balance:0, note:''},
+    {id:'cash',      name:'Cash',             type:'cash',         balance:0, note:''},
+  ];
   if(!S.asetSnapshots) S.asetSnapshots = {};
   if(!S.transfers)      S.transfers = [];
   if(!S.github)         S.github = {token:'',repo:'',branch:'main'};
@@ -2079,18 +2085,18 @@ const REK_TYPE_LABEL = {bank:'Bank',ewallet:'E-Wallet',cash:'Cash',kartu_kredit:
 function renderRekening(){
   const list = S.rekening || [];
   document.getElementById('rekList').innerHTML = list.length ? list.map((r,i)=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border)" id="rekrow_${i}">
+    <div style="display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border)" id="rekrow_${i}">
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13px;margin-bottom:2px">${r.name}</div>
+        <div style="font-weight:600;font-size:13px;margin-bottom:3px">${r.name}</div>
         <div style="font-size:11px;color:var(--text3)">${REK_TYPE_LABEL[r.type]||r.type}${r.note?' · '+r.note:''}</div>
       </div>
-      <div style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text)">Rp ${fmt(r.balance)}</div>
-      <div style="display:flex;gap:4px">
-        <button class="btn btn-sm" onclick="editRekInline(${i})" style="padding:4px 8px">✏️</button>
-        <button class="btn btn-sm" onclick="deleteRek(${i})" style="padding:4px 8px;color:var(--red)">🗑</button>
+      <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text);margin-right:8px">Rp ${fmt(r.balance)}</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm" onclick="editRekInline(${i})" style="padding:5px 10px">✏️ Edit</button>
+        <button class="btn btn-sm" onclick="deleteRek(${i})" style="padding:5px 10px;color:var(--red)">🗑</button>
       </div>
     </div>`).join('') :
-    '<div style="padding:24px;text-align:center;color:var(--text3)">Belum ada rekening</div>';
+    '<div style="padding:24px;text-align:center;color:var(--text3)">Belum ada rekening — tambah di form kanan</div>';
 }
 
 function addRekening(){
