@@ -458,6 +458,9 @@ window.addEventListener('load', function(){
         <button class="btn btn-sm" onclick="document.getElementById('restoreFile').click()" title="Restore JSON">📂 Restore</button>
         <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="importAllData(event)">
         <button class="btn btn-green btn-sm" onclick="exportExcel()" title="Export ke Excel">📊 Export Excel</button>
+        <button class="btn btn-sm" onclick="manualSupaSync()" title="Sync ke Cloud" style="background:#10b981;color:#fff;border-color:#059669">
+          ☁️ Sync Cloud
+        </button>
         <button class="btn btn-sm" id="ghSyncBtn" onclick="syncToGitHub()" title="Sync ke GitHub" style="background:#24292f;color:#fff;border-color:#444">
           <span id="ghSyncIcon">🐙</span> <span id="ghSyncTxt">GitHub</span>
         </button>
@@ -958,6 +961,14 @@ window.addEventListener('load', function(){
 // STATE
 // ═══════════════════════════════════════
 const STORE_KEY = 'myfinancial_v1';
+
+// ── SUPABASE CONFIG ──────────────────────────────────────
+const SUPA_URL = 'https://bjpepqdbwngqebjaepaa.supabase.co';
+const SUPA_KEY = 'sb_publishable_M_TOBGDC6y63HGqtmer9FQ_pJ6cB0Qq';
+const SUPA_TABLE = 'myfinancial_data';
+const SUPA_ID = 'main';
+let supaLastSync = null;
+let supaAutoSyncTimer = null;
 let S = {
   transactions: [],
   investments: [
@@ -1052,6 +1063,8 @@ function loadState() {
   if (S.apiKey) document.getElementById('apiIn').value = S.apiKey;
   updateImportAlert();
   updateGitHubUI();
+  // Try load from Supabase on startup
+  supaLoad();
 }
 
 function persist() {
@@ -2432,6 +2445,134 @@ function renderTransferHistory(){
       .join('')
     : '<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text3)">Belum ada riwayat transfer</td></tr>';
 }
+
+// ═══════════════════════════════════════
+// SUPABASE SYNC — shared data Denny & Lauren
+// ═══════════════════════════════════════
+
+// UI indicator
+function supaSetStatus(status, msg){
+  const dot  = document.getElementById('syncDot');
+  const txt  = document.getElementById('syncTxt');
+  if(!dot||!txt) return;
+  dot.className = 'sync-dot';
+  if(status==='ok'){
+    dot.classList.add('ok');
+    txt.textContent = 'Synced: '+msg;
+    txt.style.color = 'var(--green)';
+  } else if(status==='syncing'){
+    dot.classList.add('busy');
+    txt.textContent = 'Syncing...';
+    txt.style.color = 'var(--amber)';
+  } else if(status==='err'){
+    dot.classList.add('err');
+    txt.textContent = 'Sync error';
+    txt.style.color = 'var(--red)';
+  } else {
+    txt.textContent = 'Data: Lokal';
+    txt.style.color = 'var(--text3)';
+  }
+}
+
+// Save S to Supabase
+async function supaSync(mode){
+  try{
+    supaSetStatus('syncing');
+    const body = JSON.stringify({
+      id: SUPA_ID,
+      data: S,
+      updated_at: new Date().toISOString()
+    });
+    const res = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}?id=eq.${SUPA_ID}`,{
+      method: 'PATCH',
+      headers:{
+        'apikey': SUPA_KEY,
+        'Authorization': `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body
+    });
+    if(!res.ok){
+      // Row might not exist yet — try INSERT
+      const res2 = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}`,{
+        method: 'POST',
+        headers:{
+          'apikey': SUPA_KEY,
+          'Authorization': `Bearer ${SUPA_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body
+      });
+      if(!res2.ok) throw new Error(`HTTP ${res2.status}`);
+    }
+    supaLastSync = new Date();
+    const t = supaLastSync.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    supaSetStatus('ok', t);
+    if(mode!=='auto') alert('✅ Data berhasil disync ke cloud!\nLauren bisa buka app sekarang.');
+  } catch(err){
+    console.error('Supabase sync error:', err);
+    supaSetStatus('err');
+    if(mode!=='auto') alert('❌ Sync gagal: '+err.message+'\nData tetap tersimpan lokal.');
+  }
+}
+
+// Load from Supabase on startup
+async function supaLoad(){
+  try{
+    supaSetStatus('syncing');
+    const res = await fetch(
+      `${SUPA_URL}/rest/v1/${SUPA_TABLE}?id=eq.${SUPA_ID}&select=data,updated_at`,{
+        headers:{
+          'apikey': SUPA_KEY,
+          'Authorization': `Bearer ${SUPA_KEY}`,
+          'Accept': 'application/json'
+        }
+      }
+    );
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const rows = await res.json();
+    if(!rows.length || !rows[0].data || !rows[0].data.transactions){
+      // No cloud data yet — use local, push to cloud
+      supaSetStatus('ok', 'Local');
+      if(S.transactions && S.transactions.length > 0){
+        supaSync('auto'); // push local to cloud
+      }
+      return;
+    }
+    const cloudData = rows[0].data;
+    const cloudTime = new Date(rows[0].updated_at);
+    const localRaw  = localStorage.getItem(STORE_KEY);
+    const localTime = localRaw ? new Date(JSON.parse(localRaw).lastSaved||0) : new Date(0);
+
+    // Use whichever is newer
+    if(cloudTime > localTime || !localRaw){
+      // Cloud is newer — use cloud data
+      Object.assign(S, cloudData);
+      // ensure defaults
+      if(!S.categories)    S.categories   = JSON.parse(JSON.stringify(DEFAULT_CATS));
+      if(!S.keywordRules)  S.keywordRules = JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES));
+      if(!S.rekening)      S.rekening     = [];
+      if(!S.asetSnapshots) S.asetSnapshots= {};
+      if(!S.transfers)     S.transfers    = [];
+      if(!S.github)        S.github       = {token:'',repo:'',branch:'main'};
+      localStorage.setItem(STORE_KEY, JSON.stringify(S));
+      renderDash();
+      renderManualRecent();
+      updateCats();
+      console.log('Loaded from Supabase:', cloudTime);
+    }
+    const t = cloudTime.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    supaSetStatus('ok', t);
+  } catch(err){
+    console.warn('Supabase load failed, using local:', err.message);
+    supaSetStatus('idle');
+  }
+}
+
+// Manual sync button (topbar)
+function manualSupaSync(){ supaSync('manual'); }
 
 // ═══════════════════════════════════════
 // GITHUB SYNC
