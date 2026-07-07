@@ -841,7 +841,7 @@ window.addEventListener('load', function(){
         <div class="kpi-grid" id="asetKpi" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-bottom:18px"></div>
 
         <!-- Category cards grid -->
-        <div id="asetCards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:18px"></div>
+        <div id="asetCards" style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px"></div>
 
         <!-- Detail panel (hidden by default, shown when card clicked) -->
         <div id="asetDetail" style="display:none">
@@ -2341,75 +2341,101 @@ function renderAsetCards(){
     const items = S.asetItems[def.key]||[];
     const total = getAsetTotal(def.key);
     const isLiab = def.isLiability;
-    const itemList = items.length
-      ? items.map(item=>`
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
-            <span style="font-size:12px;color:var(--text2)">${item.name||'—'}</span>
-            <div style="display:flex;align-items:center;gap:6px">
-              <span style="font-size:12px;font-family:var(--mono);font-weight:600;color:${isLiab?'var(--red)':'var(--text)'}">${isLiab?'-':''}Rp ${fmtS(item.value||0)}</span>
-              ${def.auto?'':`<button onclick="openEditAset('${def.key}',${items.indexOf(item)})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:2px 4px">✏️</button>`}
-            </div>
-          </div>`).join('')
-      : `<div style="padding:12px 0;text-align:center;color:var(--text3);font-size:12px">Belum ada item</div>`;
-
     return `
-      <div class="card" style="margin-bottom:0;overflow:visible">
-        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:18px">${def.icon}</span>
-            <div>
-              <div style="font-weight:700;font-size:13px">${def.label}</div>
-              <div style="font-size:11px;color:var(--text3)">${def.auto?'Auto dari rekening':items.length+' item'}</div>
-            </div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-weight:700;font-size:15px;font-family:var(--mono);color:${isLiab?'var(--red)':'var(--text)'}">${isLiab?'-':''}Rp ${fmtS(total)}</div>
+      <div onclick="toggleAsetCard('${def.key}')" style="
+        background:#fff;border:1px solid var(--border);border-radius:12px;
+        padding:16px 18px;cursor:pointer;transition:all 0.15s;
+        display:flex;align-items:center;justify-content:space-between;
+      " id="asetcard_${def.key}"
+        onmouseenter="this.style.borderColor='var(--border2)';this.style.background='var(--bg3)'"
+        onmouseleave="this.style.borderColor='var(--border)';this.style.background='#fff'">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:22px">${def.icon}</span>
+          <div>
+            <div style="font-weight:600;font-size:14px;color:var(--text)">${def.label}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${def.auto?'Otomatis dari rekening':items.length+' item'}</div>
           </div>
         </div>
-        <div style="padding:4px 16px 10px">
-          ${itemList}
-          <div style="display:flex;gap:6px;margin-top:10px">
-            ${def.auto?'':`<button class="btn btn-sm" style="flex:1;font-size:11px" onclick="openAddAset('${def.key}','${def.label}')">➕ Tambah</button>`}
-            <button class="btn btn-sm" style="flex:1;font-size:11px" onclick="showAsetDetail('${def.key}','${def.label}')">📈 Riwayat</button>
+        <div style="text-align:right">
+          <div style="font-weight:700;font-size:15px;font-family:var(--mono);color:${isLiab?'var(--red)':'var(--text)'}">
+            ${isLiab?'- ':''}Rp ${fmtS(total)}
           </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">klik untuk detail</div>
         </div>
       </div>`;
   });
   document.getElementById('asetCards').innerHTML = cards.join('');
 }
 
+function toggleAsetCard(key){
+  const def = ASET_DEFS.find(d=>d.key===key);
+  showAsetDetail(key, def.label);
+}
+
+
 function showAsetDetail(key, label){
+  const def = ASET_DEFS.find(d=>d.key===key);
   const items = S.asetItems[key]||[];
+  const isLiab = def?.isLiability;
+
   // collect all months from history
   const allMonths = [...new Set(
     items.flatMap(i=>(i.history||[]).map(h=>h.month))
   )].sort();
   if(!allMonths.length && items.length){
-    // no history yet, show current only
     allMonths.push(today().slice(0,7));
   }
-  document.getElementById('asetDetailTitle').textContent = label+' — Riwayat';
-  document.getElementById('asetDetailHead').innerHTML =
-    `<th style="min-width:140px;background:var(--bg3)">Item</th>`+
-    allMonths.map(m=>`<th style="text-align:right;min-width:110px;padding-right:14px">${m}</th>`).join('');
-  const rows = items.map(item=>{
-    const cells = allMonths.map(m=>{
-      const h = (item.history||[]).find(x=>x.month===m);
-      const v = h?h.value:(allMonths[allMonths.length-1]===m?item.value:null);
-      return `<td style="text-align:right;padding-right:14px;font-family:var(--mono);font-size:12.5px">${v!==null?'Rp '+fmt(v):'—'}</td>`;
+
+  // Update detail title
+  document.getElementById('asetDetailTitle').textContent = def.icon+' '+label;
+
+  // Build item list with edit buttons + history
+  const thead = document.getElementById('asetDetailHead');
+  const tbody = document.getElementById('asetDetailBody');
+
+  if(!items.length){
+    thead.innerHTML = '<th>Item</th>';
+    tbody.innerHTML = `<tr><td style="padding:20px;text-align:center;color:var(--text3)">
+      Belum ada item — 
+      ${def.auto?'otomatis dari rekening':`<button class="btn btn-sm btn-primary" onclick="openAddAset('${key}','${label}')">➕ Tambah Item</button>`}
+    </td></tr>`;
+  } else {
+    thead.innerHTML =
+      `<th style="min-width:160px;background:var(--bg3);position:sticky;left:0">Item</th>`+
+      allMonths.map(m=>`<th style="text-align:right;min-width:120px;padding-right:14px">${m}</th>`).join('')+
+      `<th style="min-width:80px"></th>`;
+
+    const rows = items.map((item,i)=>{
+      const cells = allMonths.map(m=>{
+        const h=(item.history||[]).find(x=>x.month===m);
+        const v=h?h.value:(allMonths[allMonths.length-1]===m?item.value:null);
+        return `<td style="text-align:right;padding-right:14px;font-family:var(--mono);font-size:12.5px;color:${isLiab?'var(--red)':'var(--text)'}">${v!==null?'Rp '+fmt(v):'—'}</td>`;
+      }).join('');
+      const editBtn = def.auto?'':`<button class="btn btn-sm" onclick="openEditAset('${key}',${i})" style="padding:4px 8px">✏️</button>`;
+      return `<tr><td style="font-weight:500;position:sticky;left:0;background:#fff">${item.name}</td>${cells}<td>${editBtn}</td></tr>`;
+    });
+
+    // Total row
+    const totalCells = allMonths.map(m=>{
+      const v=items.reduce((a,item)=>{const h=(item.history||[]).find(x=>x.month===m);return a+(h?h.value:0);},0);
+      return `<td style="text-align:right;padding-right:14px;font-family:var(--mono);font-weight:700;border-top:2px solid var(--border2);color:${isLiab?'var(--red)':'var(--text)'}">Rp ${fmt(v)}</td>`;
     }).join('');
-    return `<tr><td style="font-weight:500">${item.name}</td>${cells}</tr>`;
-  });
-  // total row
-  const totalCells = allMonths.map(m=>{
-    const v = items.reduce((a,item)=>{
-      const h=(item.history||[]).find(x=>x.month===m);
-      return a+(h?h.value:(allMonths[allMonths.length-1]===m?item.value:0));
-    },0);
-    return `<td style="text-align:right;padding-right:14px;font-family:var(--mono);font-weight:700;border-top:2px solid var(--border2)">Rp ${fmt(v)}</td>`;
-  }).join('');
-  rows.push(`<tr style="background:var(--bg3)"><td style="font-weight:700">Total</td>${totalCells}</tr>`);
-  document.getElementById('asetDetailBody').innerHTML = rows.join('');
+    rows.push(`<tr style="background:var(--bg3)"><td style="font-weight:700;position:sticky;left:0;background:var(--bg3)">Total ${label}</td>${totalCells}<td></td></tr>`);
+    tbody.innerHTML = rows.join('');
+  }
+
+  // Add/close buttons in card-head
+  const addBtn = def.auto?'':`<button class="btn btn-sm btn-primary" onclick="openAddAset('${key}','${label}')">➕ Tambah</button>`;
+  document.querySelector('#asetDetail .card-head').innerHTML = `
+    <div>
+      <div class="card-title" id="asetDetailTitle">${def.icon} ${label}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">Klik item untuk edit nilai</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      ${addBtn}
+      <button class="btn btn-sm" onclick="closeAsetDetail()">✕ Tutup</button>
+    </div>`;
+
   document.getElementById('asetDetail').style.display='block';
   document.getElementById('asetDetail').scrollIntoView({behavior:'smooth',block:'start'});
 }
