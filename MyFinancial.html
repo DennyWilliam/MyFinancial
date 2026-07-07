@@ -791,34 +791,39 @@ window.addEventListener('load', function(){
           <div class="sec-title">Manajemen Rekening</div>
           <div class="sec-sub">Tambah, edit, atau hapus rekening bank dan dompet digital</div>
         </div>
-        <!-- Daftar Rekening (full width) -->
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-head">
-            <div class="card-title"><span class="card-title-icon">🏦</span>Daftar Rekening</div>
-            <button class="btn btn-primary btn-sm" onclick="toggleAddRek()">➕ Tambah Rekening</button>
-          </div>
-          <!-- Add form (hidden by default) -->
-          <div id="addRekForm" style="display:none;padding:16px;border-bottom:1px solid var(--border);background:var(--bg3)">
-            <div class="form-grid">
-              <div class="fg full"><label>Nama Rekening</label><input type="text" id="newRekName" placeholder="cth: BCA 1147, Mandiri, GoPay..."></div>
-              <div class="fg"><label>Tipe</label>
-                <select id="newRekType">
-                  <option value="bank">Bank</option>
-                  <option value="ewallet">E-Wallet</option>
-                  <option value="cash">Cash</option>
-                  <option value="kartu_kredit">Kartu Kredit</option>
-                  <option value="lainnya">Lainnya</option>
-                </select>
+        <div class="split" style="gap:14px;align-items:start">
+          <!-- LEFT: list rekening -->
+          <div style="flex:1.5">
+            <div class="card" style="margin-bottom:0">
+              <div class="card-head">
+                <div class="card-title"><span class="card-title-icon">🏦</span>Daftar Rekening</div>
               </div>
-              <div class="fg"><label>Saldo (Rp)</label><input type="number" id="newRekBal" placeholder="0" min="0"></div>
-              <div class="fg full"><label>Catatan</label><input type="text" id="newRekNote" placeholder="opsional"></div>
-            </div>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-primary" onclick="addRekening()">✅ Simpan</button>
-              <button class="btn" onclick="toggleAddRek()">Batal</button>
+              <div id="rekList" style="padding:0;min-height:60px"></div>
             </div>
           </div>
-          <div id="rekList" style="padding:0"></div>
+          <!-- RIGHT: add form -->
+          <div style="flex:1">
+            <div class="card" style="margin-bottom:0;overflow:visible">
+              <div class="card-head"><div class="card-title"><span class="card-title-icon">➕</span>Tambah Rekening</div></div>
+              <div style="padding:16px">
+                <div style="display:flex;flex-direction:column;gap:10px">
+                  <div class="fg"><label>Nama Rekening</label><input type="text" id="newRekName" placeholder="cth: BCA 1147, GoPay..."></div>
+                  <div class="fg"><label>Tipe</label>
+                    <select id="newRekType">
+                      <option value="bank">Bank</option>
+                      <option value="ewallet">E-Wallet</option>
+                      <option value="cash">Cash</option>
+                      <option value="kartu_kredit">Kartu Kredit</option>
+                      <option value="lainnya">Lainnya</option>
+                    </select>
+                  </div>
+                  <div class="fg"><label>Saldo (Rp)</label><input type="number" id="newRekBal" placeholder="0" min="0"></div>
+                  <div class="fg"><label>Catatan</label><input type="text" id="newRekNote" placeholder="opsional"></div>
+                </div>
+                <button class="btn btn-primary" onclick="addRekening()" style="width:100%;margin-top:14px">✅ Tambah</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
