@@ -930,7 +930,7 @@ window.addEventListener('load', function(){
 
         <div class="settings-section">
           <div class="settings-title">🔐 Ubah PIN</div>
-          <div class="settings-sub">PIN dipakai Denny & Lauren untuk masuk ke app. Default: 1992</div>
+          <div class="settings-sub">PIN dipakai Denny & Lauren untuk masuk ke app. Default: 0124</div>
           <div class="form-grid">
             <div class="fg"><label>PIN Lama</label><input type="password" id="oldPin" placeholder="••••" maxlength="6"></div>
             <div class="fg"><label>PIN Baru</label><input type="password" id="newPin" placeholder="••••" maxlength="6"></div>
@@ -2710,6 +2710,12 @@ async function supaLoad(){
       renderDash();
       renderManualRecent();
       updateCats();
+      // Always re-init aset after cloud load
+      if(!S.asetItems || Object.keys(S.asetItems).length===0){
+        S.asetItems = {};
+        initAsetItems();
+        persist();
+      }
       console.log('Loaded from Supabase:', cloudTime);
     }
     const t = cloudTime.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
@@ -3122,13 +3128,14 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 // ═══════════════════════════════════════
 // PIN AUTHENTICATION
 // ═══════════════════════════════════════
-const CORRECT_PIN = '1992'; // PIN default — bisa diubah di Settings
+const CORRECT_PIN = '0124'; // PIN default — bisa diubah di Settings
 
 function checkPin(){
   const input = document.getElementById('pinInput').value.trim();
   const err   = document.getElementById('pinErr');
   // Check against saved PIN or default
   const savedPin = localStorage.getItem('mf_pin') || CORRECT_PIN;
+  // Reset cached auth if PIN changed
   if(input === savedPin){
     document.getElementById('pinOverlay').style.display = 'none';
     localStorage.setItem('mf_authed', Date.now()); // remember for 8 hours
@@ -3147,6 +3154,12 @@ function checkPin(){
 
 function checkAutoAuth(){
   // Auto-bypass PIN if authenticated within last 8 hours
+  // Clear old auth if PIN version changed
+  const storedPin = localStorage.getItem('mf_pin');
+  if(!storedPin || storedPin === '1992'){
+    localStorage.removeItem('mf_authed'); // force re-auth with new default PIN
+    localStorage.setItem('mf_pin', CORRECT_PIN);
+  }
   const lastAuth = parseInt(localStorage.getItem('mf_authed')||'0');
   const eightHours = 8 * 60 * 60 * 1000;
   if(Date.now() - lastAuth < eightHours){
