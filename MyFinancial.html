@@ -2083,6 +2083,17 @@ function saveCatEdit(type, idx, oldName){
 const REK_TYPE_LABEL = {bank:'Bank',ewallet:'E-Wallet',cash:'Cash',kartu_kredit:'Kartu Kredit',lainnya:'Lainnya'};
 
 function renderRekening(){
+  // safety: if rekening empty, init defaults
+  if(!S.rekening || S.rekening.length===0){
+    S.rekening = [
+        {id:'bca1147',   name:'BCA 1147',        type:'bank',         balance:0, note:'Rekening utama Denny'},
+        {id:'bca4500',   name:'BCA 4500 Petra',  type:'bank',         balance:0, note:'Rekening Lauren'},
+        {id:'superbank', name:'Superbank',        type:'bank',         balance:0, note:'Deposito'},
+        {id:'ccbca',     name:'Kartu Kredit BCA', type:'kartu_kredit', balance:0, note:''},
+        {id:'cash',      name:'Cash',             type:'cash',         balance:0, note:''},
+      ];
+    persist();
+  }
   const list = S.rekening || [];
   document.getElementById('rekList').innerHTML = list.length ? list.map((r,i)=>`
     <div style="display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border)" id="rekrow_${i}">
@@ -2608,6 +2619,17 @@ async function supaLoad(){
     if(cloudTime > localTime || !localRaw){
       // Cloud is newer — use cloud data
       Object.assign(S, cloudData);
+      // Force inject default rekening if still empty after cloud load
+      if(!S.rekening || !Array.isArray(S.rekening) || S.rekening.length===0){
+        S.rekening = [
+        {id:'bca1147',   name:'BCA 1147',        type:'bank',         balance:0, note:'Rekening utama Denny'},
+        {id:'bca4500',   name:'BCA 4500 Petra',  type:'bank',         balance:0, note:'Rekening Lauren'},
+        {id:'superbank', name:'Superbank',        type:'bank',         balance:0, note:'Deposito'},
+        {id:'ccbca',     name:'Kartu Kredit BCA', type:'kartu_kredit', balance:0, note:''},
+        {id:'cash',      name:'Cash',             type:'cash',         balance:0, note:''},
+      ];
+        persist(); // save back with defaults
+      }
       // ensure defaults
       if(!S.categories)    S.categories   = JSON.parse(JSON.stringify(DEFAULT_CATS));
       if(!S.keywordRules)  S.keywordRules = JSON.parse(JSON.stringify(DEFAULT_KEYWORD_RULES));
