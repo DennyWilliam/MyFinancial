@@ -732,7 +732,7 @@ window.addEventListener('load', function(){
                   <button class="btn btn-sm" onclick="filterKatType('investment')" id="kfinv" style="background:#ede9fe;color:#7c3aed;border-color:#c4b5fd">Investasi</button>
                 </div>
               </div>
-              <div id="catListWrap" style="padding:12px 16px;max-height:520px;overflow-y:auto">
+              <div id="catListWrap" style="max-height:520px;overflow-y:auto">
                 <div id="catList"></div>
               </div>
             </div>
@@ -1970,35 +1970,27 @@ function renderKategori(){
   const ruleMap = {};
   rules.forEach(r=>{ ruleMap[r.cat||r.c] = typeof r.keys==='string'?r.keys:(r.k||[]).join(','); });
 
-  // highlight active filter btn
   const kfIds = {expense:'kfexp',income:'kfinc',investment:'kfinv'};
   ['expense','income','investment'].forEach(t=>{
     const btn = document.getElementById(kfIds[t]);
     if(!btn) return;
-    btn.style.fontWeight = t===katFilter ? '700' : '500';
-    btn.style.opacity = t===katFilter ? '1' : '0.6';
+    btn.style.fontWeight = t===katFilter ? '700' : '400';
+    btn.style.background = t===katFilter ? 'var(--accent)' : 'var(--bg4)';
+    btn.style.color = t===katFilter ? '#fff' : 'var(--text2)';
+    btn.style.borderColor = t===katFilter ? 'var(--accent)' : 'var(--border)';
   });
 
-  const typeLabel = {expense:'Outcome',income:'Income',investment:'Investasi'};
-  const typeBg = {expense:'#fee2e2',income:'#dcfce7',investment:'#ede9fe'};
-  const typeColor = {expense:'#dc2626',income:'#059669',investment:'#7c3aed'};
-
-  document.getElementById('catList').innerHTML = cats.length ? cats.map((cat,i)=>`
-    <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)" id="catrow_${katFilter}_${i}">
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <span style="background:${typeBg[katFilter]};color:${typeColor[katFilter]};font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">${typeLabel[katFilter]}</span>
-          <span id="catname_${katFilter}_${i}" style="font-weight:600;font-size:13px">${cat}</span>
+  document.getElementById('catList').innerHTML = cats.length
+    ? cats.map((cat,i)=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border)" id="catrow_${katFilter}_${i}">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px">${cat}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">🔑 ${ruleMap[cat]||'belum ada keyword'}</div>
         </div>
-        <div style="font-size:11px;color:var(--text3)">
-          Keywords: <span id="catkeys_${katFilter}_${i}" style="color:var(--text2)">${ruleMap[cat]||'—'}</span>
-        </div>
-      </div>
-      <div style="display:flex;gap:4px;flex-shrink:0">
-        <button class="btn btn-sm" onclick="editCatInline('${katFilter}',${i})" style="padding:4px 8px">✏️</button>
-        <button class="btn btn-sm" onclick="deleteCat('${katFilter}',${i})" style="padding:4px 8px;color:var(--red)">🗑</button>
-      </div>
-    </div>`).join('') : '<div style="padding:20px;text-align:center;color:var(--text3)">Belum ada kategori</div>';
+        <button class="btn btn-sm" onclick="editCatInline('${katFilter}',${i})" style="padding:5px 10px">✏️ Edit</button>
+        <button class="btn btn-sm" onclick="deleteCat('${katFilter}',${i})" style="padding:5px 10px;color:var(--red)">🗑</button>
+      </div>`).join('')
+    : '<div style="padding:24px;text-align:center;color:var(--text3)">Belum ada kategori</div>';
 }
 
 function addCategory(){
@@ -2138,10 +2130,21 @@ function editRekInline(i){
 }
 
 function saveRekEdit(i){
-  S.rekening[i].name    = document.getElementById(`eRekName_${i}`).value.trim()||S.rekening[i].name;
+  const oldName = S.rekening[i].name;
+  const newName = document.getElementById(`eRekName_${i}`).value.trim() || oldName;
+  S.rekening[i].name    = newName;
   S.rekening[i].type    = document.getElementById(`eRekType_${i}`).value;
   S.rekening[i].balance = parseFloat(document.getElementById(`eRekBal_${i}`).value)||0;
   S.rekening[i].note    = document.getElementById(`eRekNote_${i}`).value.trim();
+  // ── Cascade: update all transactions using old rekening name ──
+  if(oldName !== newName){
+    let count = 0;
+    S.transactions.forEach(t=>{ if(t.account===oldName){ t.account=newName; count++; } });
+    S.transfers.forEach(t=>{
+      if(t.fromName===oldName) t.fromName=newName;
+    });
+    if(count>0) console.log(`Updated ${count} transactions: rekening "${oldName}" → "${newName}"`);
+  }
   persist(); renderRekening(); updateCats();
 }
 
