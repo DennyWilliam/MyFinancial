@@ -418,11 +418,11 @@ window.addEventListener('load', function(){
       </div>
 
       <div class="nav-section">Master Data</div>
-      <div class="nav-item" onclick="go('rekening',this)">
-        <span class="nav-icon">🏦</span>Rekening
+      <div class="nav-item" onclick="go('jenisaset',this)">
+        <span class="nav-icon">🏛️</span>Jenis Aset
       </div>
       <div class="nav-item" onclick="go('kategori',this)">
-        <span class="nav-icon">🏷️</span>Kategori
+        <span class="nav-icon">🏷️</span>Jenis Transaksi
       </div>
       <div class="nav-section">Laporan</div>
       <div class="nav-item" onclick="go('pnl',this)">
@@ -689,7 +689,7 @@ window.addEventListener('load', function(){
       <div class="page" id="page-kategori">
         <div class="sec-head">
           <div class="sec-title">Manajemen Kategori</div>
-          <div class="sec-sub">Tambah, edit, atau hapus kategori untuk pengeluaran, pemasukan, dan investasi</div>
+          <div class="sec-sub">Tambah, edit, atau hapus jenis transaksi untuk pengeluaran, pemasukan, dan investasi</div>
         </div>
         <div class="split" style="gap:16px;align-items:start">
           <!-- LEFT: Add new category -->
@@ -788,42 +788,44 @@ window.addEventListener('load', function(){
         </div>
       </div>
 
-            <!-- ══ REKENING ══ -->
-      <div class="page" id="page-rekening">
+            <!-- ══ JENIS ASET ══ -->
+      <div class="page" id="page-jenisaset">
         <div class="sec-head">
-          <div class="sec-title">Manajemen Rekening</div>
-          <div class="sec-sub">Tambah, edit, atau hapus rekening bank dan dompet digital</div>
+          <div class="sec-title">Jenis Aset</div>
+          <div class="sec-sub">Kelola kategori aset dan instrumen di dalamnya — instrumen Tabungan otomatis jadi pilihan rekening saat input transaksi</div>
         </div>
         <div class="split" style="gap:14px;align-items:start">
-          <!-- LEFT: list rekening -->
-          <div style="flex:1.5">
+          <div style="flex:1.6">
             <div class="card" style="margin-bottom:0">
               <div class="card-head">
-                <div class="card-title"><span class="card-title-icon">🏦</span>Daftar Rekening</div>
+                <div class="card-title"><span class="card-title-icon">🏛️</span>Daftar Instrumen</div>
               </div>
-              <div id="rekList" style="padding:0;min-height:60px"></div>
+              <div id="jenisAsetList" style="padding:0;min-height:80px"></div>
             </div>
           </div>
-          <!-- RIGHT: add form -->
           <div style="flex:1">
             <div class="card" style="margin-bottom:0;overflow:visible">
-              <div class="card-head"><div class="card-title"><span class="card-title-icon">➕</span>Tambah Rekening</div></div>
+              <div class="card-head"><div class="card-title"><span class="card-title-icon">➕</span>Tambah Instrumen</div></div>
               <div style="padding:16px">
                 <div style="display:flex;flex-direction:column;gap:10px">
-                  <div class="fg"><label>Nama Rekening</label><input type="text" id="newRekName" placeholder="cth: BCA 1147, GoPay..."></div>
-                  <div class="fg"><label>Tipe</label>
-                    <select id="newRekType">
-                      <option value="bank">Bank</option>
-                      <option value="ewallet">E-Wallet</option>
-                      <option value="cash">Cash</option>
-                      <option value="kartu_kredit">Kartu Kredit</option>
-                      <option value="lainnya">Lainnya</option>
+                  <div class="fg">
+                    <label>Kategori Aset</label>
+                    <select id="newInstrCat">
+                      <option value="tabungan">Tabungan</option>
+                      <option value="deposito">Deposito</option>
+                      <option value="saham_idx">Saham Indo</option>
+                      <option value="saham_us">Saham Luar</option>
+                      <option value="crypto">Crypto</option>
+                      <option value="asuransi">Asuransi</option>
+                      <option value="piutang">Piutang</option>
+                      <option value="utang">Utang</option>
                     </select>
                   </div>
-                  <div class="fg"><label>Saldo (Rp)</label><input type="number" id="newRekBal" placeholder="0" min="0"></div>
-                  <div class="fg"><label>Catatan</label><input type="text" id="newRekNote" placeholder="opsional"></div>
+                  <div class="fg"><label>Nama Instrumen</label><input type="text" id="newInstrName" placeholder="cth: BCA 1147, IPOT, Superbank..."></div>
+                  <div class="fg"><label>Nilai Sekarang (Rp)</label><input type="number" id="newInstrVal" placeholder="0" min="0"></div>
+                  <div class="fg"><label>Catatan</label><input type="text" id="newInstrNote" placeholder="opsional"></div>
                 </div>
-                <button class="btn btn-primary" onclick="addRekening()" style="width:100%;margin-top:14px">✅ Tambah</button>
+                <button class="btn btn-primary" onclick="addInstrumen()" style="width:100%;margin-top:14px">✅ Tambah Instrumen</button>
               </div>
             </div>
           </div>
@@ -1196,7 +1198,7 @@ function persist() {
 const PAGE_TITLES = {
   dashboard:'Dashboard', import:'AI Import', manual:'Input Manual',
   transaksi:'Semua Transaksi', investasi:'Portofolio Investasi',
-  pnl:'P&L Bulanan', kategori:'Manajemen Kategori', rekening:'Manajemen Rekening', aset:'Laporan Aset', transfer:'Transfer ke Investasi', settings:'Settings'
+  pnl:'P&L Bulanan', kategori:'Jenis Transaksi', jenisaset:'Jenis Aset', aset:'Laporan Aset', transfer:'Transfer ke Investasi', settings:'Settings'
 };
 
 function go(name, el) {
@@ -1210,7 +1212,7 @@ function go(name, el) {
   if (name === 'pnl')         renderPnL();
   if (name === 'investasi')   renderInv();
   if (name === 'manual')      updateCats();
-  if (name === 'rekening')    setTimeout(renderRekening, 50);
+  if (name === 'jenisaset')   setTimeout(renderJenisAset, 50);
   if (name === 'kategori')    { katFilter='expense'; setTimeout(renderKategori, 50); }
   if (name === 'aset')        setTimeout(renderAset, 50);
   if (name === 'transfer')    initTransfer();
@@ -1319,7 +1321,15 @@ function updateCats() {
   const type = document.getElementById('mType').value;
   document.getElementById('mCat').innerHTML = getCatList(type).map(c=>`<option>${c}</option>`).join('');
   const mAcc = document.getElementById('mAcc');
-  if(mAcc) mAcc.innerHTML = (S.rekening||[]).map(r=>`<option value="${r.name}">${r.name}</option>`).join('');
+  if(mAcc){
+    // Use instrumen Tabungan as rekening options
+    const tabItems = (S.asetItems?.tabungan||[]);
+    const rekOptions = tabItems.length
+      ? tabItems.map(r=>`<option value="${r.name}">${r.name}</option>`).join('')
+      : (S.rekening||[]).map(r=>`<option value="${r.name}">${r.name}</option>`).join('') ||
+        '<option>BCA 1147</option><option>Cash</option>';
+    mAcc.innerHTML = rekOptions;
+  }
 }
 function addTx() {
   const date   = document.getElementById('mDate').value;
@@ -2146,452 +2156,125 @@ function saveCatEdit(type, idx, oldName){
 }
 
 // ═══════════════════════════════════════
-// REKENING MANAGEMENT
+// JENIS ASET MANAGEMENT
 // ═══════════════════════════════════════
-const REK_TYPE_LABEL = {bank:'Bank',ewallet:'E-Wallet',cash:'Cash',kartu_kredit:'Kartu Kredit',lainnya:'Lainnya'};
+const JENIS_ASET_LABELS = {
+  tabungan:'Tabungan', deposito:'Deposito',
+  saham_idx:'Saham Indo', saham_us:'Saham Luar',
+  crypto:'Crypto', asuransi:'Asuransi',
+  piutang:'Piutang', utang:'Utang'
+};
 
-function renderRekening(){
-  // safety: if rekening empty, init defaults
-  if(!S.rekening || S.rekening.length===0){
-    S.rekening = [
-        {id:'bca1147',   name:'BCA 1147',        type:'bank',         balance:0, note:'Rekening utama Denny'},
-        {id:'bca4500',   name:'BCA 4500 Petra',  type:'bank',         balance:0, note:'Rekening Lauren'},
-        {id:'superbank', name:'Superbank',        type:'bank',         balance:0, note:'Deposito'},
-        {id:'ccbca',     name:'Kartu Kredit BCA', type:'kartu_kredit', balance:0, note:''},
-        {id:'cash',      name:'Cash',             type:'cash',         balance:0, note:''},
-      ];
-    persist();
-  }
-  const list = S.rekening || [];
-  document.getElementById('rekList').innerHTML = list.length ? list.map((r,i)=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border)" id="rekrow_${i}">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13px;margin-bottom:3px">${r.name}</div>
-        <div style="font-size:11px;color:var(--text3)">${REK_TYPE_LABEL[r.type]||r.type}${r.note?' · '+r.note:''}</div>
-      </div>
-      <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text);margin-right:8px">Rp ${fmt(r.balance)}</div>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-sm" onclick="editRekInline(${i})" style="padding:5px 10px">✏️ Edit</button>
-        <button class="btn btn-sm" onclick="deleteRek(${i})" style="padding:5px 10px;color:var(--red)">🗑</button>
-      </div>
-    </div>`).join('') :
-    '<div style="padding:24px;text-align:center;color:var(--text3)">Belum ada rekening — tambah di form kanan</div>';
-}
-
-function addRekening(){
-  const name = document.getElementById('newRekName').value.trim();
-  const type = document.getElementById('newRekType').value;
-  const balance = parseFloat(document.getElementById('newRekBal').value)||0;
-  const note = document.getElementById('newRekNote').value.trim();
-  if(!name){alert('Isi nama rekening!');return;}
-  if(!S.rekening) S.rekening=[];
-  S.rekening.push({id:'rek_'+Date.now(), name, type, balance, note});
-  persist(); syncTabunganFromRekening(); renderRekening(); updateCats();
-  document.getElementById('newRekName').value='';
-  document.getElementById('newRekBal').value='';
-  document.getElementById('newRekNote').value='';
-}
-
-function deleteRek(i){
-  const r=S.rekening[i];
-  if(!confirm(`Hapus rekening "${r.name}"?`))return;
-  S.rekening.splice(i,1); persist(); renderRekening(); updateCats();
-}
-
-function editRekInline(i){
-  const r=S.rekening[i];
-  const row=document.getElementById(`rekrow_${i}`);
-  row.innerHTML=`
-    <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <input type="text" id="eRekName_${i}" value="${r.name}" placeholder="Nama">
-      <select id="eRekType_${i}">${Object.entries(REK_TYPE_LABEL).map(([k,v])=>`<option value="${k}" ${r.type===k?'selected':''}>${v}</option>`).join('')}</select>
-      <input type="number" id="eRekBal_${i}" value="${r.balance}" placeholder="Saldo">
-      <input type="text" id="eRekNote_${i}" value="${r.note||''}" placeholder="Catatan">
-    </div>
-    <div style="display:flex;gap:4px;flex-shrink:0">
-      <button class="btn btn-primary btn-sm" onclick="saveRekEdit(${i})">✅</button>
-      <button class="btn btn-sm" onclick="renderRekening()">✕</button>
-    </div>`;
-}
-
-function saveRekEdit(i){
-  const oldName = S.rekening[i].name;
-  const newName = document.getElementById(`eRekName_${i}`).value.trim() || oldName;
-  S.rekening[i].name    = newName;
-  S.rekening[i].type    = document.getElementById(`eRekType_${i}`).value;
-  S.rekening[i].balance = parseFloat(document.getElementById(`eRekBal_${i}`).value)||0;
-  S.rekening[i].note    = document.getElementById(`eRekNote_${i}`).value.trim();
-  // ── Cascade: update all transactions using old rekening name ──
-  if(oldName !== newName){
-    let count = 0;
-    S.transactions.forEach(t=>{ if(t.account===oldName){ t.account=newName; count++; } });
-    S.transfers.forEach(t=>{
-      if(t.fromName===oldName) t.fromName=newName;
-    });
-    if(count>0) console.log(`Updated ${count} transactions: rekening "${oldName}" → "${newName}"`);
-  }
-  persist(); syncTabunganFromRekening(); renderRekening(); updateCats();
-}
-
-// ═══════════════════════════════════════
-// ASET MANAGEMENT — card-based, item-level edit
-// ═══════════════════════════════════════
-
-// Default aset structure: S.asetItems = { sec_key: [{name, value, note, history:[{month,value}]}] }
-const ASET_DEFS = [
-  {key:'tabungan',  label:'Tabungan',    icon:'🏦', auto:true,  note:'Otomatis dari rekening'},
-  {key:'deposito',  label:'Deposito',    icon:'🏛️', auto:false},
-  {key:'saham_idx', label:'Saham Indo',  icon:'📊', auto:false},
-  {key:'saham_us',  label:'Saham Luar',  icon:'🌍', auto:false},
-  {key:'crypto',    label:'Crypto',      icon:'₿',  auto:false},
-  {key:'asuransi',  label:'Asuransi',    icon:'🛡️', auto:false},
-  {key:'piutang',   label:'Piutang',     icon:'📤', auto:false},
-  {key:'utang',     label:'Utang',       icon:'📥', auto:false, isLiability:true},
-];
-
-function initAsetItems(){
+function renderJenisAset(){
+  const list = document.getElementById('jenisAsetList');
+  if(!list) return;
   if(!S.asetItems) S.asetItems = {};
+
+  let html = '';
   ASET_DEFS.forEach(def=>{
-    if(!S.asetItems[def.key]) S.asetItems[def.key] = [];
-  });
-  // Auto-sync tabungan from rekening
-  syncTabunganFromRekening();
-  // Auto-snapshot current values to this month's history
-  autoSnapshotCurrentMonth();
-}
-
-function autoSnapshotCurrentMonth(){
-  const nowM = today().slice(0,7);
-  ASET_DEFS.forEach(def=>{
-    (S.asetItems[def.key]||[]).forEach(item=>{
-      if(!item.history) item.history = [];
-      if(item.value > 0){
-        const existing = item.history.find(h=>h.month===nowM);
-        if(!existing) item.history.push({month:nowM, value:item.value});
-      }
-    });
-  });
-}
-
-function syncTabunganFromRekening(){
-  if(!S.rekening) return;
-  // Map rekening to tabungan items (non-credit card)
-  const bankRek = (S.rekening||[]).filter(r=>r.type!=='kartu_kredit');
-  const ccRek   = (S.rekening||[]).filter(r=>r.type==='kartu_kredit');
-  // update tabungan items
-  S.asetItems['tabungan'] = bankRek.map(r=>({
-    name: r.name, value: r.balance||0, note: r.note||'', auto:true
-  }));
-  // update utang from kartu kredit
-  if(!S.asetItems['utang']) S.asetItems['utang'] = [];
-  ccRek.forEach(r=>{
-    const existing = S.asetItems['utang'].find(i=>i.name===r.name);
-    if(!existing) S.asetItems['utang'].push({name:r.name, value:r.balance||0, note:'Kartu Kredit'});
-  });
-}
-
-function getAsetTotal(key){
-  return (S.asetItems[key]||[]).reduce((a,b)=>a+(b.value||0),0);
-}
-
-function getTotalAset(){
-  return ASET_DEFS.filter(d=>!d.isLiability).reduce((a,d)=>a+getAsetTotal(d.key),0);
-}
-
-function getTotalUtang(){
-  return getAsetTotal('utang');
-}
-
-function renderAset(){
-  if(!S.asetItems) S.asetItems = {};
-  initAsetItems();
-  renderAsetKpi();
-  renderAsetCards();
-  renderAsetTable();
-}
-
-function renderAsetKpi(){
-  const totalAset = getTotalAset();
-  const totalUtang = getTotalUtang();
-  const netWorth = totalAset - totalUtang;
-
-  // calc prev month net worth from history
-  const nowM = today().slice(0,7);
-  let prevNW = null;
-  const prevM = new Date(nowM+'-01');
-  prevM.setMonth(prevM.getMonth()-1);
-  const prevKey = prevM.toISOString().slice(0,7);
-
-  // check if any items have history for prevM
-  let prevTotal = 0, hasPrev = false;
-  ASET_DEFS.forEach(def=>{
-    (S.asetItems[def.key]||[]).forEach(item=>{
-      const h = (item.history||[]).find(x=>x.month===prevKey);
-      if(h){ hasPrev=true; if(!def.isLiability) prevTotal+=h.value; else prevTotal-=h.value; }
-    });
-  });
-  if(hasPrev) prevNW = prevTotal;
-  const nwDiff = prevNW!==null ? netWorth-prevNW : null;
-
-  document.getElementById('asetKpi').innerHTML = `
-    <div class="kpi">
-      <div class="kpi-lbl" style="font-size:10px">💰 TOTAL ASET</div>
-      <div class="kpi-val" style="font-size:19px">Rp ${fmtS(totalAset)}</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-lbl" style="font-size:10px">📥 TOTAL UTANG</div>
-      <div class="kpi-val" style="font-size:19px">Rp ${fmtS(totalUtang)}</div>
-    </div>
-    <div class="kpi" style="grid-column:span 2;border:1px solid var(--border2)">
-      <div class="kpi-lbl" style="font-size:10px">🏆 NET WORTH</div>
-      <div class="kpi-val" style="font-size:21px">Rp ${fmtS(netWorth)}</div>
-      <div class="kpi-meta">${nwDiff!==null?(nwDiff>=0?'▲ +':'▼ ')+'Rp '+fmtS(Math.abs(nwDiff))+' vs bulan lalu':''}</div>
-    </div>`;
-}
-
-function renderAsetCards(){
-  // Build table: rows = categories, cols = months
-  // Collect all months from history across all items
-  const allMonths = [...new Set(
-    ASET_DEFS.flatMap(def=>
-      (S.asetItems[def.key]||[]).flatMap(item=>(item.history||[]).map(h=>h.month))
-    )
-  )].sort();
-
-  // Always include current month
-  const nowM = today().slice(0,7);
-  if(!allMonths.includes(nowM)) allMonths.push(nowM);
-
-  // Show last 6 months max
-  const months = allMonths.slice(-6);
-
-  const container = document.getElementById('asetCards');
-  if(!container) return;
-
-  // Helper: get value for a category in a month
-  function getCatMonthVal(def, month){
     const items = S.asetItems[def.key]||[];
-    return items.reduce((sum, item)=>{
-      const h = (item.history||[]).find(x=>x.month===month);
-      // fallback: if no history for this month but it's current month, use item.value
-      const v = h ? h.value : (month===nowM ? (item.value||0) : 0);
-      return sum + v;
-    }, 0);
-  }
-
-  // Format month label: 2026-06 → Jun 26
-  function fmtMonth(m){
-    const d = new Date(m+'-01');
-    return d.toLocaleDateString('id-ID',{month:'short',year:'2-digit'});
-  }
-
-  const isLastMonth = (m) => m === months[months.length-1];
-
-  let html = `<div style="background:#fff;border:0.5px solid var(--border);border-radius:12px;overflow:hidden">
-    <div style="overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse;min-width:500px">
-    <thead>
-      <tr style="background:var(--bg3);border-bottom:1px solid var(--border)">
-        <th style="text-align:left;padding:11px 16px;font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;min-width:150px">Kategori</th>
-        ${months.map(m=>`<th style="text-align:right;padding:11px 16px;font-size:12px;font-weight:600;color:${isLastMonth(m)?'var(--accent)':'var(--text3)'};min-width:100px">${fmtMonth(m)}</th>`).join('')}
-        <th style="width:60px"></th>
-      </tr>
-    </thead>
-    <tbody>`;
-
-  ASET_DEFS.forEach((def, idx)=>{
-    const isLiab = def.isLiability;
-    const isSep = idx > 0 && !ASET_DEFS[idx-1].isLiability && isLiab;
-    const bg = idx%2===0 ? '#fff' : 'var(--bg3)';
-    const borderTop = isSep ? 'border-top:2px solid var(--border2)' : '';
-
-    html += `<tr style="background:${bg};${borderTop}" onclick="showAsetDetail('${def.key}','${def.label}')" 
-      style="cursor:pointer" onmouseenter="this.style.background='var(--bg4)'" 
-      onmouseleave="this.style.background='${bg}'">
-      <td style="padding:12px 16px;font-size:14px;font-weight:500;color:${isLiab?'var(--red)':'var(--text)'}">
-        <span style="margin-right:8px">${def.icon}</span>${def.label}
-        ${def.auto?'<span style="font-size:10px;color:var(--text3);margin-left:6px">auto</span>':''}
-      </td>
-      ${months.map(m=>{
-        const v = getCatMonthVal(def, m);
-        const last = isLastMonth(m);
-        return `<td style="text-align:right;padding:12px 16px;font-size:14px;font-weight:${last?'600':'400'};
-          color:${isLiab?'var(--red)':'var(--text)'}">
-          ${v ? (isLiab?'- ':'')+'Rp '+fmtS(v) : '<span style="color:var(--text3)">—</span>'}
-        </td>`;
-      }).join('')}
-      <td style="padding:12px 8px;text-align:center;font-size:12px;color:var(--text3)">›</td>
-    </tr>`;
+    html += `<div style="border-bottom:1px solid var(--border)">
+      <div style="padding:10px 16px;background:var(--bg3);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px">
+          ${def.icon} ${def.label}
+        </span>
+        <span style="font-size:11px;color:var(--text3)">${items.length} instrumen</span>
+      </div>`;
+    if(items.length){
+      items.forEach((item,i)=>{
+        html += `<div style="display:flex;align-items:center;padding:10px 16px;border-top:1px solid var(--border)" id="instr_${def.key}_${i}">
+          <div style="flex:1">
+            <div style="font-weight:500;font-size:13px">${item.name}</div>
+            ${item.note?`<div style="font-size:11px;color:var(--text3)">${item.note}</div>`:''}
+          </div>
+          <div style="font-family:var(--mono);font-size:13px;font-weight:600;margin-right:12px">Rp ${fmt(item.value||0)}</div>
+          <button class="btn btn-sm" onclick="editInstrumen('${def.key}',${i})" style="padding:4px 8px;margin-right:4px">✏️</button>
+          <button class="btn btn-sm" onclick="deleteInstrumen('${def.key}',${i})" style="padding:4px 8px;color:var(--red)">🗑</button>
+        </div>`;
+      });
+    } else {
+      html += `<div style="padding:10px 16px;color:var(--text3);font-size:12px;border-top:1px solid var(--border)">Belum ada instrumen</div>`;
+    }
+    html += `</div>`;
   });
-
-  // Net Worth row
-  html += `<tr style="background:var(--accent-glow);border-top:2px solid var(--border2)">
-    <td style="padding:13px 16px;font-size:14px;font-weight:700;color:var(--accent)">Net Worth</td>
-    ${months.map(m=>{
-      const aset = ASET_DEFS.filter(d=>!d.isLiability).reduce((a,d)=>a+getCatMonthVal(d,m),0);
-      const utang = getCatMonthVal({key:'utang'},m);
-      const nw = aset - utang;
-      const last = isLastMonth(m);
-      return `<td style="text-align:right;padding:13px 16px;font-size:${last?'15':'14'}px;font-weight:${last?'700':'500'};color:var(--accent)">
-        Rp ${fmtS(nw)}
-      </td>`;
-    }).join('')}
-    <td></td>
-  </tr>`;
-
-  html += `</tbody></table></div></div>`;
-  container.innerHTML = html;
+  list.innerHTML = html;
 }
 
-function toggleAsetCard(key){
-  const def = ASET_DEFS.find(d=>d.key===key);
-  showAsetDetail(key, def.label);
-}
-
-
-function showAsetDetail(key, label){
-  const def = ASET_DEFS.find(d=>d.key===key);
-  const items = S.asetItems[key]||[];
-  const isLiab = def?.isLiability;
-
-  // collect all months from history
-  const allMonths = [...new Set(
-    items.flatMap(i=>(i.history||[]).map(h=>h.month))
-  )].sort();
-  if(!allMonths.length && items.length){
-    allMonths.push(today().slice(0,7));
-  }
-
-  // Update detail title
-  document.getElementById('asetDetailTitle').textContent = def.icon+' '+label;
-
-  // Build item list with edit buttons + history
-  const thead = document.getElementById('asetDetailHead');
-  const tbody = document.getElementById('asetDetailBody');
-
-  if(!items.length){
-    thead.innerHTML = '<th>Item</th>';
-    tbody.innerHTML = `<tr><td style="padding:20px;text-align:center;color:var(--text3)">
-      Belum ada item — 
-      ${def.auto?'otomatis dari rekening':`<button class="btn btn-sm btn-primary" onclick="openAddAset('${key}','${label}')">➕ Tambah Item</button>`}
-    </td></tr>`;
-  } else {
-    thead.innerHTML =
-      `<th style="min-width:160px;background:var(--bg3);position:sticky;left:0">Item</th>`+
-      allMonths.map(m=>`<th style="text-align:right;min-width:120px;padding-right:14px">${m}</th>`).join('')+
-      `<th style="min-width:80px"></th>`;
-
-    const rows = items.map((item,i)=>{
-      const cells = allMonths.map(m=>{
-        const h=(item.history||[]).find(x=>x.month===m);
-        const v=h?h.value:(allMonths[allMonths.length-1]===m?item.value:null);
-        return `<td style="text-align:right;padding-right:14px;font-family:var(--mono);font-size:12.5px;color:${isLiab?'var(--red)':'var(--text)'}">${v!==null?'Rp '+fmt(v):'—'}</td>`;
-      }).join('');
-      const editBtn = def.auto?'':`<button class="btn btn-sm" onclick="openEditAset('${key}',${i})" style="padding:4px 8px">✏️</button>`;
-      return `<tr><td style="font-weight:500;position:sticky;left:0;background:#fff">${item.name}</td>${cells}<td>${editBtn}</td></tr>`;
-    });
-
-    // Total row
-    const totalCells = allMonths.map(m=>{
-      const v=items.reduce((a,item)=>{const h=(item.history||[]).find(x=>x.month===m);return a+(h?h.value:0);},0);
-      return `<td style="text-align:right;padding-right:14px;font-family:var(--mono);font-weight:700;border-top:2px solid var(--border2);color:${isLiab?'var(--red)':'var(--text)'}">Rp ${fmt(v)}</td>`;
-    }).join('');
-    rows.push(`<tr style="background:var(--bg3)"><td style="font-weight:700;position:sticky;left:0;background:var(--bg3)">Total ${label}</td>${totalCells}<td></td></tr>`);
-    tbody.innerHTML = rows.join('');
-  }
-
-  // Add/close buttons in card-head
-  const addBtn = def.auto?'':`<button class="btn btn-sm btn-primary" onclick="openAddAset('${key}','${label}')">➕ Tambah</button>`;
-  document.querySelector('#asetDetail .card-head').innerHTML = `
-    <div>
-      <div class="card-title" id="asetDetailTitle">${def.icon} ${label}</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:2px">Klik item untuk edit nilai</div>
-    </div>
-    <div style="display:flex;gap:8px">
-      ${addBtn}
-      <button class="btn btn-sm" onclick="closeAsetDetail()">✕ Tutup</button>
-    </div>`;
-
-  document.getElementById('asetDetail').style.display='block';
-  document.getElementById('asetDetail').scrollIntoView({behavior:'smooth',block:'start'});
-}
-
-function closeAsetDetail(){
-  document.getElementById('asetDetail').style.display='none';
-}
-
-// Edit existing item
-function openEditAset(sec, idx){
-  const item = (S.asetItems[sec]||[])[idx];
-  if(!item) return;
-  const def = ASET_DEFS.find(d=>d.key===sec);
-  document.getElementById('asetItemTitle').textContent = 'Edit — '+def.label;
-  document.getElementById('asetItemSub').textContent = 'Update nilai '+item.name;
-  document.getElementById('asetItemSec').value = sec;
-  document.getElementById('asetItemIdx').value = idx;
-  document.getElementById('asetItemName').value = item.name||'';
-  document.getElementById('asetItemVal').value = item.value||0;
-  document.getElementById('asetItemNote').value = item.note||'';
-  openModal('asetItemModal');
-}
-
-function saveAsetItem(){
-  const sec = document.getElementById('asetItemSec').value;
-  const idx = parseInt(document.getElementById('asetItemIdx').value);
-  const name = document.getElementById('asetItemName').value.trim();
-  const value = parseFloat(document.getElementById('asetItemVal').value)||0;
-  const note = document.getElementById('asetItemNote').value.trim();
-  if(!name){alert('Isi nama item!');return;}
-  const item = S.asetItems[sec][idx];
-  // save to history before update
+function addInstrumen(){
+  const cat  = document.getElementById('newInstrCat').value;
+  const name = document.getElementById('newInstrName').value.trim();
+  const val  = parseFloat(document.getElementById('newInstrVal').value)||0;
+  const note = document.getElementById('newInstrNote').value.trim();
+  if(!name){ alert('Isi nama instrumen!'); return; }
+  if(!S.asetItems) S.asetItems = {};
+  if(!S.asetItems[cat]) S.asetItems[cat] = [];
+  // check duplicate
+  if(S.asetItems[cat].find(i=>i.name===name)){ alert('Instrumen sudah ada!'); return; }
   const nowM = today().slice(0,7);
+  S.asetItems[cat].push({name, value:val, note, history: val>0?[{month:nowM, value:val}]:[]});
+  // sync: if tabungan, update S.rekening too for backward compat
+  if(cat==='tabungan'){
+    if(!S.rekening) S.rekening=[];
+    if(!S.rekening.find(r=>r.name===name))
+      S.rekening.push({id:'rek_'+Date.now(), name, type:'bank', balance:val, note});
+  }
+  persist();
+  renderJenisAset();
+  updateCats();
+  document.getElementById('newInstrName').value='';
+  document.getElementById('newInstrVal').value='';
+  document.getElementById('newInstrNote').value='';
+}
+
+function editInstrumen(cat, idx){
+  const item = (S.asetItems[cat]||[])[idx];
+  if(!item) return;
+  const row = document.getElementById(`instr_${cat}_${idx}`);
+  if(!row) return;
+  row.innerHTML = `
+    <div style="flex:1;display:grid;grid-template-columns:1fr 130px;gap:6px">
+      <input type="text" id="eInstrName_${idx}" value="${item.name}" placeholder="Nama" style="font-size:13px">
+      <input type="number" id="eInstrVal_${idx}" value="${item.value||0}" placeholder="Nilai Rp" style="font-size:13px">
+    </div>
+    <div style="display:flex;gap:4px;margin-left:8px">
+      <button class="btn btn-primary btn-sm" onclick="saveInstrumen('${cat}',${idx})">✅</button>
+      <button class="btn btn-sm" onclick="renderJenisAset()">✕</button>
+    </div>`;
+}
+
+function saveInstrumen(cat, idx){
+  const item = S.asetItems[cat][idx];
+  const oldName = item.name;
+  const newName = document.getElementById(`eInstrName_${idx}`).value.trim() || oldName;
+  const newVal  = parseFloat(document.getElementById(`eInstrVal_${idx}`).value)||0;
+  const nowM = today().slice(0,7);
+  // update history
   if(!item.history) item.history=[];
   const existing = item.history.find(h=>h.month===nowM);
-  if(existing) existing.value=value; else item.history.push({month:nowM,value});
-  item.name=name; item.value=value; item.note=note;
-  persist(); closeModal('asetItemModal'); renderAset();
+  if(existing) existing.value=newVal; else if(newVal>0) item.history.push({month:nowM,value:newVal});
+  item.name=newName; item.value=newVal;
+  // cascade: update transactions account name
+  if(oldName!==newName)
+    S.transactions.forEach(t=>{ if(t.account===oldName) t.account=newName; });
+  // sync rekening if tabungan
+  if(cat==='tabungan' && S.rekening){
+    const rek = S.rekening.find(r=>r.name===oldName);
+    if(rek){ rek.name=newName; rek.balance=newVal; }
+  }
+  persist(); renderJenisAset(); updateCats();
 }
 
-function deleteAsetItem(){
-  const sec = document.getElementById('asetItemSec').value;
-  const idx = parseInt(document.getElementById('asetItemIdx').value);
-  if(!confirm('Hapus item ini?')) return;
-  S.asetItems[sec].splice(idx,1);
-  persist(); closeModal('asetItemModal'); renderAset();
+function deleteInstrumen(cat, idx){
+  const item = (S.asetItems[cat]||[])[idx];
+  if(!confirm(`Hapus instrumen "${item?.name}"?`)) return;
+  S.asetItems[cat].splice(idx,1);
+  // sync rekening
+  if(cat==='tabungan' && S.rekening)
+    S.rekening = S.rekening.filter(r=>r.name!==item.name);
+  persist(); renderJenisAset(); updateCats();
 }
 
-// Add new item
-function openAddAset(sec, label){
-  document.getElementById('asetAddSub').textContent = 'Tambah ke '+label;
-  document.getElementById('asetAddSec').value = sec;
-  document.getElementById('asetAddName').value='';
-  document.getElementById('asetAddVal').value='';
-  document.getElementById('asetAddNote').value='';
-  openModal('asetAddModal');
-}
-
-function saveAsetAdd(){
-  const sec = document.getElementById('asetAddSec').value;
-  const name = document.getElementById('asetAddName').value.trim();
-  const value = parseFloat(document.getElementById('asetAddVal').value)||0;
-  const note = document.getElementById('asetAddNote').value.trim();
-  if(!name){alert('Isi nama item!');return;}
-  const nowM = today().slice(0,7);
-  if(!S.asetItems[sec]) S.asetItems[sec]=[];
-  S.asetItems[sec].push({name,value,note,history:[{month:nowM,value}]});
-  persist(); closeModal('asetAddModal'); renderAset();
-}
-
-function today_ym(){ return new Date().toISOString().slice(0,7); }
-
-
-// ═══════════════════════════════════════
-// REKENING TOGGLE FORM
-// ═══════════════════════════════════════
-function toggleAddRek(){
-  const f = document.getElementById('addRekForm');
-  if(f) f.style.display = f.style.display==='none' ? 'block' : 'none';
-}
+// Override updateCats to use instrumen Tabungan as rekening options
 
 // ═══════════════════════════════════════
 // TRANSFER INVESTASI
@@ -2604,9 +2287,12 @@ const INV_NAMES = {
 function initTransfer(){
   // populate rekening dropdown
   const sel = document.getElementById('trFrom');
-  if(sel) sel.innerHTML = (S.rekening||[])
-    .filter(r=>r.type!=='kartu_kredit')
-    .map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
+  if(sel){
+    const tabItems = (S.asetItems?.tabungan||[]);
+    sel.innerHTML = tabItems.length
+      ? tabItems.map((r,i)=>`<option value="${i}">${r.name}</option>`).join('')
+      : (S.rekening||[]).filter(r=>r.type!=='kartu_kredit').map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
+  }
   document.getElementById('trDate').value = today();
   renderTransferHistory();
 }
@@ -2620,8 +2306,11 @@ function saveTransfer(){
   if(!date||!amt){alert('Lengkapi tanggal dan jumlah!');return;}
   if(!fromId){alert('Pilih rekening asal!');return;}
 
-  const fromRek = (S.rekening||[]).find(r=>r.id===fromId);
-  if(!fromRek){alert('Rekening tidak ditemukan!');return;}
+  const tabItems = (S.asetItems?.tabungan||[]);
+  const fromRek = tabItems.length
+    ? tabItems[parseInt(fromId)]
+    : (S.rekening||[]).find(r=>r.id===fromId);
+  if(!fromRek){alert('Instrumen tidak ditemukan!');return;}
   if(fromRek.balance < amt){
     if(!confirm(`Saldo ${fromRek.name} (Rp ${fmt(fromRek.balance)}) kurang dari jumlah transfer.
 Lanjutkan?`)) return;
