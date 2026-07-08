@@ -2256,6 +2256,21 @@ function initAsetItems(){
   });
   // Auto-sync tabungan from rekening
   syncTabunganFromRekening();
+  // Auto-snapshot current values to this month's history
+  autoSnapshotCurrentMonth();
+}
+
+function autoSnapshotCurrentMonth(){
+  const nowM = today().slice(0,7);
+  ASET_DEFS.forEach(def=>{
+    (S.asetItems[def.key]||[]).forEach(item=>{
+      if(!item.history) item.history = [];
+      if(item.value > 0){
+        const existing = item.history.find(h=>h.month===nowM);
+        if(!existing) item.history.push({month:nowM, value:item.value});
+      }
+    });
+  });
 }
 
 function syncTabunganFromRekening(){
@@ -2320,19 +2335,17 @@ function renderAsetKpi(){
 
   document.getElementById('asetKpi').innerHTML = `
     <div class="kpi">
-      <div class="kpi-lbl">💰 Total Aset</div>
-      <div class="kpi-val" style="font-size:20px">Rp ${fmtS(totalAset)}</div>
-      <div class="kpi-meta">Semua kategori</div>
+      <div class="kpi-lbl" style="font-size:10px">💰 TOTAL ASET</div>
+      <div class="kpi-val" style="font-size:19px">Rp ${fmtS(totalAset)}</div>
     </div>
     <div class="kpi">
-      <div class="kpi-lbl">📥 Total Utang</div>
-      <div class="kpi-val" style="font-size:20px">Rp ${fmtS(totalUtang)}</div>
-      <div class="kpi-meta">Liabilitas</div>
+      <div class="kpi-lbl" style="font-size:10px">📥 TOTAL UTANG</div>
+      <div class="kpi-val" style="font-size:19px">Rp ${fmtS(totalUtang)}</div>
     </div>
-    <div class="kpi" style="grid-column:span 2;border:1.5px solid var(--border2)">
-      <div class="kpi-lbl">🏆 Net Worth</div>
-      <div class="kpi-val" style="font-size:22px">Rp ${fmtS(netWorth)}</div>
-      <div class="kpi-meta">${nwDiff!==null?(nwDiff>=0?'▲ +':'▼ ')+'Rp '+fmtS(Math.abs(nwDiff))+' vs bulan lalu':'Update rutin untuk lihat tren'}</div>
+    <div class="kpi" style="grid-column:span 2;border:1px solid var(--border2)">
+      <div class="kpi-lbl" style="font-size:10px">🏆 NET WORTH</div>
+      <div class="kpi-val" style="font-size:21px">Rp ${fmtS(netWorth)}</div>
+      <div class="kpi-meta">${nwDiff!==null?(nwDiff>=0?'▲ +':'▼ ')+'Rp '+fmtS(Math.abs(nwDiff))+' vs bulan lalu':''}</div>
     </div>`;
 }
 
