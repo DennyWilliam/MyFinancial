@@ -688,14 +688,14 @@ window.addEventListener('load', function(){
       <!-- ══ SETTINGS ══ -->
       <div class="page" id="page-kategori">
         <div class="sec-head">
-          <div class="sec-title">Manajemen Kategori</div>
+          <div class="sec-title">Jenis Transaksi</div>
           <div class="sec-sub">Tambah, edit, atau hapus jenis transaksi untuk pengeluaran, pemasukan, dan investasi</div>
         </div>
         <div class="split" style="gap:16px;align-items:start">
           <!-- LEFT: Add new category -->
           <div>
             <div class="card" style="overflow:visible;margin-bottom:16px">
-              <div class="card-head"><div class="card-title"><span class="card-title-icon">➕</span>Tambah Kategori Baru</div></div>
+              <div class="card-head"><div class="card-title"><span class="card-title-icon">➕</span>Tambah Jenis Transaksi</div></div>
               <div style="padding:16px">
                 <div class="form-grid">
                   <div class="fg full">
@@ -795,14 +795,7 @@ window.addEventListener('load', function(){
           <div class="sec-sub">Kelola kategori aset dan instrumen di dalamnya — instrumen Tabungan otomatis jadi pilihan rekening saat input transaksi</div>
         </div>
         <div class="split" style="gap:14px;align-items:start">
-          <div style="flex:1.6">
-            <div class="card" style="margin-bottom:0">
-              <div class="card-head">
-                <div class="card-title"><span class="card-title-icon">🏛️</span>Daftar Instrumen</div>
-              </div>
-              <div id="jenisAsetList" style="padding:0;min-height:80px"></div>
-            </div>
-          </div>
+          <!-- LEFT: form tambah -->
           <div style="flex:1">
             <div class="card" style="margin-bottom:0;overflow:visible">
               <div class="card-head"><div class="card-title"><span class="card-title-icon">➕</span>Tambah Instrumen</div></div>
@@ -827,6 +820,15 @@ window.addEventListener('load', function(){
                 </div>
                 <button class="btn btn-primary" onclick="addInstrumen()" style="width:100%;margin-top:14px">✅ Tambah Instrumen</button>
               </div>
+            </div>
+          </div>
+          <!-- RIGHT: daftar instrumen -->
+          <div style="flex:1.6">
+            <div class="card" style="margin-bottom:0">
+              <div class="card-head">
+                <div class="card-title"><span class="card-title-icon">🏛️</span>Daftar Instrumen</div>
+              </div>
+              <div id="jenisAsetList" style="padding:0;min-height:80px"></div>
             </div>
           </div>
         </div>
