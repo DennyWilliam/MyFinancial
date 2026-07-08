@@ -1991,21 +1991,41 @@ function parseCSV(csv){
 
 function showParsed(items){
   hideProgress();
-  parsedBuf=items.map(i=>({...i,category:i.category||guessCat(i.description||'',i.type)}));
-  const allCats=[...new Set([...getCatList('expense'),...getCatList('income'),...getCatList('investment')])];
-  document.getElementById('parsedList').innerHTML=parsedBuf.map((item,i)=>`
-    <div class="parsed-row" id="pr_${i}">
+  parsedBuf=items.map(i=>({...i,category:i.category||guessCat(i.description||'',i.type),type:i.type||'expense'}));
+
+  function getCatsForType(type){
+    return getCatList(type).map(c=>`<option>${c}</option>`).join('');
+  }
+
+  document.getElementById('parsedList').innerHTML = parsedBuf.map((item,i)=>`
+    <div class="parsed-row" id="pr_${i}" style="display:grid;grid-template-columns:106px 1fr 100px 140px 30px 30px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
       <input type="date" value="${item.date||today()}" onchange="parsedBuf[${i}].date=this.value">
       <input type="text" value="${item.description||''}" onchange="parsedBuf[${i}].description=this.value" placeholder="Deskripsi">
-      <select onchange="parsedBuf[${i}].category=this.value">${allCats.map(c=>`<option ${c===item.category?'selected':''}>${c}</option>`).join('')}</select>
-      <div style="display:flex;align-items:center;gap:4px">
-        <span class="${item.type==='income'?'cr-pill':'db-pill'}">${item.type==='income'?'CR':'DB'}</span>
-        <input type="number" value="${item.amount||0}" onchange="parsedBuf[${i}].amount=parseFloat(this.value)||0" style="flex:1;min-width:0">
-      </div>
+      <select onchange="parsedBuf[${i}].type=this.value;updateParsedCats(${i},this.value)">
+        <option value="expense" ${item.type==='expense'?'selected':''}>Outcome</option>
+        <option value="income" ${item.type==='income'?'selected':''}>Income</option>
+        <option value="investment" ${item.type==='investment'?'selected':''}>Investasi</option>
+      </select>
+      <select id="pr_cat_${i}" onchange="parsedBuf[${i}].category=this.value">
+        ${getCatList(item.type||'expense').map(c=>`<option ${c===item.category?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <span class="${item.type==='income'?'cr-pill':'db-pill'}" id="pr_pill_${i}">${item.type==='income'?'CR':'DB'}</span>
       <button class="del-btn" onclick="parsedBuf.splice(${i},1);showParsed(parsedBuf)">🗑</button>
     </div>`).join('');
+
   document.getElementById('parsedCnt').textContent=parsedBuf.length+' transaksi ditemukan';
   document.getElementById('aiPanel').style.display='block';
+}
+
+function updateParsedCats(i, type){
+  const sel = document.getElementById('pr_cat_'+i);
+  if(sel) sel.innerHTML = getCatList(type).map(c=>`<option>${c}</option>`).join('');
+  const pill = document.getElementById('pr_pill_'+i);
+  if(pill){
+    pill.className = type==='income'?'cr-pill':'db-pill';
+    pill.textContent = type==='income'?'CR':'DB';
+  }
+  parsedBuf[i].category = getCatList(type)[0]||'Lainnya';
 }
 
 function confirmImport(){
