@@ -397,16 +397,19 @@ window.addEventListener('load', function(){
       <div class="nav-item active" onclick="go('dashboard',this)">
         <span class="nav-icon">📊</span>Dashboard
       </div>
+      <div class="nav-item" onclick="go('aset',this)">
+        <span class="nav-icon">🏦</span>Aset
+      </div>
+      <div class="nav-item" onclick="go('pnl',this)">
+        <span class="nav-icon">📋</span>Transaksi
+      </div>
 
-      <div class="nav-section">Keuangan</div>
+      <div class="nav-section">Input</div>
       <div class="nav-item" onclick="go('import',this)">
         <span class="nav-icon">✨</span>AI Import
       </div>
       <div class="nav-item" onclick="go('manual',this)">
-        <span class="nav-icon">✏️</span>Input Manual
-      </div>
-      <div class="nav-item" onclick="go('transaksi',this)">
-        <span class="nav-icon">📋</span>Transaksi
+        <span class="nav-icon">✏️</span>Manual
       </div>
 
       <div class="nav-section">Investasi</div>
@@ -423,13 +426,6 @@ window.addEventListener('load', function(){
       </div>
       <div class="nav-item" onclick="go('kategori',this)">
         <span class="nav-icon">🏷️</span>Jenis Transaksi
-      </div>
-      <div class="nav-section">Laporan</div>
-      <div class="nav-item" onclick="go('pnl',this)">
-        <span class="nav-icon">🗂</span>P&amp;L Bulanan
-      </div>
-      <div class="nav-item" onclick="go('aset',this)">
-        <span class="nav-icon">🏛️</span>Laporan Aset
       </div>
     </nav>
 
@@ -668,7 +664,7 @@ window.addEventListener('load', function(){
       <!-- ══ P&L ══ -->
       <div class="page" id="page-pnl">
         <div class="sec-head">
-          <div class="sec-title">P&amp;L Bulanan</div>
+          <div class="sec-title">Transaksi</div>
           <div class="sec-sub">Chart of Account — pendapatan &amp; rincian pengeluaran per bulan</div>
         </div>
         <div class="card">
@@ -837,7 +833,7 @@ window.addEventListener('load', function(){
       <!-- ══ ASET ══ -->
       <div class="page" id="page-aset">
         <div class="sec-head">
-          <div class="sec-title">Laporan Aset</div>
+          <div class="sec-title">Aset</div>
           <div class="sec-sub">Kekayaan bersih — update kapanpun ada perubahan</div>
         </div>
 
@@ -1198,9 +1194,9 @@ function persist() {
 // NAVIGATION
 // ═══════════════════════════════════════
 const PAGE_TITLES = {
-  dashboard:'Dashboard', import:'AI Import', manual:'Input Manual',
+  dashboard:'Dashboard', import:'AI Import', manual:'Manual',
   transaksi:'Semua Transaksi', investasi:'Portofolio Investasi',
-  pnl:'P&L Bulanan', kategori:'Jenis Transaksi', jenisaset:'Jenis Aset', aset:'Laporan Aset', transfer:'Transfer ke Investasi', settings:'Settings'
+  pnl:'Transaksi', kategori:'Jenis Transaksi', jenisaset:'Jenis Aset', aset:'Aset', transfer:'Transfer ke Investasi', settings:'Settings'
 };
 
 function go(name, el) {
