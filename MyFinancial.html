@@ -87,6 +87,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
   text-transform:uppercase;letter-spacing:1px;
   padding:10px 8px 5px;
 }
+.nav-sub{padding-left:28px!important;font-size:12.5px;}
 .nav-item{
   display:flex;align-items:center;gap:10px;
   padding:9px 10px;border-radius:var(--radius);
@@ -393,37 +394,51 @@ window.addEventListener('load', function(){
     </div>
 
     <nav class="nav">
-      <div class="nav-section">Overview</div>
-      <div class="nav-item active" onclick="go('dashboard',this)">
+      <div class="nav-item active" onclick="go('dashboard',this)" style="font-weight:600;font-size:13px;padding:10px 16px">
         <span class="nav-icon">📊</span>Dashboard
       </div>
-      <div class="nav-item" onclick="go('aset',this)">
-        <span class="nav-icon">🏦</span>Aset
-      </div>
-      <div class="nav-item" onclick="go('pnl',this)">
-        <span class="nav-icon">📋</span>Transaksi
-      </div>
 
-      <div class="nav-section">Input</div>
+      <div class="nav-section">Transaksi</div>
+      <div class="nav-item" onclick="go('pnl',this)">
+        <span class="nav-icon">📈</span>Rangkuman
+      </div>
+      <div class="nav-item" onclick="go('transaksi',this)">
+        <span class="nav-icon">📋</span>Rincian
+      </div>
       <div class="nav-item" onclick="go('import',this)">
         <span class="nav-icon">✨</span>AI Import
       </div>
       <div class="nav-item" onclick="go('manual',this)">
-        <span class="nav-icon">✏️</span>Manual
+        <span class="nav-icon">✏️</span>Input Manual
       </div>
 
-      <div class="nav-section">Investasi</div>
-      <div class="nav-item" onclick="go('investasi',this)">
-        <span class="nav-icon">📈</span>Portofolio
+      <div class="nav-section">Aset</div>
+      <div class="nav-item nav-sub" onclick="go('saham-idx',this)">
+        <span class="nav-icon">📊</span>Saham Indo
       </div>
-      <div class="nav-item" onclick="go('transfer',this)">
+      <div class="nav-item nav-sub" onclick="go('saham-us',this)">
+        <span class="nav-icon">🌍</span>Saham Luar
+      </div>
+      <div class="nav-item nav-sub" onclick="go('deposito',this)">
+        <span class="nav-icon">🏛️</span>Deposito
+      </div>
+      <div class="nav-item nav-sub" onclick="go('crypto',this)">
+        <span class="nav-icon">₿</span>Crypto
+      </div>
+      <div class="nav-item nav-sub" onclick="go('tunai',this)">
+        <span class="nav-icon">🏦</span>Tunai
+      </div>
+      <div class="nav-item nav-sub" onclick="go('piutang',this)">
+        <span class="nav-icon">📤</span>Piutang
+      </div>
+      <div class="nav-item nav-sub" onclick="go('utang',this)">
+        <span class="nav-icon">📥</span>Utang
+      </div>
+      <div class="nav-item nav-sub" onclick="go('transfer',this)">
         <span class="nav-icon">💸</span>Transfer Dana
       </div>
 
       <div class="nav-section">Master Data</div>
-      <div class="nav-item" onclick="go('jenisaset',this)">
-        <span class="nav-icon">🏛️</span>Jenis Aset
-      </div>
       <div class="nav-item" onclick="go('kategori',this)">
         <span class="nav-icon">🏷️</span>Jenis Transaksi
       </div>
@@ -681,6 +696,69 @@ window.addEventListener('load', function(){
         </div>
       </div>
 
+            <!-- ══ SAHAM INDO ══ -->
+      <div class="page" id="page-saham-idx">
+        <div class="sec-head">
+          <div class="sec-title">📊 Saham Indo</div>
+          <div class="sec-sub">Portfolio saham Indonesia — update nilai kapanpun</div>
+        </div>
+        <div id="saham-idx-content"></div>
+      </div>
+
+      <!-- ══ SAHAM LUAR ══ -->
+      <div class="page" id="page-saham-us">
+        <div class="sec-head">
+          <div class="sec-title">🌍 Saham Luar</div>
+          <div class="sec-sub">Portfolio saham luar negeri — update nilai kapanpun</div>
+        </div>
+        <div id="saham-us-content"></div>
+      </div>
+
+      <!-- ══ DEPOSITO ══ -->
+      <div class="page" id="page-deposito">
+        <div class="sec-head">
+          <div class="sec-title">🏛️ Deposito</div>
+          <div class="sec-sub">Kelola deposito dan bunga berjalan</div>
+        </div>
+        <div id="deposito-content"></div>
+      </div>
+
+      <!-- ══ CRYPTO ══ -->
+      <div class="page" id="page-crypto">
+        <div class="sec-head">
+          <div class="sec-title">₿ Crypto</div>
+          <div class="sec-sub">Portfolio crypto — update nilai kapanpun</div>
+        </div>
+        <div id="crypto-content"></div>
+      </div>
+
+      <!-- ══ TUNAI ══ -->
+      <div class="page" id="page-tunai">
+        <div class="sec-head">
+          <div class="sec-title">🏦 Tunai</div>
+          <div class="sec-sub">Rekening bank dan cash — saldo terkini</div>
+        </div>
+        <div id="tunai-content"></div>
+      </div>
+
+      <!-- ══ PIUTANG ══ -->
+      <div class="page" id="page-piutang">
+        <div class="sec-head">
+          <div class="sec-title">📤 Piutang</div>
+          <div class="sec-sub">Uang yang dipinjam orang ke kamu</div>
+        </div>
+        <div id="piutang-content"></div>
+      </div>
+
+      <!-- ══ UTANG ══ -->
+      <div class="page" id="page-utang">
+        <div class="sec-head">
+          <div class="sec-title">📥 Utang</div>
+          <div class="sec-sub">Kewajiban yang harus dibayar</div>
+        </div>
+        <div id="utang-content"></div>
+      </div>
+
       <!-- ══ SETTINGS ══ -->
       <div class="page" id="page-kategori">
         <div class="sec-head">
@@ -828,6 +906,69 @@ window.addEventListener('load', function(){
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- ══ SAHAM IDX ══ -->
+      <div class="page" id="page-saham-idx">
+        <div class="sec-head">
+          <div class="sec-title">📊 Saham Indo</div>
+          <div class="sec-sub">Portofolio saham Indonesia — nilai total per akun</div>
+        </div>
+        <div id="sahamIdxContent"></div>
+      </div>
+
+      <!-- ══ SAHAM US ══ -->
+      <div class="page" id="page-saham-us">
+        <div class="sec-head">
+          <div class="sec-title">🌍 Saham Luar</div>
+          <div class="sec-sub">Portofolio saham luar negeri — nilai total per akun</div>
+        </div>
+        <div id="sahamUsContent"></div>
+      </div>
+
+      <!-- ══ DEPOSITO ══ -->
+      <div class="page" id="page-deposito">
+        <div class="sec-head">
+          <div class="sec-title">🏛️ Deposito</div>
+          <div class="sec-sub">Deposito — nominal, bunga, dan jatuh tempo</div>
+        </div>
+        <div id="depositoContent"></div>
+      </div>
+
+      <!-- ══ CRYPTO ══ -->
+      <div class="page" id="page-crypto">
+        <div class="sec-head">
+          <div class="sec-title">₿ Crypto</div>
+          <div class="sec-sub">Portofolio crypto — nilai total per akun</div>
+        </div>
+        <div id="cryptoContent"></div>
+      </div>
+
+      <!-- ══ TUNAI ══ -->
+      <div class="page" id="page-tunai">
+        <div class="sec-head">
+          <div class="sec-title">🏦 Tunai</div>
+          <div class="sec-sub">Rekening bank dan kas — saldo per akun</div>
+        </div>
+        <div id="tunaiContent"></div>
+      </div>
+
+      <!-- ══ PIUTANG ══ -->
+      <div class="page" id="page-piutang">
+        <div class="sec-head">
+          <div class="sec-title">📤 Piutang</div>
+          <div class="sec-sub">Uang yang dipinjam orang ke kamu</div>
+        </div>
+        <div id="piutangContent"></div>
+      </div>
+
+      <!-- ══ UTANG ══ -->
+      <div class="page" id="page-utang">
+        <div class="sec-head">
+          <div class="sec-title">📥 Utang</div>
+          <div class="sec-sub">Kewajiban — kartu kredit dan pinjaman</div>
+        </div>
+        <div id="utangContent"></div>
       </div>
 
       <!-- ══ ASET ══ -->
@@ -1027,9 +1168,9 @@ window.addEventListener('load', function(){
     <div class="modal-sub" id="asetAddSub">Tambah ke kategori aset</div>
     <input type="hidden" id="asetAddSec">
     <div style="display:flex;flex-direction:column;gap:10px">
-      <div class="fg"><label>Nama Item</label><input type="text" id="asetAddName" placeholder="cth: BBCA, Ethereum..."></div>
+      <div class="fg"><label>Nama Akun</label><input type="text" id="asetAddName" placeholder="cth: IPOT, Pluang..."></div>
       <div class="fg"><label>Nilai Sekarang (Rp)</label><input type="number" id="asetAddVal" placeholder="0" min="0"></div>
-      <div class="fg"><label>Catatan</label><input type="text" id="asetAddNote" placeholder="opsional"></div>
+      <div class="fg"><label>Modal / Harga Beli (Rp)</label><input type="number" id="asetAddNote" placeholder="0" min="0"></div>
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="closeModal('asetAddModal')">Batal</button>
@@ -1177,6 +1318,8 @@ function loadState() {
   ];
   if(!S.asetSnapshots) S.asetSnapshots = {};
   if(!S.asetItems)      S.asetItems = {};
+  if(!S.piutangList)    S.piutangList = [];
+  if(!S.utangList)      S.utangList = [];
   if(!S.transfers)      S.transfers = [];
   if(!S.github)         S.github = {token:'',repo:'',branch:'main'};
   if (S.apiKey) document.getElementById('apiIn').value = S.apiKey;
@@ -1194,26 +1337,51 @@ function persist() {
 // NAVIGATION
 // ═══════════════════════════════════════
 const PAGE_TITLES = {
-  dashboard:'Dashboard', import:'AI Import', manual:'Manual',
-  transaksi:'Semua Transaksi', investasi:'Portofolio Investasi',
-  pnl:'Transaksi', kategori:'Jenis Transaksi', jenisaset:'Jenis Aset', aset:'Aset', transfer:'Transfer ke Investasi', settings:'Settings'
+  dashboard:'Dashboard',
+  pnl:'Rangkuman',
+  transaksi:'Rincian Transaksi',
+  import:'AI Import',
+  manual:'Input Manual',
+  'saham-idx':'Saham Indo',
+  'saham-us':'Saham Luar',
+  deposito:'Deposito',
+  crypto:'Crypto',
+  tunai:'Tunai',
+  piutang:'Piutang',
+  utang:'Utang',
+  transfer:'Transfer Dana',
+  kategori:'Jenis Transaksi',
+  jenisaset:'Jenis Aset',
+  aset:'Laporan Aset',
+  investasi:'Portofolio',
+  settings:'Settings',
+  rekening:'Rekening',
 };
 
 function go(name, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
+  const pageEl = document.getElementById('page-' + name);
+  if(!pageEl){ console.warn('Page not found:', name); return; }
+  pageEl.classList.add('active');
   if (el) el.classList.add('active');
   document.getElementById('pageTitle').textContent = PAGE_TITLES[name] || name;
-  if (name === 'dashboard')   renderDash();
-  if (name === 'transaksi')   { renderTx(); populateFilters(); }
-  if (name === 'pnl')         renderPnL();
-  if (name === 'investasi')   renderInv();
-  if (name === 'manual')      updateCats();
-  if (name === 'jenisaset')   setTimeout(renderJenisAset, 50);
-  if (name === 'kategori')    { katFilter='expense'; setTimeout(renderKategori, 50); }
-  if (name === 'aset')        setTimeout(renderAset, 50);
-  if (name === 'transfer')    initTransfer();
+  if (name === 'dashboard')    renderDash();
+  if (name === 'transaksi')    { renderTx(); populateFilters(); }
+  if (name === 'pnl')          renderPnL();
+  if (name === 'investasi')    renderInv();
+  if (name === 'manual')       updateCats();
+  if (name === 'kategori')     { katFilter='expense'; setTimeout(renderKategori, 50); }
+  if (name === 'jenisaset')    setTimeout(renderJenisAset, 50);
+  if (name === 'aset')         setTimeout(renderAset, 50);
+  if (name === 'transfer')     setTimeout(renderTransferPage, 50);
+  if (name === 'saham-idx')    setTimeout(()=>renderAsetPage('saham_idx','Saham Indo','📊'), 50);
+  if (name === 'saham-us')     setTimeout(()=>renderAsetPage('saham_us','Saham Luar','🌍'), 50);
+  if (name === 'deposito')     setTimeout(()=>renderDepositoPage(), 50);
+  if (name === 'crypto')       setTimeout(()=>renderAsetPage('crypto','Crypto','₿'), 50);
+  if (name === 'tunai')        setTimeout(()=>renderTunaiPage(), 50);
+  if (name === 'piutang')      setTimeout(()=>renderPiutangPage(), 50);
+  if (name === 'utang')        setTimeout(()=>renderUtangPage(), 50);
 }
 
 // ═══════════════════════════════════════
@@ -2999,12 +3167,20 @@ function saveAsetAdd(){
   const sec=document.getElementById('asetAddSec').value;
   const name=document.getElementById('asetAddName').value.trim();
   const value=parseFloat(document.getElementById('asetAddVal').value)||0;
-  const note=document.getElementById('asetAddNote').value.trim();
+  const modal=parseFloat(document.getElementById('asetAddNote').value)||0;
   if(!name){alert('Isi nama!');return;}
   const nowM=today().slice(0,7);
   if(!S.asetItems[sec]) S.asetItems[sec]=[];
-  S.asetItems[sec].push({name,value,note,history:value>0?[{month:nowM,value}]:[]});
-  persist(); closeModal('asetAddModal'); renderAset();
+  S.asetItems[sec].push({name,value,modal,note:'',history:value>0?[{month:nowM,value}]:[]});
+  persist(); closeModal('asetAddModal');
+  // refresh correct page
+  const pageKey = sec.replace('_','-');
+  const pageEl = document.getElementById('page-'+pageKey);
+  if(pageEl && pageEl.classList.contains('active')){
+    go(pageKey, null);
+  } else {
+    renderAset();
+  }
 }
 
 function renderAsetTable(){
@@ -3055,6 +3231,515 @@ function exportAsetCSV(){
 }
 
 function today_ym(){ return new Date().toISOString().slice(0,7); }
+
+// ═══════════════════════════════════════
+// ASET SUB-PAGES (Saham, Deposito, Crypto, Tunai, Piutang, Utang)
+// ═══════════════════════════════════════
+
+// ── Generic Saham/Crypto page ─────────────────────────────────
+function renderAsetPage(key, label, icon){
+  const containerId = key.replace('_','-')+'-content';
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  if(!S.asetItems) S.asetItems={};
+  if(!S.asetItems[key]) S.asetItems[key]=[];
+
+  const items = S.asetItems[key];
+  const allMonths = [...new Set(items.flatMap(i=>(i.history||[]).map(h=>h.month)))].sort();
+  const nowM = today().slice(0,7);
+  if(!allMonths.includes(nowM)) allMonths.push(nowM);
+  const months = allMonths.slice(-6);
+
+  function fmtM(m){ return new Date(m+'-01').toLocaleDateString('id-ID',{month:'short',year:'2-digit'}); }
+
+  // Table HTML
+  let table = `<div class="card" style="margin-bottom:14px">
+    <div class="card-head">
+      <div class="card-title">${icon} ${label}</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddAsetPage('${key}','${label}')">➕ Tambah Akun</button>
+    </div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:500px">
+    <thead>
+      <tr style="background:var(--bg3);border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--text3);min-width:130px">Akun</th>
+        ${months.map(m=>`<th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:${m===nowM?'var(--accent)':'var(--text3)'};min-width:90px;cursor:pointer" onclick="showMonthDetail('${key}','${m}')">${fmtM(m)}</th>`).join('')}
+        <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3);min-width:90px">Modal</th>
+        <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3);min-width:90px">Return</th>
+        <th style="width:60px"></th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  if(!items.length){
+    table += `<tr><td colspan="${months.length+4}" style="padding:24px;text-align:center;color:var(--text3)">Belum ada akun — klik ➕ Tambah Akun</td></tr>`;
+  } else {
+    items.forEach((item,i)=>{
+      const ret = (item.value||0)-(item.modal||0);
+      const retColor = ret>=0?'var(--green)':'var(--red)';
+      table += `<tr style="border-bottom:1px solid var(--border);cursor:pointer"
+        onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
+        <td style="padding:12px 16px;font-size:14px;font-weight:500">${item.name}</td>
+        ${months.map(m=>{
+          const h=(item.history||[]).find(x=>x.month===m);
+          const v=h?h.value:(m===nowM?(item.value||0):null);
+          const last=m===nowM;
+          return `<td style="text-align:right;padding:12px 14px;font-size:${last?'14':'13'}px;font-weight:${last?'600':'400'};cursor:pointer"
+            onclick="showMonthDetail('${key}','${m}','${item.name}')" title="Klik untuk detail">
+            ${v!==null?'Rp '+fmtS(v):'<span style="color:var(--text3)">—</span>'}
+          </td>`;
+        }).join('')}
+        <td style="text-align:right;padding:12px 14px;font-size:13px;color:var(--text2)">Rp ${fmtS(item.modal||0)}</td>
+        <td style="text-align:right;padding:12px 14px;font-size:13px;font-weight:500;color:${retColor}">${ret>=0?'+':''}Rp ${fmtS(ret)}</td>
+        <td style="padding:12px 8px;text-align:center;display:flex;gap:4px">
+          <button class="btn btn-sm" onclick="openEditAsetPage('${key}',${i})" style="padding:4px 8px">✏️</button>
+          <button class="btn btn-sm" onclick="deleteAsetPage('${key}',${i})" style="padding:4px 8px;color:var(--red)">🗑</button>
+        </td>
+      </tr>`;
+    });
+    // Total row
+    const totalModal = items.reduce((a,b)=>a+(b.modal||0),0);
+    const totalVal   = items.reduce((a,b)=>a+(b.value||0),0);
+    const totalRet   = totalVal-totalModal;
+    table += `<tr style="background:var(--bg3);font-weight:700">
+      <td style="padding:11px 16px;font-size:13px">Total</td>
+      ${months.map(m=>{
+        const v=items.reduce((a,item)=>{const h=(item.history||[]).find(x=>x.month===m);return a+(h?h.value:(m===nowM?(item.value||0):0));},0);
+        return `<td style="text-align:right;padding:11px 14px;font-size:13px">Rp ${fmtS(v)}</td>`;
+      }).join('')}
+      <td style="text-align:right;padding:11px 14px;font-size:13px">Rp ${fmtS(totalModal)}</td>
+      <td style="text-align:right;padding:11px 14px;font-size:13px;color:${totalRet>=0?'var(--green)':'var(--red)'}">${totalRet>=0?'+':''}Rp ${fmtS(totalRet)}</td>
+      <td></td>
+    </tr>`;
+  }
+  table += `</tbody></table></div></div>`;
+
+  // Month detail panel (hidden)
+  table += `<div id="monthDetailPanel" style="display:none"></div>`;
+
+  el.innerHTML = table;
+}
+
+function showMonthDetail(key, month, itemName){
+  const panel = document.getElementById('monthDetailPanel');
+  if(!panel) return;
+  const items = S.asetItems[key]||[];
+  const targetItems = itemName ? items.filter(i=>i.name===itemName) : items;
+  const transfers = (S.transfers||[]).filter(t=>{
+    const tMonth = (t.date||'').slice(0,7);
+    const akun = targetItems.map(i=>i.name);
+    return tMonth===month && (akun.includes(t.toName)||akun.includes(t.fromName));
+  });
+
+  const prevM = new Date(month+'-01');
+  prevM.setMonth(prevM.getMonth()-1);
+  const prevKey = prevM.toISOString().slice(0,7);
+
+  let html = `<div class="card" style="margin-bottom:14px">
+    <div class="card-head">
+      <div class="card-title">📅 Detail ${month}${itemName?' — '+itemName:''}</div>
+      <button class="btn btn-sm" onclick="document.getElementById('monthDetailPanel').style.display='none'">✕ Tutup</button>
+    </div>
+    <div style="padding:16px">`;
+
+  // Previous month value
+  targetItems.forEach(item=>{
+    const prevH = (item.history||[]).find(h=>h.month===prevKey);
+    const currH = (item.history||[]).find(h=>h.month===month);
+    const prevVal = prevH?prevH.value:null;
+    const currVal = currH?currH.value:(item.value||0);
+    const diff = prevVal!==null?currVal-prevVal:null;
+
+    html += `<div style="margin-bottom:12px">
+      <div style="font-weight:600;font-size:14px;margin-bottom:6px">${item.name}</div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px">
+        ${prevVal!==null?`<span style="color:var(--text2)">Bulan lalu: Rp ${fmtS(prevVal)}</span>`:''}
+        <span style="font-weight:500">Bulan ini: Rp ${fmtS(currVal)}</span>
+        ${diff!==null?`<span style="color:${diff>=0?'var(--green)':'var(--red)'}">Perubahan: ${diff>=0?'+':''}Rp ${fmtS(diff)}</span>`:''}
+      </div>
+    </div>`;
+  });
+
+  // Transfers this month
+  if(transfers.length){
+    html += `<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Transfer bulan ini</div>`;
+    transfers.forEach(t=>{
+      const isSetor = targetItems.map(i=>i.name).includes(t.toName);
+      html += `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:0.5px solid var(--border)">
+        <span>${t.date} — ${isSetor?'Setor dari '+t.fromName:'Tarik ke '+t.toName}</span>
+        <span style="font-weight:500;color:${isSetor?'var(--green)':'var(--red)'}">${isSetor?'+':'-'}Rp ${fmtS(t.amount)}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div></div>`;
+  panel.innerHTML = html;
+  panel.style.display = 'block';
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function openAddAsetPage(key, label){
+  document.getElementById('asetAddSec').value = key;
+  document.getElementById('asetAddName').value = '';
+  document.getElementById('asetAddVal').value = '';
+  document.getElementById('asetAddNote').value = '';
+  // show modal with extra modal field for key
+  document.querySelector('#asetAddModal .modal-title').textContent = 'Tambah Akun — '+label;
+  openModal('asetAddModal');
+}
+
+function openEditAsetPage(key, idx){
+  const item = (S.asetItems[key]||[])[idx];
+  if(!item) return;
+  document.getElementById('asetItemSec').value = key;
+  document.getElementById('asetItemIdx').value = idx;
+  document.getElementById('asetItemTitle').textContent = 'Edit Akun';
+  document.getElementById('asetItemSub').textContent = item.name;
+  document.getElementById('asetItemName').value = item.name;
+  document.getElementById('asetItemVal').value = item.value||0;
+  document.getElementById('asetItemNote').value = item.modal||0; // reuse note field for modal
+  openModal('asetItemModal');
+}
+
+function deleteAsetPage(key, idx){
+  const item = (S.asetItems[key]||[])[idx];
+  if(!confirm('Hapus "'+item?.name+'"?')) return;
+  S.asetItems[key].splice(idx,1);
+  persist();
+  go(key.replace('_','-'), null);
+}
+
+// ── Deposito page ──────────────────────────────────────────────
+function renderDepositoPage(){
+  const el = document.getElementById('deposito-content');
+  if(!el) return;
+  if(!S.asetItems) S.asetItems={};
+  if(!S.asetItems['deposito']) S.asetItems['deposito']=[];
+  const items = S.asetItems['deposito'];
+
+  let html = `<div class="card">
+    <div class="card-head">
+      <div class="card-title">🏛️ Deposito</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddDeposito()">➕ Tambah</button>
+    </div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:var(--bg3);border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--text3)">Akun</th>
+        <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3)">Nominal</th>
+        <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3)">Bunga/thn</th>
+        <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3)">Jatuh Tempo</th>
+        <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3)">Nilai Skrg</th>
+        <th style="width:60px"></th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  if(!items.length){
+    html += `<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text3)">Belum ada deposito</td></tr>`;
+  } else {
+    items.forEach((item,i)=>{
+      // auto-calc current value: nominal * (1 + rate/100)
+      const nilaiSkrg = item.value || (item.nominal*(1+(item.rate||0)/100));
+      html += `<tr style="border-bottom:1px solid var(--border)"
+        onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
+        <td style="padding:12px 16px;font-size:14px;font-weight:500">${item.name}</td>
+        <td style="text-align:right;padding:12px 14px;font-size:14px">Rp ${fmtS(item.nominal||0)}</td>
+        <td style="text-align:right;padding:12px 14px;font-size:14px">${item.rate||0}%</td>
+        <td style="text-align:right;padding:12px 14px;font-size:13px;color:var(--text2)">${item.jatuhTempo||'—'}</td>
+        <td style="text-align:right;padding:12px 14px;font-size:14px;font-weight:600;color:var(--green)">Rp ${fmtS(nilaiSkrg)}</td>
+        <td style="padding:12px 8px;text-align:center;display:flex;gap:4px">
+          <button class="btn btn-sm" onclick="editDeposito(${i})" style="padding:4px 8px">✏️</button>
+          <button class="btn btn-sm" onclick="deleteDeposito(${i})" style="padding:4px 8px;color:var(--red)">🗑</button>
+        </td>
+      </tr>`;
+    });
+  }
+  html += `</tbody></table></div></div>`;
+  el.innerHTML = html;
+}
+
+function openAddDeposito(){
+  const name = prompt('Nama akun deposito:');
+  if(!name) return;
+  const nominal = parseFloat(prompt('Nominal (Rp):')||0);
+  const rate = parseFloat(prompt('Bunga per tahun (%):')||0);
+  const jatuhTempo = prompt('Jatuh tempo (cth: 31 Des 2026):');
+  const nowM = today().slice(0,7);
+  const nilaiSkrg = nominal*(1+rate/100);
+  if(!S.asetItems['deposito']) S.asetItems['deposito']=[];
+  S.asetItems['deposito'].push({
+    name, nominal, rate, jatuhTempo, value:nilaiSkrg,
+    history:[{month:nowM,value:nilaiSkrg}]
+  });
+  persist(); renderDepositoPage();
+}
+
+function editDeposito(idx){
+  const item = S.asetItems['deposito'][idx];
+  const name = prompt('Nama:', item.name)||item.name;
+  const nominal = parseFloat(prompt('Nominal (Rp):', item.nominal)||item.nominal);
+  const rate = parseFloat(prompt('Bunga %:', item.rate)||item.rate);
+  const jatuhTempo = prompt('Jatuh tempo:', item.jatuhTempo)||item.jatuhTempo;
+  const nowM = today().slice(0,7);
+  const nilaiSkrg = nominal*(1+rate/100);
+  item.name=name; item.nominal=nominal; item.rate=rate; item.jatuhTempo=jatuhTempo; item.value=nilaiSkrg;
+  if(!item.history) item.history=[];
+  const h=item.history.find(x=>x.month===nowM);
+  if(h) h.value=nilaiSkrg; else item.history.push({month:nowM,value:nilaiSkrg});
+  persist(); renderDepositoPage();
+}
+
+function deleteDeposito(idx){
+  if(!confirm('Hapus deposito ini?')) return;
+  S.asetItems['deposito'].splice(idx,1);
+  persist(); renderDepositoPage();
+}
+
+// ── Tunai page ─────────────────────────────────────────────────
+function renderTunaiPage(){
+  const el = document.getElementById('tunai-content');
+  if(!el) return;
+  // Use S.rekening as tunai data source
+  if(!S.rekening) S.rekening=[];
+  const items = S.rekening;
+
+  let html = `<div class="card">
+    <div class="card-head">
+      <div class="card-title">🏦 Tunai — Rekening & Cash</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddTunai()">➕ Tambah</button>
+    </div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:var(--bg3);border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--text3)">Rekening / Dompet</th>
+        <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3)">Tipe</th>
+        <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:var(--accent)">Saldo Skrg</th>
+        <th style="width:60px"></th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  const typeLabel = {bank:'Bank',ewallet:'E-Wallet',cash:'Cash',kartu_kredit:'Kartu Kredit',lainnya:'Lainnya'};
+  if(!items.length){
+    html += `<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text3)">Belum ada rekening</td></tr>`;
+  } else {
+    items.forEach((item,i)=>{
+      html += `<tr style="border-bottom:1px solid var(--border)"
+        onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
+        <td style="padding:12px 16px;font-size:14px;font-weight:500">${item.name}</td>
+        <td style="padding:12px 14px;font-size:13px;color:var(--text2)">${typeLabel[item.type]||item.type}</td>
+        <td style="text-align:right;padding:12px 14px;font-size:14px;font-weight:600">Rp ${fmtS(item.balance||0)}</td>
+        <td style="padding:12px 8px;text-align:center;display:flex;gap:4px">
+          <button class="btn btn-sm" onclick="editTunai(${i})" style="padding:4px 8px">✏️</button>
+          <button class="btn btn-sm" onclick="deleteTunai(${i})" style="padding:4px 8px;color:var(--red)">🗑</button>
+        </td>
+      </tr>`;
+    });
+    const total = items.reduce((a,b)=>a+(b.balance||0),0);
+    html += `<tr style="background:var(--bg3);font-weight:700">
+      <td colspan="2" style="padding:11px 16px;font-size:13px">Total</td>
+      <td style="text-align:right;padding:11px 14px;font-size:14px;font-weight:700;color:var(--accent)">Rp ${fmtS(total)}</td>
+      <td></td>
+    </tr>`;
+  }
+  html += `</tbody></table></div></div>`;
+  el.innerHTML = html;
+}
+
+function openAddTunai(){
+  const name = prompt('Nama rekening/dompet:');
+  if(!name) return;
+  const balance = parseFloat(prompt('Saldo sekarang (Rp):')||0);
+  const type = prompt('Tipe (bank/ewallet/cash/kartu_kredit):')||'bank';
+  if(!S.rekening) S.rekening=[];
+  S.rekening.push({id:'rek_'+Date.now(),name,type,balance,note:''});
+  // sync to asetItems tabungan
+  if(!S.asetItems) S.asetItems={};
+  if(!S.asetItems['tabungan']) S.asetItems['tabungan']=[];
+  if(type!=='kartu_kredit') S.asetItems['tabungan'].push({name,value:balance,modal:0,note:'',history:[]});
+  persist(); renderTunaiPage(); updateCats();
+}
+
+function editTunai(idx){
+  const item = S.rekening[idx];
+  const balance = parseFloat(prompt('Saldo baru (Rp):',item.balance)||item.balance);
+  item.balance = balance;
+  // sync asetItems
+  const tabIdx = (S.asetItems?.tabungan||[]).findIndex(t=>t.name===item.name);
+  if(tabIdx>=0) S.asetItems['tabungan'][tabIdx].value=balance;
+  persist(); renderTunaiPage();
+}
+
+function deleteTunai(idx){
+  const item = S.rekening[idx];
+  if(!confirm('Hapus "'+item.name+'"?')) return;
+  S.rekening.splice(idx,1);
+  if(S.asetItems?.tabungan) S.asetItems['tabungan']=S.asetItems['tabungan'].filter(t=>t.name!==item.name);
+  persist(); renderTunaiPage(); updateCats();
+}
+
+// ── Piutang page ───────────────────────────────────────────────
+function renderPiutangPage(){
+  const el = document.getElementById('piutang-content');
+  if(!el) return;
+  if(!S.piutangList) S.piutangList=[];
+
+  let html = `<div class="card">
+    <div class="card-head">
+      <div class="card-title">📤 Piutang</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddPiutang()">➕ Tambah</button>
+    </div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:var(--bg3);border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--text3)">Nama</th>
+        <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3)">Jumlah</th>
+        <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3)">Tgl Pinjam</th>
+        <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3)">Status</th>
+        <th style="width:60px"></th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  if(!S.piutangList.length){
+    html += `<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text3)">Belum ada piutang</td></tr>`;
+  } else {
+    S.piutangList.forEach((p,i)=>{
+      const statusColor = p.status==='lunas'?'var(--green)':'var(--amber)';
+      html += `<tr style="border-bottom:1px solid var(--border)"
+        onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
+        <td style="padding:12px 16px;font-size:14px;font-weight:500">${p.nama}</td>
+        <td style="text-align:right;padding:12px 14px;font-size:14px;font-weight:500">Rp ${fmtS(p.jumlah||0)}</td>
+        <td style="padding:12px 14px;font-size:13px;color:var(--text2)">${p.tglPinjam||'—'}</td>
+        <td style="padding:12px 14px">
+          <span style="font-size:12px;font-weight:600;color:${statusColor};padding:3px 10px;background:${p.status==='lunas'?'var(--bg-success)':'rgba(245,158,11,0.1)'};border-radius:20px">
+            ${p.status==='lunas'?'Lunas':'Belum lunas'}
+          </span>
+        </td>
+        <td style="padding:12px 8px;text-align:center;display:flex;gap:4px">
+          <button class="btn btn-sm" onclick="togglePiutang(${i})" style="padding:4px 8px" title="${p.status==='lunas'?'Tandai belum lunas':'Tandai lunas'}">
+            ${p.status==='lunas'?'↩️':'✅'}
+          </button>
+          <button class="btn btn-sm" onclick="deletePiutang(${i})" style="padding:4px 8px;color:var(--red)">🗑</button>
+        </td>
+      </tr>`;
+    });
+    const total = S.piutangList.filter(p=>p.status!=='lunas').reduce((a,b)=>a+(b.jumlah||0),0);
+    html += `<tr style="background:var(--bg3);font-weight:700">
+      <td style="padding:11px 16px;font-size:13px">Total belum lunas</td>
+      <td style="text-align:right;padding:11px 14px;font-size:14px;color:var(--amber)">Rp ${fmtS(total)}</td>
+      <td colspan="3"></td>
+    </tr>`;
+  }
+  html += `</tbody></table></div></div>`;
+  el.innerHTML = html;
+}
+
+function openAddPiutang(){
+  const nama = prompt('Nama peminjam:');
+  if(!nama) return;
+  const jumlah = parseFloat(prompt('Jumlah (Rp):')||0);
+  const tglPinjam = prompt('Tanggal pinjam (cth: 01 Jul 2026):');
+  if(!S.piutangList) S.piutangList=[];
+  S.piutangList.push({nama,jumlah,tglPinjam,status:'belum'});
+  persist(); renderPiutangPage();
+}
+
+function togglePiutang(idx){
+  const p = S.piutangList[idx];
+  p.status = p.status==='lunas'?'belum':'lunas';
+  persist(); renderPiutangPage();
+}
+
+function deletePiutang(idx){
+  if(!confirm('Hapus piutang ini?')) return;
+  S.piutangList.splice(idx,1);
+  persist(); renderPiutangPage();
+}
+
+// ── Utang page ─────────────────────────────────────────────────
+function renderUtangPage(){
+  const el = document.getElementById('utang-content');
+  if(!el) return;
+  if(!S.utangList) S.utangList=[];
+
+  let html = `<div class="card">
+    <div class="card-head">
+      <div class="card-title">📥 Utang</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddUtang()">➕ Tambah</button>
+    </div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:var(--bg3);border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--text3)">Kreditur</th>
+        <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3)">Jumlah</th>
+        <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3)">Jatuh Tempo</th>
+        <th style="width:60px"></th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  if(!S.utangList.length){
+    html += `<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text3)">Belum ada utang</td></tr>`;
+  } else {
+    S.utangList.forEach((u,i)=>{
+      html += `<tr style="border-bottom:1px solid var(--border)"
+        onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
+        <td style="padding:12px 16px;font-size:14px;font-weight:500">${u.nama}</td>
+        <td style="text-align:right;padding:12px 14px;font-size:14px;font-weight:500;color:var(--red)">Rp ${fmtS(u.jumlah||0)}</td>
+        <td style="padding:12px 14px;font-size:13px;color:var(--text2)">${u.jatuhTempo||'—'}</td>
+        <td style="padding:12px 8px;text-align:center;display:flex;gap:4px">
+          <button class="btn btn-sm" onclick="editUtang(${i})" style="padding:4px 8px">✏️</button>
+          <button class="btn btn-sm" onclick="deleteUtang(${i})" style="padding:4px 8px;color:var(--red)">🗑</button>
+        </td>
+      </tr>`;
+    });
+    const total = S.utangList.reduce((a,b)=>a+(b.jumlah||0),0);
+    html += `<tr style="background:var(--bg3)">
+      <td style="padding:11px 16px;font-size:13px;font-weight:700">Total</td>
+      <td style="text-align:right;padding:11px 14px;font-size:14px;font-weight:700;color:var(--red)">Rp ${fmtS(total)}</td>
+      <td colspan="2"></td>
+    </tr>`;
+  }
+  html += `</tbody></table></div></div>`;
+  el.innerHTML = html;
+}
+
+function openAddUtang(){
+  const nama = prompt('Nama kreditur (cth: Kartu Kredit BCA):');
+  if(!nama) return;
+  const jumlah = parseFloat(prompt('Jumlah (Rp):')||0);
+  const jatuhTempo = prompt('Jatuh tempo (cth: 25 Jul 2026):');
+  if(!S.utangList) S.utangList=[];
+  S.utangList.push({nama,jumlah,jatuhTempo});
+  persist(); renderUtangPage();
+}
+
+function editUtang(idx){
+  const u = S.utangList[idx];
+  const jumlah = parseFloat(prompt('Jumlah baru (Rp):',u.jumlah)||u.jumlah);
+  u.jumlah=jumlah;
+  persist(); renderUtangPage();
+}
+
+function deleteUtang(idx){
+  if(!confirm('Hapus utang ini?')) return;
+  S.utangList.splice(idx,1);
+  persist(); renderUtangPage();
+}
+
+// ── Transfer page render ───────────────────────────────────────
+function renderTransferPage(){
+  initTransfer();
+  renderTransferList();
+}
 
 // ═══════════════════════════════════════
 // EXPORT EXCEL (SheetJS)
