@@ -359,10 +359,7 @@ input[readonly]{color:var(--text2)}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:#d0d3da;border-radius:2px}
 ::-webkit-scrollbar-thumb:hover{background:#b8bcc7}
-/* Ensure nothing blocks clicks */
-.overlay{pointer-events:none!important}
-.overlay.open{pointer-events:auto!important}
-#pinOverlay{pointer-events:none!important}
+
 
 /* ─── OFFLINE NOTICE ─── */
 .offline-bar{
@@ -2582,11 +2579,11 @@ function deleteAsetItem(){
 // ── Modal helpers ──────────────────────────────────────────────
 function openModal(id){
   const el = document.getElementById(id);
-  if(el) el.style.display='flex';
+  if(el){ el.style.display='flex'; el.style.pointerEvents='auto'; }
 }
 function closeModal(id){
   const el = document.getElementById(id);
-  if(el) el.style.display='none';
+  if(el){ el.style.display='none'; }
 }
 
 // ═══════════════════════════════════════
