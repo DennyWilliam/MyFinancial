@@ -1273,6 +1273,7 @@ function loadState() {
       S.transactions  = p.transactions  || [];
       S.investments     = p.investments   || S.investments;
       S.rekening        = p.rekening      || S.rekening;
+      S.asetItems       = p.asetItems     || {};
       S.asetSnapshots   = p.asetSnapshots || {};
       S.transfers       = p.transfers      || [];
       S.github          = p.github         || {token:'',repo:'',branch:'main'};
@@ -1301,8 +1302,8 @@ function loadState() {
   if (S.apiKey) document.getElementById('apiIn').value = S.apiKey;
   updateImportAlert();
   updateGitHubUI();
-  // Try load from Supabase on startup
-  supaLoad();
+  // Try load from Supabase on startup (guarded: not implemented yet, see item #3)
+  if (typeof supaLoad === 'function') supaLoad();
 }
 
 function persist() {
