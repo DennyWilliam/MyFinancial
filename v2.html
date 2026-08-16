@@ -2448,21 +2448,20 @@ const INV_NAMES = {
 };
 
 function initTransfer(){
-  // Build dropdown from all aset instruments (dynamic from getCatList)
+  // Build dropdown from all aset instruments
   const allInstruments = [];
-  const cats = getCatList('investment');
-  cats.forEach(cat=>{
-    (S.asetItems?.[cat]||[]).forEach(item=>{
-      allInstruments.push({label:`${item.name} (${cat})`, name:item.name, cat});
+  if(S.asetItems){
+    Object.keys(S.asetItems).forEach(cat=>{
+      (S.asetItems[cat]||[]).forEach(item=>{
+        if(item&&item.name)
+          allInstruments.push(`<option value="${item.name}">${item.name} (${cat})</option>`);
+      });
     });
-  });
-
-  const opts = allInstruments.length
-    ? allInstruments.map(i=>`<option value="${i.name}">${i.label}</option>`).join('')
-    : '<option value="">Belum ada instrumen — tambah di Aset → Rangkuman</option>';
+  }
 
   const fromEl = document.getElementById('trFrom');
   const toEl   = document.getElementById('trTo');
+  const opts = allInstruments.length ? allInstruments.join('') : '<option value="">Tambah akun di Aset dulu</option>';
   if(fromEl) fromEl.innerHTML = opts;
   if(toEl)   toEl.innerHTML   = opts;
 
@@ -2640,7 +2639,10 @@ function saveInlineAset(){
     alert('Nama sudah ada di kategori ini!'); return;
   }
 
-  S.asetItems[cat].push({name, awal, awalDate:date, note:''});
+  const month = date.slice(0,7);
+  const monthValues = {};
+  if(awal>0) monthValues[month] = awal;
+  S.asetItems[cat].push({name, monthValues, note:''});
 
   // If Rekening - also sync to rekening list for Input Manual dropdown
   if(cat.toLowerCase()==='rekening'||cat.toLowerCase()==='tunai'){
@@ -2705,19 +2707,37 @@ function renderAsetRangkuman(){
       '<div style="padding:40px;text-align:center;color:var(--text3)">Belum ada kategori Aset.<br>Tambah dulu di <b>Jenis Transaksi → Aset</b></div>';
     return;
   }
-  asetCats.forEach(cat=>{ if(!S.asetItems[cat]) S.asetItems[cat]=[]; });
+  asetCats.forEach(cat=>{
+    if(!S.asetItems[cat]) S.asetItems[cat]=[];
+    // Migrate old format (awal/awalDate) to new (monthValues)
+    S.asetItems[cat].forEach(item=>{
+      if(!item.monthValues) item.monthValues={};
+      if(item.awal>0 && item.awalDate && !Object.keys(item.monthValues).length){
+        item.monthValues[item.awalDate.slice(0,7)] = item.awal;
+      }
+      // Migrate from old history format
+      if(item.history && item.history.length && !Object.keys(item.monthValues).length){
+        item.history.forEach(h=>{ if(h.month&&h.value) item.monthValues[h.month]=h.value; });
+      }
+    });
+  });
 
   // ── Calc monthly value per instrument from transfers ──
   // value(acct, month) = awal + sum(transfers IN up to month) - sum(transfers OUT up to month)
   function getAcctMonthVal(catName, acctName, month){
     const acct = (S.asetItems[catName]||[]).find(i=>i.name===acctName);
     if(!acct) return 0;
-    const awal = acct.awal || 0;
-    const monthEnd = month+'-31'; // inclusive
+    // Find last manual entry at or before this month
+    const entries = (acct.monthValues||{});
+    const relevantMonths = Object.keys(entries).filter(m=>m<=month).sort();
+    if(!relevantMonths.length) return 0;
+    const lastMonth = relevantMonths[relevantMonths.length-1];
+    const baseVal = entries[lastMonth];
+    // Add net transfers from lastMonth+1 to this month
     const transfers = S.transfers||[];
-    const inflow  = transfers.filter(t=>t.toName===acctName   && t.date<=monthEnd && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
-    const outflow = transfers.filter(t=>t.fromName===acctName && t.date<=monthEnd && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
-    return awal + inflow - outflow;
+    const inflow  = transfers.filter(t=>t.toName===acctName   && t.date.slice(0,7)>lastMonth && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
+    const outflow = transfers.filter(t=>t.fromName===acctName && t.date.slice(0,7)>lastMonth && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
+    return baseVal + inflow - outflow;
   }
 
   // ── Collect all months that have data ──
@@ -2725,7 +2745,7 @@ function renderAsetRangkuman(){
   const allMonthsSet = new Set();
   asetCats.forEach(cat=>{
     (S.asetItems[cat]||[]).forEach(item=>{
-      if(item.awalDate) allMonthsSet.add(item.awalDate.slice(0,7));
+      Object.keys(item.monthValues||{}).forEach(m=>allMonthsSet.add(m));
     });
   });
   (S.transfers||[]).forEach(t=>{ if(t.date) allMonthsSet.add(t.date.slice(0,7)); });
@@ -2766,7 +2786,7 @@ function renderAsetRangkuman(){
   <thead>
     <tr style="background:var(--bg3);border-bottom:1px solid var(--border)">
       <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--text3);min-width:200px;position:sticky;left:0;background:var(--bg3);z-index:2">Kategori / Akun</th>
-      <th style="text-align:right;padding:10px 16px;font-size:11px;font-weight:600;color:var(--text3);min-width:140px;white-space:nowrap">Awal</th>
+
       ${months.map(m=>`<th style="text-align:right;padding:10px 16px;font-size:11px;font-weight:600;
         color:${m===nowM?'var(--accent)':'var(--text3)'};min-width:140px;white-space:nowrap">
         ${fmtMShort(m)}</th>`).join('')}
@@ -2780,12 +2800,12 @@ function renderAsetRangkuman(){
     const catRowColor = 'var(--red)';
 
     // Cat totals
-    const catAwal = items.reduce((a,i)=>a+(i.awal||0),0);
+
     const catMonthTotals = months.map(m=>items.reduce((a,i)=>a+getAcctMonthVal(cat,i.name,m),0));
 
     html+=`<tr style="background:var(--bg3);border-top:1.5px solid var(--border2)">
       <td style="padding:9px 16px;font-size:12px;font-weight:700;color:${catRowColor};text-transform:uppercase;letter-spacing:0.5px;position:sticky;left:0;background:var(--bg3)">${cat}</td>
-      <td style="text-align:right;padding:9px 16px;font-size:13px;font-weight:600;color:${catRowColor}">${catAwal?'Rp '+fmt(catAwal):'—'}</td>
+
       ${catMonthTotals.map(v=>`<td style="text-align:right;padding:9px 16px;font-size:13px;font-weight:600;color:${catRowColor}">${v?'Rp '+fmt(v):'—'}</td>`).join('')}
     </tr>`;
 
@@ -2793,14 +2813,14 @@ function renderAsetRangkuman(){
       html+=`<tr><td colspan="${months.length+2}" style="padding:8px 28px;font-size:12px;color:var(--text3);font-style:italic">Belum ada akun</td></tr>`;
     } else {
       items.forEach((item,i)=>{
-        const awal = item.awal||0;
+
         html+=`<tr style="border-bottom:0.5px solid var(--border)"
           onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='#fff'">
           <td style="padding:10px 16px 10px 28px;font-size:13px;font-weight:400;color:var(--text);position:sticky;left:0;background:#fff">
             ${item.name}
             <button onclick="editAkunAset('${cat}',${i})" style="margin-left:6px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--text3)">✏️</button>
           </td>
-          <td style="text-align:right;padding:10px 16px;font-size:13px;color:var(--text);font-family:var(--mono)">${awal?'Rp '+fmt(awal):'—'}</td>
+
           ${months.map(m=>{
             const v = getAcctMonthVal(cat,item.name,m);
             const last = m===nowM;
