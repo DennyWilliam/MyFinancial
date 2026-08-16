@@ -1311,6 +1311,137 @@ function persist() {
 }
 
 // ═══════════════════════════════════════
+// BACKUP / RESTORE (local JSON file)
+// ═══════════════════════════════════════
+function exportAllData(){
+  const blob = new Blob([JSON.stringify(S, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `myfinancial-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importAllData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const parsed = JSON.parse(e.target.result);
+      if(!confirm('Ini akan MENGGANTI semua data saat ini dengan isi file backup. Lanjutkan?')) { event.target.value=''; return; }
+      Object.keys(parsed).forEach(k=>{ S[k] = parsed[k]; });
+      persist();
+      alert('✅ Data berhasil di-restore dari backup.');
+      location.reload();
+    }catch(err){
+      alert('❌ File backup tidak valid: '+err.message);
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function resetAll(){
+  localStorage.removeItem(STORE_KEY);
+  location.reload();
+}
+
+// ═══════════════════════════════════════
+// SETTINGS: API KEY / PIN / GITHUB CONFIG
+// ═══════════════════════════════════════
+function saveKey(){
+  const val = document.getElementById('apiIn').value.trim();
+  S.apiKey = val;
+  persist();
+  const st = document.getElementById('keyStatus');
+  if(st){ st.textContent = val ? '✅ API key tersimpan' : 'API key dikosongkan'; st.style.color = val ? 'var(--green)':'var(--text3)'; }
+}
+
+function changePin(){
+  const oldPin = document.getElementById('oldPin').value.trim();
+  const newPin = document.getElementById('newPin').value.trim();
+  const st = document.getElementById('pinChangeStatus');
+  const current = S.customPin || CORRECT_PIN;
+  if(oldPin !== current){ if(st){st.textContent='❌ PIN lama salah'; st.style.color='var(--red)';} return; }
+  if(!newPin || newPin.length<4){ if(st){st.textContent='PIN baru minimal 4 digit'; st.style.color='var(--red)';} return; }
+  S.customPin = newPin;
+  persist();
+  document.getElementById('oldPin').value=''; document.getElementById('newPin').value='';
+  if(st){ st.textContent='✅ PIN berhasil diubah'; st.style.color='var(--green)'; }
+}
+
+function updateGitHubUI(){
+  const status = document.getElementById('ghConfigStatus');
+  const lastSync = document.getElementById('ghLastSync');
+  const g = S.github || {};
+  if(status) status.textContent = g.token && g.repo ? `✅ Terhubung ke ${g.repo}` : 'Belum dikonfigurasi';
+  if(lastSync) lastSync.textContent = g.lastSync ? `Terakhir sync: ${new Date(g.lastSync).toLocaleString('id-ID')}` : '';
+}
+
+function saveGitHubConfig(){
+  S.github = S.github || {};
+  S.github.token  = document.getElementById('ghToken').value.trim();
+  S.github.repo   = document.getElementById('ghRepo').value.trim();
+  S.github.branch = document.getElementById('ghBranch').value.trim() || 'main';
+  persist();
+  updateGitHubUI();
+  alert('✅ Konfigurasi GitHub tersimpan di browser ini.');
+}
+
+async function syncToGitHub(){
+  const g = S.github || {};
+  const btn = document.getElementById('ghSyncBtn');
+  const icon = document.getElementById('ghSyncIcon');
+  if(!g.token || !g.repo){
+    alert('Isi dulu GitHub Personal Access Token & Repo di Settings → GitHub Sync.');
+    return;
+  }
+  if(icon) icon.textContent = '⏳';
+  try{
+    const [owner, repoName] = g.repo.split('/');
+    const branch = g.branch || 'main';
+    const path = 'myfinancial-backup.json';
+    const apiUrl = `https://api.github.com/repos/${owner}/${repoName}/contents/${path}`;
+    let sha = null;
+    try{
+      const getRes = await fetch(`${apiUrl}?ref=${branch}`, {
+        headers: { 'Authorization': `Bearer ${g.token}`, 'Accept': 'application/vnd.github+json' }
+      });
+      if(getRes.ok){ const j = await getRes.json(); sha = j.sha; }
+    }catch(e){}
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(S, null, 2))));
+    const putRes = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${g.token}`, 'Accept': 'application/vnd.github+json' },
+      body: JSON.stringify({ message: 'Backup dari My Financial - '+new Date().toISOString(), content, branch, sha: sha||undefined })
+    });
+    if(!putRes.ok){ const errBody = await putRes.text(); throw new Error(putRes.status+' '+errBody); }
+    S.github.lastSync = Date.now();
+    persist();
+    updateGitHubUI();
+    if(icon) icon.textContent = '✅';
+    setTimeout(()=>{ if(icon) icon.textContent='🐙'; }, 2500);
+  }catch(err){
+    if(icon) icon.textContent = '🐙';
+    alert('❌ Gagal sync ke GitHub: '+err.message);
+  }
+}
+
+// ═══════════════════════════════════════
+// SUPABASE CLOUD SYNC — not yet wired up.
+// Placeholder so buttons don't crash; real push/pull pending
+// (needs the myfinancial_data table schema confirmed first).
+// ═══════════════════════════════════════
+function manualSupaSync(){
+  alert('☁️ Sync Cloud (Supabase) belum aktif — gunakan tombol 💾 Backup untuk menyimpan file cadangan sementara ini.');
+}
+
+// ═══════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════
 const PAGE_TITLES = {
