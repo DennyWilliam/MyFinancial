@@ -1122,25 +1122,30 @@ window.addEventListener('load', function(){
 
 <!-- ADD ASET CATEGORY MODAL -->
 <div class="overlay" id="asetAddModal">
-  <div class="modal" style="width:400px">
-    <div class="modal-title">Tambah Item Baru</div>
-    <div class="modal-sub" id="asetAddSub">Tambah ke kategori aset</div>
-    <div style="display:flex;flex-direction:column;gap:10px">
+  <div class="modal" style="width:480px">
+    <div class="modal-title">➕ Tambah Akun Baru</div>
+    <div style="display:flex;flex-direction:column;gap:12px;padding:4px 0">
       <div class="fg">
         <label>Kategori Aset</label>
-        <select id="asetAddSec">
-          <option value="saham_idx">📊 Saham Indo</option>
-          <option value="saham_us">🌍 Saham Luar</option>
-          <option value="deposito">🏛️ Deposito</option>
-          <option value="crypto">₿ Crypto</option>
-          <option value="tunai">🏦 Tunai</option>
-          <option value="piutang">📤 Piutang</option>
-          <option value="utang">📥 Utang</option>
-        </select>
+        <select id="asetAddSec" style="width:100%"></select>
       </div>
-      <div class="fg"><label>Nama Akun</label><input type="text" id="asetAddName" placeholder="cth: IPOT, Pluang, Superbank..."></div>
-      <div class="fg"><label>Nilai Sekarang (Rp)</label><input type="number" id="asetAddVal" placeholder="0" min="0"></div>
-      <div class="fg"><label>Modal / Harga Beli (Rp)</label><input type="number" id="asetAddNote" placeholder="0" min="0"></div>
+      <div class="fg"><label>Nama Akun</label><input type="text" id="asetAddName" placeholder="cth: IPOT, Pluang, BCA 1147..."></div>
+      <div class="form-grid">
+        <div class="fg"><label>Modal / Harga Beli (Rp)</label><input type="number" id="asetAddNote" placeholder="0" min="0"></div>
+        <div class="fg"><label>Nilai Sekarang (Rp)</label><input type="number" id="asetAddVal" placeholder="0" min="0"></div>
+      </div>
+      <div class="fg">
+        <label>Bulan nilai ini (opsional, untuk isi mundur)</label>
+        <input type="month" id="asetAddMonth">
+      </div>
+      <div id="asetAddHistBox" style="display:none;border:1px solid var(--border);border-radius:8px;padding:10px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text2)">Isi nilai bulan-bulan sebelumnya (opsional)</div>
+        <div id="asetAddHistRows"></div>
+        <button class="btn btn-sm" onclick="addHistRow()" style="margin-top:6px;font-size:12px">+ Tambah bulan lain</button>
+      </div>
+      <button class="btn btn-sm" onclick="document.getElementById('asetAddHistBox').style.display=document.getElementById('asetAddHistBox').style.display==='none'?'block':'none'" style="font-size:12px;color:var(--text3)">
+        📅 Isi data bulan sebelumnya
+      </button>
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="closeModal('asetAddModal')">Batal</button>
@@ -2499,14 +2504,31 @@ function saveAsetAdd(){
   const name = document.getElementById('asetAddName').value.trim();
   const value = parseFloat(document.getElementById('asetAddVal').value)||0;
   const modal = parseFloat(document.getElementById('asetAddNote').value)||0;
+  const mainMonth = document.getElementById('asetAddMonth').value || today().slice(0,7);
+  if(!sec){ alert('Pilih kategori!'); return; }
   if(!name){ alert('Isi nama akun!'); return; }
-  const nowM = today().slice(0,7);
   if(!S.asetItems) S.asetItems={};
   if(!S.asetItems[sec]) S.asetItems[sec]=[];
   if(S.asetItems[sec].find(i=>i.name===name)){ alert('Nama sudah ada!'); return; }
-  S.asetItems[sec].push({name, value, modal, note:'', history: value>0?[{month:nowM,value}]:[]});
-  // if tunai, also add to rekening
-  if(sec==='tunai'){
+
+  // Build history from main value + historical rows
+  const history = [];
+  if(value>0) history.push({month:mainMonth, value});
+
+  // Collect historical rows
+  document.querySelectorAll('#asetAddHistRows > div').forEach(row=>{
+    const inputs = row.querySelectorAll('input');
+    const m = inputs[0].value;
+    const v = parseFloat(inputs[1].value)||0;
+    if(m&&v>0&&!history.find(h=>h.month===m)) history.push({month:m, value:v});
+  });
+  history.sort((a,b)=>a.month.localeCompare(b.month));
+
+  S.asetItems[sec].push({name, value, modal, note:'', history});
+
+  // If Rekening/Tunai category, also add to rekening list for Input Manual
+  const secLower = sec.toLowerCase();
+  if(secLower==='rekening'||secLower==='tunai'){
     if(!S.rekening) S.rekening=[];
     if(!S.rekening.find(r=>r.name===name))
       S.rekening.push({id:'rek_'+Date.now(), name, type:'bank', balance:value, note:''});
@@ -2590,12 +2612,22 @@ const ASET_DEFS = [
 
 function renderAsetRangkuman(){
   if(!S.asetItems) S.asetItems={};
-  ASET_DEFS.forEach(def=>{ if(!S.asetItems[def.key]) S.asetItems[def.key]=[]; });
+  // Use dynamic categories from Jenis Transaksi → Aset tab
+  const asetCats = getCatList('investment');
+  if(!asetCats.length){
+    document.getElementById('aset-rangkuman-kpi').innerHTML='';
+    document.getElementById('aset-rangkuman-table').innerHTML=
+      '<div style="padding:40px;text-align:center;color:var(--text3)">Belum ada kategori Aset.<br>Tambah dulu di <b>Jenis Transaksi → Aset</b></div>';
+    return;
+  }
+  asetCats.forEach(cat=>{ if(!S.asetItems[cat]) S.asetItems[cat]=[]; });
 
-  const totalAset=ASET_DEFS.filter(d=>!d.isLiability).reduce((a,d)=>
-    a+(S.asetItems[d.key]||[]).reduce((x,i)=>x+(i.value||0),0),0);
-  const totalUtang=(S.asetItems['utang']||[]).reduce((a,i)=>a+(i.value||0),0);
-  const netWorth=totalAset-totalUtang;
+  const utangCat = asetCats.find(c=>c.toLowerCase()==='utang')||'';
+  const totalUtang = utangCat ? (S.asetItems[utangCat]||[]).reduce((a,i)=>a+(i.value||0),0) : 0;
+  const totalAset = asetCats
+    .filter(c=>c.toLowerCase()!=='utang')
+    .reduce((a,cat)=>a+(S.asetItems[cat]||[]).reduce((x,i)=>x+(i.value||0),0),0);
+  const netWorth = totalAset - totalUtang;
 
   const kpiEl=document.getElementById('aset-rangkuman-kpi');
   if(kpiEl) kpiEl.innerHTML=`
@@ -2631,24 +2663,20 @@ function renderAsetRangkuman(){
     <th style="width:50px"></th>
   </tr></thead><tbody>`;
 
-  ASET_DEFS.forEach(def=>{
-    const items=S.asetItems[def.key]||[];
-    const isLiab=def.isLiability;
+  asetCats.forEach(cat=>{
+    const items=S.asetItems[cat]||[];
+    const isUtang=cat.toLowerCase()==='utang';
     const catTotals=months.map(m=>items.reduce((a,i)=>{const v=getVal(i,m);return a+(v||0);},0));
     const catModal=items.reduce((a,i)=>a+(i.modal||0),0);
     const catVal=items.reduce((a,i)=>a+(i.value||0),0);
     const catRet=catVal-catModal;
 
     html+=`<tr style="background:var(--bg3);border-top:1.5px solid var(--border2)">
-      <td style="padding:9px 16px;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px">
-        ${def.icon} ${def.label}
-        <button onclick="openTambahAkunCat('${def.key}','${def.label}')"
-          style="margin-left:8px;font-size:10px;padding:2px 7px;background:var(--bg4);border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text2)">
-          + Tambah
-        </button>
+      <td style="padding:9px 16px;font-size:12px;font-weight:700;color:${isUtang?'var(--red)':'var(--text2)'};text-transform:uppercase;letter-spacing:0.5px">
+        ${cat}
       </td>
       ${catTotals.map(v=>`<td style="text-align:right;padding:9px 14px;font-size:13px;font-weight:600;
-        color:${isLiab?'var(--red)':'var(--text)'}">${v?'Rp '+fmtS(v):'—'}</td>`).join('')}
+        color:${isUtang?'var(--red)':'var(--text)'}">${v?'Rp '+fmtS(v):'—'}</td>`).join('')}
       <td style="text-align:right;padding:9px 14px;font-size:12px;color:var(--text2)">${catModal?'Rp '+fmtS(catModal):'—'}</td>
       <td style="text-align:right;padding:9px 14px;font-size:12px;font-weight:600;
         color:${catRet>=0?'var(--green)':'var(--red)'}">${catModal?(catRet>=0?'+':'')+fmtS(catRet):'—'}</td>
@@ -2656,7 +2684,7 @@ function renderAsetRangkuman(){
     </tr>`;
 
     if(!items.length){
-      html+=`<tr><td colspan="${months.length+4}" style="padding:8px 28px;font-size:12px;color:var(--text3)">Belum ada akun</td></tr>`;
+      html+=`<tr><td colspan="${months.length+4}" style="padding:8px 28px;font-size:12px;color:var(--text3);font-style:italic">Belum ada akun</td></tr>`;
     } else {
       items.forEach((item,i)=>{
         const ret=(item.value||0)-(item.modal||0);
@@ -2667,7 +2695,7 @@ function renderAsetRangkuman(){
             const v=getVal(item,m);
             const last=m===nowM;
             return `<td style="text-align:right;padding:10px 14px;font-size:${last?'14':'13'}px;font-weight:${last?'600':'400'};cursor:pointer"
-              onclick="showAsetMonthDetail('${def.key}',${i},'${m}')">
+              onclick="showAsetMonthDetail('${cat}',${i},'${m}')">
               ${v!==null?'Rp '+fmtS(v):'<span style="color:var(--text3)">—</span>'}
             </td>`;
           }).join('')}
@@ -2675,7 +2703,7 @@ function renderAsetRangkuman(){
           <td style="text-align:right;padding:10px 14px;font-size:13px;font-weight:500;color:${ret>=0?'var(--green)':'var(--red)'}">
             ${item.modal?(ret>=0?'+':'')+fmtS(ret):'—'}</td>
           <td style="padding:10px 8px;text-align:center">
-            <button class="btn btn-sm" onclick="editAkunAset('${def.key}',${i})" style="padding:3px 7px;font-size:12px">✏️</button>
+            <button class="btn btn-sm" onclick="editAkunAset('${cat}',${i})" style="padding:3px 7px;font-size:12px">✏️</button>
           </td>
         </tr>`;
       });
@@ -2684,9 +2712,10 @@ function renderAsetRangkuman(){
 
   // Net Worth row
   const nwMonths=months.map(m=>{
-    const aset=ASET_DEFS.filter(d=>!d.isLiability).reduce((a,d)=>
-      a+(S.asetItems[d.key]||[]).reduce((x,i)=>{const v=getVal(i,m);return x+(v||0);},0),0);
-    const utang=(S.asetItems['utang']||[]).reduce((a,i)=>{const v=getVal(i,m);return a+(v||0);},0);
+    const aset=asetCats.filter(c=>c.toLowerCase()!=='utang')
+      .reduce((a,cat)=>a+(S.asetItems[cat]||[]).reduce((x,i)=>{const v=getVal(i,m);return x+(v||0);},0),0);
+    const utangCatItems=(S.asetItems[asetCats.find(c=>c.toLowerCase()==='utang')||'']||[]);
+    const utang=utangCatItems.reduce((a,i)=>{const v=getVal(i,m);return a+(v||0);},0);
     return aset-utang;
   });
   html+=`<tr style="background:rgba(79,142,247,0.07);border-top:2px solid var(--border2)">
@@ -2701,28 +2730,43 @@ function renderAsetRangkuman(){
   document.getElementById('aset-rangkuman-table').innerHTML=html;
 }
 
-function openTambahAkun(){
-  document.querySelector('#asetAddModal .modal-title').textContent='Tambah Akun Baru';
-  openModal('asetAddModal');
-}
-
-function openTambahAkunCat(key,label){
-  const cat=document.getElementById('asetAddSec');
-  if(cat) cat.value=key;
-  document.querySelector('#asetAddModal .modal-title').textContent='Tambah — '+label;
+function openTambahAkun(preselect){
+  // Populate category dropdown from Jenis Transaksi → Aset
+  const cats = getCatList('investment');
+  const sel = document.getElementById('asetAddSec');
+  sel.innerHTML = cats.length
+    ? cats.map(c=>`<option value="${c}">${c}</option>`).join('')
+    : '<option value="">-- Tambah kategori di Jenis Transaksi dulu --</option>';
+  if(preselect && cats.includes(preselect)) sel.value = preselect;
   document.getElementById('asetAddName').value='';
   document.getElementById('asetAddVal').value='';
   document.getElementById('asetAddNote').value='';
+  document.getElementById('asetAddMonth').value=today().slice(0,7);
+  document.getElementById('asetAddHistBox').style.display='none';
+  document.getElementById('asetAddHistRows').innerHTML='';
   openModal('asetAddModal');
 }
 
-function editAkunAset(key,idx){
-  const item=(S.asetItems[key]||[])[idx];
+function openTambahAkunCat(cat){
+  openTambahAkun(cat);
+}
+
+function addHistRow(){
+  const box = document.getElementById('asetAddHistRows');
+  const row = document.createElement('div');
+  row.style = 'display:grid;grid-template-columns:1fr 1fr 24px;gap:6px;margin-bottom:6px;align-items:center';
+  row.innerHTML = `<input type="month" style="font-size:13px"><input type="number" placeholder="Nilai (Rp)" min="0" style="font-size:13px">
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:16px">×</button>`;
+  box.appendChild(row);
+}
+
+function editAkunAset(cat,idx){
+  const item=(S.asetItems[cat]||[])[idx];
   if(!item) return;
-  document.getElementById('asetItemSec').value=key;
+  document.getElementById('asetItemSec').value=cat;
   document.getElementById('asetItemIdx').value=idx;
-  document.getElementById('asetItemTitle').textContent='Edit Akun';
-  document.getElementById('asetItemSub').textContent=item.name;
+  document.getElementById('asetItemTitle').textContent='Edit — '+item.name;
+  document.getElementById('asetItemSub').textContent=cat;
   document.getElementById('asetItemName').value=item.name||'';
   document.getElementById('asetItemVal').value=item.value||0;
   document.getElementById('asetItemNote').value=item.modal||0;
