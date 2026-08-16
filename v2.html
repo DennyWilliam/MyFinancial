@@ -1306,8 +1306,11 @@ function loadState() {
   if (typeof supaLoad === 'function') supaLoad();
 }
 
+let _supaSaveTimer = null;
 function persist() {
   localStorage.setItem(STORE_KEY, JSON.stringify(S));
+  clearTimeout(_supaSaveTimer);
+  _supaSaveTimer = setTimeout(()=>{ supaSave(); }, 1500);
 }
 
 // ═══════════════════════════════════════
@@ -1437,8 +1440,70 @@ async function syncToGitHub(){
 // Placeholder so buttons don't crash; real push/pull pending
 // (needs the myfinancial_data table schema confirmed first).
 // ═══════════════════════════════════════
+// ═══════════════════════════════════════
+// SUPABASE CLOUD SYNC
+// Table: myfinancial_data — single row, id='main', data=jsonb, updated_at=timestamp
+// ═══════════════════════════════════════
+function setSyncBadge(state, label){
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncTxt');
+  if(dot) dot.className = 'sync-dot' + (state ? ' '+state : '');
+  if(txt) txt.textContent = label;
+}
+
+async function supaSave(){
+  setSyncBadge('busy', 'Data: Menyimpan...');
+  try{
+    const res = await fetch(`${SUPA_URL}/rest/v1/myfinancial_data?on_conflict=id`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify({ id:'main', data:S, updated_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(res.status+' '+(await res.text()));
+    setSyncBadge('ok', 'Data: Cloud ✓');
+    return true;
+  }catch(err){
+    console.error('supaSave failed', err);
+    setSyncBadge('err', 'Data: Gagal sync');
+    return false;
+  }
+}
+
+async function supaLoad(){
+  setSyncBadge('busy', 'Data: Cek cloud...');
+  try{
+    const res = await fetch(`${SUPA_URL}/rest/v1/myfinancial_data?id=eq.main&select=data,updated_at`, {
+      headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` }
+    });
+    if(!res.ok) throw new Error(res.status+' '+(await res.text()));
+    const rows = await res.json();
+    if(!rows.length){ setSyncBadge('', 'Data: Lokal (belum ada di cloud)'); return; }
+    const cloud = rows[0].data || {};
+    const localTxCount = (S.transactions||[]).length;
+    const cloudTxCount = (cloud.transactions||[]).length;
+    if(cloudTxCount >= localTxCount && cloudTxCount > 0){
+      Object.keys(cloud).forEach(k=>{ S[k] = cloud[k]; });
+      localStorage.setItem(STORE_KEY, JSON.stringify(S));
+      setSyncBadge('ok', 'Data: Cloud ✓');
+      const activePage = document.querySelector('.page.active');
+      if(activePage) go(activePage.id.replace('page-',''), null);
+      updateGitHubUI();
+    } else {
+      setSyncBadge('ok', 'Data: Lokal lebih baru');
+    }
+  }catch(err){
+    console.error('supaLoad failed', err);
+    setSyncBadge('err', 'Data: Gagal cek cloud');
+  }
+}
+
 function manualSupaSync(){
-  alert('☁️ Sync Cloud (Supabase) belum aktif — gunakan tombol 💾 Backup untuk menyimpan file cadangan sementara ini.');
+  supaSave();
 }
 
 // ═══════════════════════════════════════
