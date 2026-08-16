@@ -598,7 +598,7 @@ window.addEventListener('load', function(){
               <div style="padding:16px">
                 <div class="form-grid">
                   <div class="fg"><label>Tanggal</label><input type="date" id="mDate"></div>
-                  <div class="fg"><label>Tipe</label><select id="mType" onchange="updateCats()"><option value="expense">Outcome</option><option value="income">Income</option><option value="investment">Investasi</option></select></div>
+                  <div class="fg"><label>Tipe</label><select id="mType" onchange="updateCats()"><option value="expense">Outcome</option><option value="income">Income</option><option value="investment">Aset</option></select></div>
                   <div class="fg full"><label>Deskripsi</label><input type="text" id="mDesc" placeholder="cth: Indomaret, Grab, Gaji..."></div>
                   <div class="fg"><label>Kategori</label><select id="mCat"></select></div>
                   <div class="fg"><label>Jumlah (Rp)</label><input type="number" id="mAmt" placeholder="0" min="0"></div>
@@ -623,7 +623,7 @@ window.addEventListener('load', function(){
       <div class="page" id="page-transaksi">
         <div class="sec-head"><div class="sec-title">Semua Transaksi</div></div>
         <div class="filter-row">
-          <select id="fType" onchange="renderTx()"><option value="">Semua tipe</option><option value="income">Income</option><option value="expense">Outcome</option><option value="investment">Investasi</option></select>
+          <select id="fType" onchange="renderTx()"><option value="">Semua tipe</option><option value="income">Income</option><option value="expense">Outcome</option><option value="investment">Aset</option></select>
           <select id="fMonth" onchange="renderTx()"></select>
           <select id="fCat" onchange="renderTx()"><option value="">Semua kategori</option></select>
           <input type="text" id="fSearch" placeholder="🔍 Cari deskripsi..." oninput="renderTx()" style="flex:1">
@@ -776,7 +776,7 @@ window.addEventListener('load', function(){
                     <select id="newCatType">
                       <option value="expense">Outcome</option>
                       <option value="income">Income</option>
-                      <option value="investment">Investasi</option>
+                      <option value="investment">Aset</option>
                     </select>
                   </div>
                   <div class="fg full">
@@ -805,7 +805,7 @@ window.addEventListener('load', function(){
                 <div style="display:flex;gap:6px">
                   <button class="btn btn-sm" onclick="filterKatType('expense')" id="kfexp" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5">Outcome</button>
                   <button class="btn btn-sm" onclick="filterKatType('income')" id="kfinc" style="background:#dcfce7;color:#059669;border-color:#86efac">Income</button>
-                  <button class="btn btn-sm" onclick="filterKatType('investment')" id="kfinv" style="background:#ede9fe;color:#7c3aed;border-color:#c4b5fd">Investasi</button>
+                  <button class="btn btn-sm" onclick="filterKatType('investment')" id="kfinv" style="background:#ede9fe;color:#7c3aed;border-color:#c4b5fd">Aset</button>
                 </div>
               </div>
               <div id="catListWrap" style="max-height:520px;overflow-y:auto">
@@ -2115,7 +2115,7 @@ function showParsed(items){
       <select onchange="parsedBuf[${i}].type=this.value;updateParsedCats(${i},this.value)">
         <option value="expense" ${item.type==='expense'?'selected':''}>Outcome</option>
         <option value="income" ${item.type==='income'?'selected':''}>Income</option>
-        <option value="investment" ${item.type==='investment'?'selected':''}>Investasi</option>
+        <option value="investment" ${item.type==='investment'?'selected':''}>Aset</option>
       </select>
       <select id="pr_cat_${i}" onchange="parsedBuf[${i}].category=this.value">
         ${getCatList(item.type||'expense').map(c=>`<option ${c===item.category?'selected':''}>${c}</option>`).join('')}
@@ -2492,6 +2492,70 @@ function deleteTransfer(idx){
   S.transfers.splice(idx,1);
   persist(); renderTransferList();
 }
+
+// ── Aset Item CRUD ─────────────────────────────────────────────
+function saveAsetAdd(){
+  const sec = document.getElementById('asetAddSec').value;
+  const name = document.getElementById('asetAddName').value.trim();
+  const value = parseFloat(document.getElementById('asetAddVal').value)||0;
+  const modal = parseFloat(document.getElementById('asetAddNote').value)||0;
+  if(!name){ alert('Isi nama akun!'); return; }
+  const nowM = today().slice(0,7);
+  if(!S.asetItems) S.asetItems={};
+  if(!S.asetItems[sec]) S.asetItems[sec]=[];
+  if(S.asetItems[sec].find(i=>i.name===name)){ alert('Nama sudah ada!'); return; }
+  S.asetItems[sec].push({name, value, modal, note:'', history: value>0?[{month:nowM,value}]:[]});
+  // if tunai, also add to rekening
+  if(sec==='tunai'){
+    if(!S.rekening) S.rekening=[];
+    if(!S.rekening.find(r=>r.name===name))
+      S.rekening.push({id:'rek_'+Date.now(), name, type:'bank', balance:value, note:''});
+  }
+  persist();
+  closeModal('asetAddModal');
+  renderAsetRangkuman();
+}
+
+function saveAsetItem(){
+  const sec = document.getElementById('asetItemSec').value;
+  const idx = parseInt(document.getElementById('asetItemIdx').value);
+  const name = document.getElementById('asetItemName').value.trim();
+  const value = parseFloat(document.getElementById('asetItemVal').value)||0;
+  const modal = parseFloat(document.getElementById('asetItemNote').value)||0;
+  if(!name){ alert('Isi nama!'); return; }
+  const item = S.asetItems[sec][idx];
+  const nowM = today().slice(0,7);
+  if(!item.history) item.history=[];
+  const h = item.history.find(x=>x.month===nowM);
+  if(h) h.value=value; else item.history.push({month:nowM, value});
+  const oldName = item.name;
+  item.name=name; item.value=value; item.modal=modal;
+  // cascade rename
+  if(oldName!==name){
+    S.transactions.forEach(t=>{ if(t.account===oldName) t.account=name; });
+    if(sec==='tunai'&&S.rekening){
+      const r=S.rekening.find(r=>r.name===oldName);
+      if(r){ r.name=name; r.balance=value; }
+    }
+  }
+  persist();
+  closeModal('asetItemModal');
+  renderAsetRangkuman();
+}
+
+function deleteAsetItem(){
+  const sec = document.getElementById('asetItemSec').value;
+  const idx = parseInt(document.getElementById('asetItemIdx').value);
+  const item = (S.asetItems[sec]||[])[idx];
+  if(!item||!confirm('Hapus "'+item.name+'"?')) return;
+  S.asetItems[sec].splice(idx,1);
+  if(sec==='tunai'&&S.rekening)
+    S.rekening = S.rekening.filter(r=>r.name!==item.name);
+  persist();
+  closeModal('asetItemModal');
+  renderAsetRangkuman();
+}
+
 // ═══════════════════════════════════════
 // PIN AUTH
 // ═══════════════════════════════════════
@@ -2514,6 +2578,16 @@ function checkPin(){
 // ═══════════════════════════════════════
 // ASET RANGKUMAN
 // ═══════════════════════════════════════
+const ASET_DEFS = [
+  {key:'saham_idx', label:'Saham Indo',  icon:'📊'},
+  {key:'saham_us',  label:'Saham Luar',  icon:'🌍'},
+  {key:'deposito',  label:'Deposito',    icon:'🏛️'},
+  {key:'crypto',    label:'Crypto',      icon:'₿'},
+  {key:'tunai',     label:'Tunai',       icon:'🏦'},
+  {key:'piutang',   label:'Piutang',     icon:'📤'},
+  {key:'utang',     label:'Utang',       icon:'📥', isLiability:true},
+];
+
 function renderAsetRangkuman(){
   if(!S.asetItems) S.asetItems={};
   ASET_DEFS.forEach(def=>{ if(!S.asetItems[def.key]) S.asetItems[def.key]=[]; });
