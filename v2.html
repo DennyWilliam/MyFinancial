@@ -749,8 +749,40 @@ window.addEventListener('load', function(){
             <div class="sec-title">Rangkuman Aset</div>
             <div class="sec-sub">Semua instrumen per kategori — klik nilai untuk detail</div>
           </div>
-          <button class="btn btn-primary" onclick="openTambahAkun()">➕ Tambah Akun</button>
+          <button class="btn btn-primary" onclick="toggleTambahAkunForm()">➕ Tambah Akun</button>
         </div>
+
+        <!-- Inline Tambah Akun Form -->
+        <div id="tambahAkunForm" style="display:none;background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:14px">➕ Tambah Akun Baru</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="fg">
+              <label>Kategori Aset</label>
+              <select id="inAddSec" style="width:100%"></select>
+            </div>
+            <div class="fg">
+              <label>Nama Akun</label>
+              <input type="text" id="inAddName" placeholder="cth: IPOT, BCA 1147...">
+            </div>
+            <div class="fg">
+              <label>Modal / Harga Beli (Rp)</label>
+              <input type="number" id="inAddModal" placeholder="0" min="0">
+            </div>
+            <div class="fg">
+              <label>Nilai Sekarang (Rp)</label>
+              <input type="number" id="inAddVal" placeholder="0" min="0">
+            </div>
+            <div class="fg">
+              <label>Tanggal Nilai</label>
+              <input type="date" id="inAddDate">
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="btn btn-primary" onclick="saveInlineAset()">✅ Tambah</button>
+            <button class="btn" onclick="toggleTambahAkunForm()">Batal</button>
+          </div>
+        </div>
+
         <div id="aset-rangkuman-kpi" class="kpi-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-bottom:18px"></div>
         <div id="aset-rangkuman-table"></div>
       </div>
@@ -2575,6 +2607,60 @@ function deleteAsetItem(){
   renderAsetRangkuman();
 }
 
+
+
+function toggleTambahAkunForm(){
+  const form = document.getElementById('tambahAkunForm');
+  const isHidden = form.style.display === 'none';
+  if(isHidden){
+    // Populate category dropdown
+    const cats = getCatList('investment');
+    const sel = document.getElementById('inAddSec');
+    sel.innerHTML = cats.length
+      ? cats.map(c=>`<option value="${c}">${c}</option>`).join('')
+      : '<option value="">Tambah kategori di Jenis Transaksi dulu</option>';
+    document.getElementById('inAddName').value = '';
+    document.getElementById('inAddModal').value = '';
+    document.getElementById('inAddVal').value = '';
+    document.getElementById('inAddDate').value = today();
+    form.style.display = 'block';
+    document.getElementById('inAddName').focus();
+  } else {
+    form.style.display = 'none';
+  }
+}
+
+function saveInlineAset(){
+  const cat   = document.getElementById('inAddSec').value;
+  const name  = document.getElementById('inAddName').value.trim();
+  const modal = parseFloat(document.getElementById('inAddModal').value)||0;
+  const value = parseFloat(document.getElementById('inAddVal').value)||0;
+  const date  = document.getElementById('inAddDate').value || today();
+  const month = date.slice(0,7);
+
+  if(!cat){ alert('Pilih kategori!'); return; }
+  if(!name){ alert('Isi nama akun!'); return; }
+
+  if(!S.asetItems) S.asetItems = {};
+  if(!S.asetItems[cat]) S.asetItems[cat] = [];
+  if(S.asetItems[cat].find(i=>i.name===name)){
+    alert('Nama sudah ada di kategori ini!'); return;
+  }
+
+  const history = value > 0 ? [{month, value}] : [];
+  S.asetItems[cat].push({name, value, modal, note:'', history});
+
+  // If Rekening category - also add to rekening list
+  if(cat.toLowerCase()==='rekening'||cat.toLowerCase()==='tunai'){
+    if(!S.rekening) S.rekening = [];
+    if(!S.rekening.find(r=>r.name===name))
+      S.rekening.push({id:'rek_'+Date.now(), name, type:'bank', balance:value, note:''});
+  }
+
+  persist();
+  document.getElementById('tambahAkunForm').style.display = 'none';
+  renderAsetRangkuman();
+}
 
 // ── Modal helpers ──────────────────────────────────────────────
 function openModal(id){
