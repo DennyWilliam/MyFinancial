@@ -2706,7 +2706,6 @@ const ASET_DEFS = [
 
 function renderAsetRangkuman(){
   if(!S.asetItems) S.asetItems={};
-  // Use dynamic categories from Jenis Transaksi → Aset tab
   const asetCats = getCatList('investment');
   if(!asetCats.length){
     document.getElementById('aset-rangkuman-kpi').innerHTML='';
@@ -2716,86 +2715,111 @@ function renderAsetRangkuman(){
   }
   asetCats.forEach(cat=>{ if(!S.asetItems[cat]) S.asetItems[cat]=[]; });
 
-  const utangCat = asetCats.find(c=>c.toLowerCase()==='utang')||'';
-  const totalUtang = utangCat ? (S.asetItems[utangCat]||[]).reduce((a,i)=>a+(i.value||0),0) : 0;
-  const totalAset = asetCats
-    .filter(c=>c.toLowerCase()!=='utang')
+  // Full number format: Rp 10.000.000
+  function fmtFull(n){ return 'Rp '+Math.round(n||0).toLocaleString('id-ID'); }
+
+  // ── KPI ──
+  const isUtangCat = c => c.toLowerCase().includes('utang') || c.toLowerCase().includes('hutang');
+  const totalHutang = asetCats.filter(isUtangCat)
     .reduce((a,cat)=>a+(S.asetItems[cat]||[]).reduce((x,i)=>x+(i.value||0),0),0);
-  const netWorth = totalAset - totalUtang;
+  const totalAset = asetCats.filter(c=>!isUtangCat(c))
+    .reduce((a,cat)=>a+(S.asetItems[cat]||[]).reduce((x,i)=>x+(i.value||0),0),0);
+  const totalBersih = totalAset - totalHutang;
 
   const kpiEl=document.getElementById('aset-rangkuman-kpi');
   if(kpiEl) kpiEl.innerHTML=`
-    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">💰 TOTAL ASET</div>
-      <div class="kpi-val" style="font-size:18px">Rp ${fmtS(totalAset)}</div></div>
-    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">📥 UTANG</div>
-      <div class="kpi-val" style="font-size:18px">Rp ${fmtS(totalUtang)}</div></div>
+    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">💰 ASET</div>
+      <div class="kpi-val" style="font-size:17px">${fmtFull(totalAset)}</div></div>
+    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">📥 HUTANG</div>
+      <div class="kpi-val" style="font-size:17px">${fmtFull(totalHutang)}</div></div>
     <div class="kpi" style="grid-column:span 2;border:1px solid var(--border2)">
-      <div class="kpi-lbl" style="font-size:10px">🏆 NET WORTH</div>
-      <div class="kpi-val" style="font-size:20px">Rp ${fmtS(netWorth)}</div></div>`;
+      <div class="kpi-lbl" style="font-size:10px">🏆 TOTAL ASET</div>
+      <div class="kpi-val" style="font-size:19px">${fmtFull(totalBersih)}</div></div>`;
 
+  // ── Collect months ──
   const allMonths=[...new Set(
-    ASET_DEFS.flatMap(def=>(S.asetItems[def.key]||[]).flatMap(i=>(i.history||[]).map(h=>h.month)))
+    asetCats.flatMap(cat=>(S.asetItems[cat]||[]).flatMap(i=>(i.history||[]).map(h=>h.month)))
   )].sort();
   const nowM=today().slice(0,7);
   if(!allMonths.includes(nowM)) allMonths.push(nowM);
-  const months=allMonths.slice(-6);
+  const months=allMonths; // show all months, newest last
 
-  function fmtM(m){ return new Date(m+'-01').toLocaleDateString('id-ID',{month:'short',year:'2-digit'}); }
+  function fmtM(m){ return new Date(m+'-01').toLocaleDateString('id-ID',{month:'2-digit',year:'2-digit'}); }
   function getVal(item,month){
     const h=(item.history||[]).find(x=>x.month===month);
     return h?h.value:(month===nowM?(item.value||0):null);
   }
 
-  let html=`<div style="background:#fff;border:0.5px solid var(--border);border-radius:12px;overflow:hidden">
-  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:400px">
-  <thead><tr style="background:var(--bg3);border-bottom:1px solid var(--border)">
-    <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--text3);min-width:160px">Kategori / Akun</th>
-    ${months.map(m=>`<th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;
-      color:${m===nowM?'var(--accent)':'var(--text3)'};min-width:100px">${fmtM(m)}</th>`).join('')}
-    <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3)">Modal</th>
-    <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3)">Return</th>
-    <th style="width:50px"></th>
-  </tr></thead><tbody>`;
+  // ── Table ──
+  let html=`<div style="border:0.5px solid var(--border);border-radius:12px;overflow:auto;max-height:70vh">
+  <table style="width:100%;border-collapse:collapse;min-width:${300+months.length*130}px">
+  <thead>
+    <tr style="background:var(--bg3)">
+      <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--text3);
+        position:sticky;left:0;top:0;background:var(--bg3);z-index:3;min-width:180px;border-bottom:1px solid var(--border2)">
+        KATEGORI / AKUN
+      </th>
+      ${months.map(m=>`<th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;
+        color:${m===nowM?'var(--accent)':'var(--text3)'};
+        position:sticky;top:0;background:var(--bg3);z-index:2;min-width:130px;border-bottom:1px solid var(--border2);white-space:nowrap">
+        ${fmtM(m)}
+      </th>`).join('')}
+      <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3);
+        position:sticky;top:0;background:var(--bg3);z-index:2;border-bottom:1px solid var(--border2);min-width:120px">MODAL</th>
+      <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3);
+        position:sticky;top:0;background:var(--bg3);z-index:2;border-bottom:1px solid var(--border2);min-width:120px">RETURN</th>
+      <th style="position:sticky;top:0;background:var(--bg3);z-index:2;border-bottom:1px solid var(--border2);width:36px"></th>
+    </tr>
+  </thead>
+  <tbody>`;
 
   asetCats.forEach(cat=>{
     const items=S.asetItems[cat]||[];
-    const isUtang=cat.toLowerCase()==='utang';
+    const isHutang=isUtangCat(cat);
     const catTotals=months.map(m=>items.reduce((a,i)=>{const v=getVal(i,m);return a+(v||0);},0));
     const catModal=items.reduce((a,i)=>a+(i.modal||0),0);
     const catVal=items.reduce((a,i)=>a+(i.value||0),0);
     const catRet=catVal-catModal;
 
+    // Category header row - RED text, sticky left
     html+=`<tr style="background:var(--bg3);border-top:1.5px solid var(--border2)">
-      <td style="padding:9px 16px;font-size:12px;font-weight:700;color:${isUtang?'var(--red)':'var(--text2)'};text-transform:uppercase;letter-spacing:0.5px">
+      <td style="padding:9px 16px;font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.5px;
+        position:sticky;left:0;background:var(--bg3);z-index:1">
         ${cat}
       </td>
-      ${catTotals.map(v=>`<td style="text-align:right;padding:9px 14px;font-size:13px;font-weight:600;
-        color:${isUtang?'var(--red)':'var(--text)'}">${v?'Rp '+fmtS(v):'—'}</td>`).join('')}
-      <td style="text-align:right;padding:9px 14px;font-size:12px;color:var(--text2)">${catModal?'Rp '+fmtS(catModal):'—'}</td>
+      ${catTotals.map(v=>`<td style="text-align:right;padding:9px 14px;font-size:13px;font-weight:600;color:var(--red)">
+        ${v?fmtFull(v):'—'}</td>`).join('')}
+      <td style="text-align:right;padding:9px 14px;font-size:12px;color:var(--red)">${catModal?fmtFull(catModal):'—'}</td>
       <td style="text-align:right;padding:9px 14px;font-size:12px;font-weight:600;
-        color:${catRet>=0?'var(--green)':'var(--red)'}">${catModal?(catRet>=0?'+':'')+fmtS(catRet):'—'}</td>
+        color:${catRet>=0?'var(--green)':'var(--red)'}">${catModal?(catRet>=0?'+':'')+fmtFull(catRet):'—'}</td>
       <td></td>
     </tr>`;
 
     if(!items.length){
-      html+=`<tr><td colspan="${months.length+4}" style="padding:8px 28px;font-size:12px;color:var(--text3);font-style:italic">Belum ada akun</td></tr>`;
+      html+=`<tr><td colspan="${months.length+4}" style="padding:7px 28px;font-size:12px;color:var(--text3);font-style:italic">Belum ada akun</td></tr>`;
     } else {
       items.forEach((item,i)=>{
         const ret=(item.value||0)-(item.modal||0);
+        // Account rows - BLACK text, sticky left
         html+=`<tr style="border-bottom:0.5px solid var(--border)"
-          onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
-          <td style="padding:10px 16px 10px 28px;font-size:13.5px;font-weight:500">${item.name}</td>
+          onmouseenter="this.style.background='#f8f9fb'" onmouseleave="this.style.background=''">
+          <td style="padding:10px 16px 10px 28px;font-size:13px;font-weight:500;color:var(--text);
+            position:sticky;left:0;background:#fff;z-index:1">
+            ${item.name}
+          </td>
           ${months.map(m=>{
             const v=getVal(item,m);
             const last=m===nowM;
-            return `<td style="text-align:right;padding:10px 14px;font-size:${last?'14':'13'}px;font-weight:${last?'600':'400'};cursor:pointer"
+            return `<td style="text-align:right;padding:10px 14px;font-size:13px;color:var(--text);
+              font-weight:${last?'600':'400'};cursor:pointer"
               onclick="showAsetMonthDetail('${cat}',${i},'${m}')">
-              ${v!==null?'Rp '+fmtS(v):'<span style="color:var(--text3)">—</span>'}
+              ${v!==null?fmtFull(v):'<span style="color:var(--text3)">—</span>'}
             </td>`;
           }).join('')}
-          <td style="text-align:right;padding:10px 14px;font-size:13px;color:var(--text2)">${item.modal?'Rp '+fmtS(item.modal):'—'}</td>
-          <td style="text-align:right;padding:10px 14px;font-size:13px;font-weight:500;color:${ret>=0?'var(--green)':'var(--red)'}">
-            ${item.modal?(ret>=0?'+':'')+fmtS(ret):'—'}</td>
+          <td style="text-align:right;padding:10px 14px;font-size:13px;color:var(--text2)">${item.modal?fmtFull(item.modal):'—'}</td>
+          <td style="text-align:right;padding:10px 14px;font-size:13px;font-weight:500;
+            color:${ret>=0?'var(--green)':'var(--red)'}">
+            ${item.modal?(ret>=0?'+':'')+fmtFull(ret):'—'}</td>
           <td style="padding:10px 8px;text-align:center">
             <button class="btn btn-sm" onclick="editAkunAset('${cat}',${i})" style="padding:3px 7px;font-size:12px">✏️</button>
           </td>
@@ -2804,22 +2828,8 @@ function renderAsetRangkuman(){
     }
   });
 
-  // Net Worth row
-  const nwMonths=months.map(m=>{
-    const aset=asetCats.filter(c=>c.toLowerCase()!=='utang')
-      .reduce((a,cat)=>a+(S.asetItems[cat]||[]).reduce((x,i)=>{const v=getVal(i,m);return x+(v||0);},0),0);
-    const utangCatItems=(S.asetItems[asetCats.find(c=>c.toLowerCase()==='utang')||'']||[]);
-    const utang=utangCatItems.reduce((a,i)=>{const v=getVal(i,m);return a+(v||0);},0);
-    return aset-utang;
-  });
-  html+=`<tr style="background:rgba(79,142,247,0.07);border-top:2px solid var(--border2)">
-    <td style="padding:12px 16px;font-size:14px;font-weight:700;color:var(--accent)">Net Worth</td>
-    ${nwMonths.map((v,i)=>`<td style="text-align:right;padding:12px 14px;font-size:${i===months.length-1?'15':'14'}px;
-      font-weight:${i===months.length-1?'700':'500'};color:var(--accent)">Rp ${fmtS(v)}</td>`).join('')}
-    <td colspan="3"></td>
-  </tr>`;
-
-  html+=`</tbody></table></div></div>
+  // NO Net Worth row in table (shown in KPI above)
+  html+=`</tbody></table></div>
   <div id="aset-detail-panel" style="display:none;margin-top:14px"></div>`;
   document.getElementById('aset-rangkuman-table').innerHTML=html;
 }
