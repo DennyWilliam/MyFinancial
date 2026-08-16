@@ -1350,7 +1350,7 @@ function go(name, el) {
   if (name === 'kategori')     { katFilter='expense'; setTimeout(renderKategori, 50); }
   if (name === 'jenisaset')    setTimeout(renderJenisAset, 50);
   if (name === 'aset')         setTimeout(renderAset, 50);
-  if (name === 'transfer')     setTimeout(renderTransferPage, 50);
+  if (name === 'transfer')     setTimeout(initTransfer, 50);
   if (name === 'aset-rangkuman') setTimeout(renderAsetRangkuman, 50);
   if (name === 'saham-idx')    setTimeout(()=>renderAsetPage('saham_idx','Saham Indo','📊'), 50);
   if (name === 'saham-us')     setTimeout(()=>renderAsetPage('saham_us','Saham Luar','🌍'), 50);
@@ -2627,7 +2627,8 @@ function toggleTambahAkunForm(){
 function saveInlineAset(){
   const cat   = document.getElementById('inAddSec').value;
   const name  = document.getElementById('inAddName').value.trim();
-  const awal  = parseFloat(document.getElementById('inAddModal').value)||0;
+  const modal = parseFloat(document.getElementById('inAddModal').value)||0;
+  const nilai = parseFloat(document.getElementById('inAddVal').value)||0;
   const date  = document.getElementById('inAddDate').value || today();
 
   if(!cat){ alert('Pilih kategori!'); return; }
@@ -2639,10 +2640,14 @@ function saveInlineAset(){
     alert('Nama sudah ada di kategori ini!'); return;
   }
 
+  // "Nilai Sekarang" is what should show up in the Rangkuman table; fall back
+  // to "Modal" if the user only filled that one in (e.g. no separate current value yet).
+  const awal = nilai>0 ? nilai : modal;
+
   const month = date.slice(0,7);
   const monthValues = {};
   if(awal>0) monthValues[month] = awal;
-  S.asetItems[cat].push({name, monthValues, note:''});
+  S.asetItems[cat].push({name, monthValues, modal, note:''});
 
   // If Rekening - also sync to rekening list for Input Manual dropdown
   if(cat.toLowerCase()==='rekening'||cat.toLowerCase()==='tunai'){
