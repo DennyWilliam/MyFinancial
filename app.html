@@ -1145,35 +1145,7 @@ window.addEventListener('load', function(){
   </div>
 </div>
 
-<!-- PIN OVERLAY -->
-<div id="pinOverlay" style="
-  position:fixed;inset:0;background:#f5f6f8;
-  display:flex;align-items:center;justify-content:center;
-  z-index:9999;flex-direction:column;gap:20px;
-">
-  <div style="text-align:center;margin-bottom:8px">
-    <div style="font-size:32px;margin-bottom:8px">💰</div>
-    <div style="font-size:20px;font-weight:800;color:#111827;letter-spacing:-0.5px">My Financial</div>
-    <div style="font-size:12px;color:#9ca3af;margin-top:4px">by Denny · GII Commerce</div>
-  </div>
-  <div style="background:#fff;border:1px solid #e4e6eb;border-radius:14px;padding:28px 32px;width:320px;box-shadow:0 4px 24px rgba(0,0,0,0.08)">
-    <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:6px">Masukkan PIN</div>
-    <div style="font-size:12px;color:#9ca3af;margin-bottom:16px">Akses hanya untuk Denny & Lauren</div>
-    <input type="password" id="pinInput" maxlength="6" placeholder="••••••"
-      style="width:100%;padding:12px 14px;font-size:20px;letter-spacing:8px;text-align:center;
-        border:1px solid #e4e6eb;border-radius:8px;outline:none;font-family:monospace;
-        background:#f8f9fb;color:#111827"
-      onkeydown="if(event.key==='Enter')checkPin()"
-      oninput="this.style.borderColor='#e4e6eb';document.getElementById('pinErr').textContent=''">
-    <div id="pinErr" style="color:#dc2626;font-size:12px;margin-top:8px;min-height:16px;text-align:center"></div>
-    <button onclick="checkPin()" style="
-      width:100%;margin-top:12px;padding:12px;
-      background:#2563eb;color:#fff;border:none;border-radius:8px;
-      font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;
-    ">Masuk</button>
-  </div>
-  <div style="font-size:11px;color:#d1d5db">Lupa PIN? Hubungi Denny</div>
-</div>
+<!-- PIN disabled --></div>
 
 <script>
 // ═══════════════════════════════════════
@@ -5026,6 +4998,16 @@ function saveTransfer(){
   document.getElementById('trNote').value='';
   persist();
   renderTransferList();
+}
+
+function checkAutoAuth(){
+  document.getElementById('pinOverlay').style.display='none';
+  loadState();
+}
+
+function checkPin(){
+  document.getElementById('pinOverlay').style.display='none';
+  loadState();
 }
 
 >
