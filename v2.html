@@ -2741,8 +2741,8 @@ function renderAsetRangkuman(){
     const baseVal = entries[lastMonth];
     // Add net transfers from lastMonth+1 to this month
     const transfers = S.transfers||[];
-    const inflow  = transfers.filter(t=>t.toName===acctName   && t.date.slice(0,7)>lastMonth && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
-    const outflow = transfers.filter(t=>t.fromName===acctName && t.date.slice(0,7)>lastMonth && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
+    const inflow  = transfers.filter(t=>t.toName===acctName   && t.date.slice(0,7)>=lastMonth && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
+    const outflow = transfers.filter(t=>t.fromName===acctName && t.date.slice(0,7)>=lastMonth && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
     return baseVal + inflow - outflow;
   }
 
