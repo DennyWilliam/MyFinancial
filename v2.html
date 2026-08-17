@@ -1486,7 +1486,7 @@ async function supaLoad(){
     const cloud = rows[0].data || {};
     const localTxCount = (S.transactions||[]).length;
     const cloudTxCount = (cloud.transactions||[]).length;
-    if(cloudTxCount >= localTxCount && cloudTxCount > 0){
+    if(cloudTxCount >= localTxCount){
       Object.keys(cloud).forEach(k=>{ S[k] = cloud[k]; });
       localStorage.setItem(STORE_KEY, JSON.stringify(S));
       setSyncBadge('ok', 'Data: Cloud ✓');
