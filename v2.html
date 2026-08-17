@@ -1820,7 +1820,7 @@ function renderPnL(){
   }
 
   // build month headers
-  const mLabels = months.map(m=>{ const d=new Date(m+'-01'); return d.toLocaleDateString('id-ID',{month:'short',year:'2-digit'}); });
+  const mLabels = months.map(m=>{ const d=new Date(m+'-01'); return d.toLocaleDateString('en-US',{month:'short',year:'2-digit'}); });
   document.getElementById('pnlHead').innerHTML =
     '<th style="min-width:160px;position:sticky;left:0;background:var(--bg3);z-index:1">Kategori</th>' +
     months.map((m,i)=>`<th style="text-align:right;min-width:140px;padding:10px 16px">${mLabels[i]}</th>`).join('');
