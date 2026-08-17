@@ -1662,10 +1662,12 @@ function updateCats() {
   document.getElementById('mCat').innerHTML = getCatList(type).map(c=>`<option>${c}</option>`).join('');
   const mAcc = document.getElementById('mAcc');
   if(mAcc){
-    // Use instrumen Tabungan as rekening options
-    const tabItems = (S.asetItems?.tabungan||[]);
-    const rekOptions = tabItems.length
-      ? tabItems.map(r=>`<option value="${r.name}">${r.name}</option>`).join('')
+    // Pull rekening options from the actual Rekening/Tunai category in Aset
+    const asetCats = getCatList('investment');
+    const rekCat = asetCats.find(c=>c.toLowerCase()==='rekening'||c.toLowerCase()==='tunai') || '';
+    const rekItems = rekCat ? (S.asetItems[rekCat]||[]) : [];
+    const rekOptions = rekItems.length
+      ? rekItems.map(r=>`<option value="${r.name}">${r.name}</option>`).join('')
       : (S.rekening||[]).map(r=>`<option value="${r.name}">${r.name}</option>`).join('') ||
         '<option>BCA 1147</option><option>Cash</option>';
     mAcc.innerHTML = rekOptions;
