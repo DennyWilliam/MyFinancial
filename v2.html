@@ -2957,11 +2957,22 @@ function renderAsetRangkuman(){
   allMonthsSet.add(nowM);
 
   // Sort months, keep last 12
-  const months = [...allMonthsSet].sort();
+  let months = [...allMonthsSet].sort();
+  // Pad forward with upcoming empty months so the table doesn't look cut short
+  const MIN_COLS = 3;
+  if(months.length < MIN_COLS){
+    const cursor = new Date(nowM+'-01');
+    while(months.length < MIN_COLS){
+      cursor.setMonth(cursor.getMonth()+1);
+      const ym = cursor.getFullYear()+'-'+String(cursor.getMonth()+1).padStart(2,'0');
+      if(!months.includes(ym)) months.push(ym);
+    }
+    months.sort();
+  }
 
   function fmtMShort(m){
     const d=new Date(m+'-01');
-    return d.toLocaleDateString('en-US',{month:'short',year:'numeric'});
+    return d.toLocaleDateString('id-ID',{month:'short',year:'2-digit'});
   }
 
   // ── KPI ──
