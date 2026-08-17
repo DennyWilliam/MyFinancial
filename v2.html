@@ -1310,7 +1310,8 @@ let _supaSaveTimer = null;
 function persist() {
   localStorage.setItem(STORE_KEY, JSON.stringify(S));
   clearTimeout(_supaSaveTimer);
-  _supaSaveTimer = setTimeout(()=>{ supaSave(); }, 1500);
+  _supaSaveTimer = setTimeout(()=>{ supaSave(); }, 400);
+  window._pendingSupaFlush = true;
 }
 
 // ═══════════════════════════════════════
@@ -1466,6 +1467,7 @@ async function supaSave(){
     });
     if(!res.ok) throw new Error(res.status+' '+(await res.text()));
     setSyncBadge('ok', 'Data: Cloud ✓');
+    window._pendingSupaFlush = false;
     return true;
   }catch(err){
     console.error('supaSave failed', err);
@@ -1505,6 +1507,18 @@ async function supaLoad(){
 function manualSupaSync(){
   supaSave();
 }
+
+window.addEventListener('beforeunload', function(){
+  if(window._pendingSupaFlush){
+    try{
+      const payload = JSON.stringify({ id:'main', data:S, updated_at: new Date().toISOString() });
+      navigator.sendBeacon(
+        `${SUPA_URL}/rest/v1/myfinancial_data?on_conflict=id&apikey=${SUPA_KEY}`,
+        new Blob([payload], {type:'text/plain'})
+      );
+    }catch(e){}
+  }
+});
 
 // ═══════════════════════════════════════
 // NAVIGATION
