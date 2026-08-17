@@ -1811,9 +1811,21 @@ function delTU(id){if(confirm('Hapus top-up ini?')){S.topups=S.topups.filter(t=>
 // ═══════════════════════════════════════
 function renderPnL(){
   const txs = S.transactions;
-  const months = [...new Set(txs.map(t=>mk(t.date)))].sort();
+  let months = [...new Set(txs.map(t=>mk(t.date)))].sort();
+  const nowM = today().slice(0,7);
+  const MIN_PNL_COLS = 5;
+  if(months.length < MIN_PNL_COLS){
+    const base = months.length ? months[months.length-1] : nowM;
+    const cursor = new Date(base+'-01');
+    while(months.length < MIN_PNL_COLS){
+      cursor.setMonth(cursor.getMonth()+1);
+      const ym = cursor.getFullYear()+'-'+String(cursor.getMonth()+1).padStart(2,'0');
+      if(!months.includes(ym)) months.push(ym);
+    }
+    months.sort();
+  }
 
-  if(!months.length){
+  if(!txs.length){
     document.getElementById('pnlHead').innerHTML='<th>Kategori</th>';
     document.getElementById('pnlBody').innerHTML='<tr><td style="padding:24px;text-align:center;color:var(--text3)">Belum ada data transaksi</td></tr>';
     return;
