@@ -554,8 +554,8 @@ window.addEventListener('load', function(){
               <div class="ai-panel-title">🤖 Hasil AI — review sebelum simpan
                 <span id="parsedCnt" style="font-size:11px;color:var(--text3);font-weight:400;margin-left:6px"></span>
               </div>
-              <div style="display:grid;grid-template-columns:106px 1fr 130px 110px 30px;gap:6px;font-size:10.5px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:4px">
-                <span>Tanggal</span><span>Deskripsi</span><span>Kategori</span><span>Jumlah</span><span></span>
+              <div style="display:grid;grid-template-columns:106px 1fr 90px 130px 110px 40px 30px;gap:6px;font-size:10.5px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:4px">
+                <span>Tanggal</span><span>Deskripsi</span><span>Tipe</span><span>Kategori</span><span>Jumlah</span><span></span><span></span>
               </div>
               <div id="parsedList"></div>
               <div style="margin-top:14px;display:flex;gap:8px">
@@ -2368,7 +2368,7 @@ function showParsed(items){
   }
 
   document.getElementById('parsedList').innerHTML = parsedBuf.map((item,i)=>`
-    <div class="parsed-row" id="pr_${i}" style="display:grid;grid-template-columns:106px 1fr 100px 140px 30px 30px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+    <div class="parsed-row" id="pr_${i}" style="display:grid;grid-template-columns:106px 1fr 90px 130px 110px 40px 30px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
       <input type="date" value="${item.date||today()}" onchange="parsedBuf[${i}].date=this.value">
       <input type="text" value="${item.description||''}" onchange="parsedBuf[${i}].description=this.value" placeholder="Deskripsi">
       <select onchange="parsedBuf[${i}].type=this.value;updateParsedCats(${i},this.value)">
@@ -2379,6 +2379,7 @@ function showParsed(items){
       <select id="pr_cat_${i}" onchange="parsedBuf[${i}].category=this.value">
         ${getCatList(item.type||'expense').map(c=>`<option ${c===item.category?'selected':''}>${c}</option>`).join('')}
       </select>
+      <input type="number" value="${item.amount||0}" onchange="parsedBuf[${i}].amount=parseFloat(this.value)||0" style="text-align:right">
       <span class="${item.type==='income'?'cr-pill':'db-pill'}" id="pr_pill_${i}">${item.type==='income'?'CR':'DB'}</span>
       <button class="del-btn" onclick="parsedBuf.splice(${i},1);showParsed(parsedBuf)">🗑</button>
     </div>`).join('');
