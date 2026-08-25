@@ -625,7 +625,6 @@ window.addEventListener('load', function(){
         <div class="sec-head"><div class="sec-title">Semua Transaksi</div></div>
         <div class="filter-row">
           <select id="fType" onchange="renderTx()"><option value="">Semua tipe</option><option value="income">Income</option><option value="expense">Outcome</option><option value="investment">Aset</option></select>
-          <select id="fMonth" onchange="renderTx()"></select>
           <select id="fAcc" onchange="renderTx()"><option value="">Semua rekening</option></select>
           <select id="fCat" onchange="renderTx()"><option value="">Semua kategori</option></select>
           <span style="font-size:11px;color:var(--text3)">Dari</span>
@@ -1728,8 +1727,6 @@ let txPage = 1;
 const PER = 25;
 
 function populateFilters() {
-  const months=[...new Set(S.transactions.map(t=>mk(t.date)))].sort().reverse();
-  document.getElementById('fMonth').innerHTML='<option value="">Semua bulan</option>'+months.map(m=>`<option value="${m}">${m}</option>`).join('');
   const cats=[...new Set(S.transactions.map(t=>t.category).filter(Boolean))].sort();
   document.getElementById('fCat').innerHTML='<option value="">Semua kategori</option>'+cats.map(c=>`<option>${c}</option>`).join('');
   const accs=[...new Set(S.transactions.map(t=>t.account).filter(Boolean))].sort();
@@ -1738,14 +1735,12 @@ function populateFilters() {
 function renderTx() {
   let txs=[...S.transactions];
   const ft=document.getElementById('fType').value;
-  const fm=document.getElementById('fMonth').value;
   const fa=document.getElementById('fAcc').value;
   const fc=document.getElementById('fCat').value;
   const fdFrom=document.getElementById('fDateFrom').value;
   const fdTo=document.getElementById('fDateTo').value;
   const fs=document.getElementById('fSearch').value.toLowerCase();
   if(ft) txs=txs.filter(t=>t.type===ft);
-  if(fm) txs=txs.filter(t=>mk(t.date)===fm);
   if(fa) txs=txs.filter(t=>t.account===fa);
   if(fc) txs=txs.filter(t=>t.category===fc);
   if(fdFrom) txs=txs.filter(t=>t.date>=fdFrom);
