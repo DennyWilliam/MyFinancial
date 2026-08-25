@@ -2035,7 +2035,52 @@ function parseBCAText(raw){
       .slice(0,55);
   }
 
-  if(hasFullDate){
+  const hasMonthNameDate = lines.some(l=>/^\d{1,2}\s+[A-Za-z]{3}\s+\d{4}$/.test(l));
+
+  if(hasMonthNameDate && !hasFullDate){
+    // ════════════════════════════════════════════════════
+    // FORMAT C — BCA Credit Card statement (web copy-paste)
+    // Repeating block: [row#] [DD Mon YYYY trx date] [DD Mon YYYY post date]
+    //                  [description] [Rp. 123.456,00]
+    // ════════════════════════════════════════════════════
+    const monthMap = {jan:'01',feb:'02',mar:'03',apr:'04',mei:'05',may:'05',jun:'06',jul:'07',
+                       agu:'08',aug:'08',sep:'09',okt:'10',oct:'10',nov:'11',des:'12',dec:'12'};
+    function parseMonthDate(s){
+      const m = s.match(/^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$/);
+      if(!m) return null;
+      const mm = monthMap[m[2].toLowerCase()] || '01';
+      return `${m[3]}-${mm}-${m[1].padStart(2,'0')}`;
+    }
+    const isDateLine = l=>/^\d{1,2}\s+[A-Za-z]{3}\s+\d{4}$/.test(l);
+    let i=0;
+    while(i<lines.length){
+      if(isDateLine(lines[i])){
+        const trxDate = parseMonthDate(lines[i]);
+        let j=i+1;
+        if(j<lines.length && isDateLine(lines[j])) j++; // skip posting date
+        const descParts=[];
+        while(j<lines.length && !/^Rp\.?\s/i.test(lines[j]) && !isDateLine(lines[j])){
+          if(lines[j]) descParts.push(lines[j]);
+          j++;
+        }
+        if(j<lines.length && /^Rp\.?\s/i.test(lines[j]) && trxDate){
+          const amtMatch = lines[j].match(/Rp\.?\s*([\d.]+,\d{2})/i);
+          if(amtMatch){
+            const amount = Math.round(parseFloat(amtMatch[1].replace(/\./g,'').replace(',','.'))||0);
+            let desc = descParts.join(' ')
+              .replace(/\[([^\]]+)\]\(https?:\/\/[^)]+\)/g,'$1') // strip markdown links
+              .replace(/\s{2,}/g,' ').trim().slice(0,55);
+            if(!desc) desc='Outcome';
+            if(amount) items.push({date:trxDate, description:desc, amount, type:'expense', category:guessCat(desc,'expense')});
+          }
+          i=j+1;
+          continue;
+        }
+      }
+      i++;
+    }
+
+  } else if(hasFullDate){
     // ════════════════════════════════════════════════════
     // FORMAT A — KlikBCA web  (one or multi-line per tx)
     // Each tx starts with DD/MM/YYYY
