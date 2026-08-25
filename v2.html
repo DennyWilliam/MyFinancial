@@ -637,7 +637,15 @@ window.addEventListener('load', function(){
         </div>
         <div class="card">
           <table>
-            <thead><tr><th>Tanggal</th><th>Deskripsi</th><th>Rekening</th><th>Tipe</th><th>Kategori</th><th style="text-align:right">Jumlah</th><th></th></tr></thead>
+            <thead><tr>
+              <th onclick="setSortTx('date')" style="cursor:pointer;user-select:none">Tanggal<span id="sortArrow_date"></span></th>
+              <th onclick="setSortTx('description')" style="cursor:pointer;user-select:none">Deskripsi<span id="sortArrow_description"></span></th>
+              <th onclick="setSortTx('account')" style="cursor:pointer;user-select:none">Rekening<span id="sortArrow_account"></span></th>
+              <th onclick="setSortTx('type')" style="cursor:pointer;user-select:none">Tipe<span id="sortArrow_type"></span></th>
+              <th onclick="setSortTx('category')" style="cursor:pointer;user-select:none">Kategori<span id="sortArrow_category"></span></th>
+              <th onclick="setSortTx('amount')" style="text-align:right;cursor:pointer;user-select:none">Jumlah<span id="sortArrow_amount"></span></th>
+              <th></th>
+            </tr></thead>
             <tbody id="allTxBody"></tbody>
           </table>
         </div>
@@ -1724,6 +1732,26 @@ function renderManualRecent() {
 // TRANSACTIONS
 // ═══════════════════════════════════════
 let txPage = 1;
+let txSortCol = 'date';
+let txSortDir = 'desc'; // 'asc' | 'desc'
+
+function setSortTx(col){
+  if(txSortCol === col){
+    txSortDir = txSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    txSortCol = col;
+    txSortDir = 'asc';
+  }
+  txPage = 1;
+  renderTx();
+}
+
+function updateSortArrows(){
+  ['date','description','account','type','category','amount'].forEach(c=>{
+    const el = document.getElementById('sortArrow_'+c);
+    if(el) el.textContent = c===txSortCol ? (txSortDir==='asc'?' ▲':' ▼') : '';
+  });
+}
 const PER = 25;
 
 function populateFilters() {
@@ -1746,7 +1774,14 @@ function renderTx() {
   if(fdFrom) txs=txs.filter(t=>t.date>=fdFrom);
   if(fdTo) txs=txs.filter(t=>t.date<=fdTo);
   if(fs) txs=txs.filter(t=>(t.description||'').toLowerCase().includes(fs)||(t.category||'').toLowerCase().includes(fs));
-  txs.sort((a,b)=>b.date.localeCompare(a.date));
+  txs.sort((a,b)=>{
+    let av=a[txSortCol], bv=b[txSortCol];
+    if(txSortCol==='amount'){ av=av||0; bv=bv||0; }
+    else { av=(av||'').toString().toLowerCase(); bv=(bv||'').toString().toLowerCase(); }
+    let cmp = av<bv ? -1 : av>bv ? 1 : 0;
+    return txSortDir==='asc' ? cmp : -cmp;
+  });
+  updateSortArrows();
   const pages=Math.ceil(txs.length/PER)||1;
   if(txPage>pages) txPage=1;
   const paged=txs.slice((txPage-1)*PER,txPage*PER);
