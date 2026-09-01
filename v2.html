@@ -3177,15 +3177,29 @@ function renderAsetRangkuman(){
             const last = m===nowM;
             // Get transfers for this month for this account
             const monthTransfers = (S.transfers||[]).filter(t=>t.date&&t.date.slice(0,7)===m&&(t.toName===item.name||t.fromName===item.name));
-            return `<td style="text-align:right;padding:10px 16px;font-size:13px;font-weight:${last?'500':'400'};color:var(--text);font-family:var(--mono);cursor:${monthTransfers.length?'pointer':'default'}"
-              onclick="showTransferPopup('${cat}','${item.name}','${m}')" title="${monthTransfers.length?'Klik lihat transfer':''}">
-              ${v?'Rp '+fmt(v):'<span style="color:var(--text3)">—</span>'}
+            return `<td style="text-align:right;padding:10px 16px;font-size:13px;font-weight:${last?'500':'400'};color:var(--text);font-family:var(--mono)">
+              <span style="cursor:pointer" onclick="editMonthVal('${cat}',${i},'${m}')" title="Klik untuk edit nilai bulan ${m}">
+                ${v?'Rp '+fmt(v):'<span style="color:var(--text3)">—</span>'}
+              </span>${monthTransfers.length?` <span style="cursor:pointer;font-size:11px" onclick="event.stopPropagation();showTransferPopup('${cat}','${item.name}','${m}')" title="Lihat transfer bulan ini">🔄</span>`:''}
             </td>`;
           }).join('')}
         </tr>`;
       });
     }
   });
+
+  // ── TOTAL row (Aset - Hutang, per month) ──
+  const totalPerMonth = months.map(m=>{
+    if(m>nowM) return 0;
+    const asetSum = asetCats.filter(c=>c!==utangCat).reduce((a,cat)=>
+      a+(S.asetItems[cat]||[]).reduce((x,i)=>x+getAcctMonthVal(cat,i.name,m),0),0);
+    const hutangSum = utangCat ? (S.asetItems[utangCat]||[]).reduce((a,i)=>a+getAcctMonthVal(utangCat,i.name,m),0) : 0;
+    return asetSum - hutangSum;
+  });
+  html+=`<tr style="background:var(--bg2);border-top:2px solid var(--border2)">
+    <td style="padding:11px 16px;font-size:13px;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;position:sticky;left:0;background:var(--bg2)">Total (Aset − Hutang)</td>
+    ${totalPerMonth.map(v=>`<td style="text-align:right;padding:11px 16px;font-size:14px;font-weight:800;color:${v<0?'var(--red)':'var(--text)'};font-family:var(--mono)">${v?'Rp '+fmt(v):'—'}</td>`).join('')}
+  </tr>`;
 
   html+=`</tbody></table></div></div>
   <div id="aset-detail-panel" style="display:none;margin-top:14px"></div>`;
@@ -3256,6 +3270,17 @@ function addHistRow(){
   row.innerHTML = `<input type="month" style="font-size:13px"><input type="number" placeholder="Nilai (Rp)" min="0" style="font-size:13px">
     <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:16px">×</button>`;
   box.appendChild(row);
+}
+
+function editMonthVal(cat, idx, month){
+  const item=(S.asetItems[cat]||[])[idx];
+  if(!item) return;
+  if(!item.monthValues) item.monthValues={};
+  const current = item.monthValues[month] || 0;
+  const input = prompt(`Nilai "${item.name}" bulan ${month} (Rp):`, current);
+  if(input===null) return;
+  item.monthValues[month] = parseFloat(input)||0;
+  persist(); renderAsetRangkuman();
 }
 
 function editAkunAset(cat,idx){
