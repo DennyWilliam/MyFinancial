@@ -604,6 +604,7 @@ window.addEventListener('load', function(){
                   <div class="fg"><label>Kategori</label><select id="mCat"></select></div>
                   <div class="fg"><label>Jumlah (Rp)</label><input type="number" id="mAmt" placeholder="0" min="0"></div>
                   <div class="fg"><label>Rekening</label><select id="mAcc" id="mAcc"></select></div>
+                  <div class="fg"><label>Pemilik</label><select id="mOwner"><option value="Denny">Denny</option><option value="Lauren">Lauren</option><option value="Bersama">Bersama</option></select></div>
                   <div class="fg full"><label>Catatan</label><input type="text" id="mNote" placeholder="Opsional"></div>
                 </div>
                 <button class="btn btn-primary" onclick="addTx()" style="width:100%">➕ Tambah Transaksi</button>
@@ -626,6 +627,7 @@ window.addEventListener('load', function(){
         <div class="filter-row">
           <select id="fType" onchange="renderTx()"><option value="">Semua tipe</option><option value="income">Income</option><option value="expense">Outcome</option><option value="investment">Aset</option></select>
           <select id="fAcc" onchange="renderTx()"><option value="">Semua rekening</option></select>
+          <select id="fOwner" onchange="renderTx()"><option value="">Semua pemilik</option><option value="Denny">Denny</option><option value="Lauren">Lauren</option><option value="Bersama">Bersama</option></select>
           <select id="fCat" onchange="renderTx()"><option value="">Semua kategori</option></select>
           <span style="font-size:11px;color:var(--text3)">Dari</span>
           <input type="date" id="fDateFrom" onchange="renderTx()">
@@ -641,6 +643,7 @@ window.addEventListener('load', function(){
               <th onclick="setSortTx('date')" style="cursor:pointer;user-select:none">Tanggal<span id="sortArrow_date"></span></th>
               <th onclick="setSortTx('description')" style="cursor:pointer;user-select:none">Deskripsi<span id="sortArrow_description"></span></th>
               <th onclick="setSortTx('account')" style="cursor:pointer;user-select:none">Rekening<span id="sortArrow_account"></span></th>
+              <th onclick="setSortTx('owner')" style="cursor:pointer;user-select:none">Pemilik<span id="sortArrow_owner"></span></th>
               <th onclick="setSortTx('type')" style="cursor:pointer;user-select:none">Tipe<span id="sortArrow_type"></span></th>
               <th onclick="setSortTx('category')" style="cursor:pointer;user-select:none">Kategori<span id="sortArrow_category"></span></th>
               <th onclick="setSortTx('amount')" style="text-align:right;cursor:pointer;user-select:none">Jumlah<span id="sortArrow_amount"></span></th>
@@ -793,6 +796,10 @@ window.addEventListener('load', function(){
               <label>Tanggal Mulai</label>
               <input type="date" id="inAddDate">
             </div>
+            <div class="fg">
+              <label>Pemilik</label>
+              <select id="inAddOwner"><option value="Denny">Denny</option><option value="Lauren">Lauren</option><option value="Bersama">Bersama</option></select>
+            </div>
           </div>
           <div style="display:flex;gap:8px;margin-top:14px">
             <button class="btn btn-primary" onclick="saveInlineAset()">✅ Tambah</button>
@@ -800,6 +807,15 @@ window.addEventListener('load', function(){
           </div>
         </div>
 
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <label style="font-size:11.5px;color:var(--text3);font-weight:600">Pemilik:</label>
+          <select id="asetOwnerFilter" onchange="renderAsetRangkuman()">
+            <option value="">Semua</option>
+            <option value="Denny">Denny</option>
+            <option value="Lauren">Lauren</option>
+            <option value="Bersama">Bersama</option>
+          </select>
+        </div>
         <div id="aset-rangkuman-kpi" class="kpi-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-bottom:18px"></div>
         <div id="aset-rangkuman-table"></div>
       </div>
@@ -1711,9 +1727,10 @@ function addTx() {
   const cat    = document.getElementById('mCat').value;
   const amount = parseFloat(document.getElementById('mAmt').value)||0;
   const acc    = document.getElementById('mAcc').value;
+  const owner  = document.getElementById('mOwner').value;
   const note   = document.getElementById('mNote').value;
   if(!date||!desc||!amount){alert('Lengkapi tanggal, deskripsi, dan jumlah!');return;}
-  S.transactions.push({id:Date.now(),date,type,description:desc,category:cat,amount,account:acc,note});
+  S.transactions.push({id:Date.now(),date,type,description:desc,category:cat,amount,account:acc,owner,note});
   persist();
   renderManualRecent();
   document.getElementById('mDesc').value='';
@@ -1747,7 +1764,7 @@ function setSortTx(col){
 }
 
 function updateSortArrows(){
-  ['date','description','account','type','category','amount'].forEach(c=>{
+  ['date','description','account','owner','type','category','amount'].forEach(c=>{
     const el = document.getElementById('sortArrow_'+c);
     if(el) el.textContent = c===txSortCol ? (txSortDir==='asc'?' ▲':' ▼') : '';
   });
@@ -1764,12 +1781,14 @@ function renderTx() {
   let txs=[...S.transactions];
   const ft=document.getElementById('fType').value;
   const fa=document.getElementById('fAcc').value;
+  const fo=document.getElementById('fOwner').value;
   const fc=document.getElementById('fCat').value;
   const fdFrom=document.getElementById('fDateFrom').value;
   const fdTo=document.getElementById('fDateTo').value;
   const fs=document.getElementById('fSearch').value.toLowerCase();
   if(ft) txs=txs.filter(t=>t.type===ft);
   if(fa) txs=txs.filter(t=>t.account===fa);
+  if(fo) txs=txs.filter(t=>t.owner===fo);
   if(fc) txs=txs.filter(t=>t.category===fc);
   if(fdFrom) txs=txs.filter(t=>t.date>=fdFrom);
   if(fdTo) txs=txs.filter(t=>t.date<=fdTo);
@@ -1790,12 +1809,13 @@ function renderTx() {
         <td style="color:var(--text3);white-space:nowrap">${t.date}</td>
         <td style="font-weight:500">${t.description||'-'}</td>
         <td style="color:var(--text2)">${t.account||'-'}</td>
+        <td style="color:var(--text2)">${t.owner||'-'}</td>
         <td><span class="badge ${t.type==='income'?'badge-in':t.type==='investment'?'badge-inv':'badge-out'}">${t.type==='income'?'Income':t.type==='investment'?'Investasi':'Outcome'}</span></td>
         <td><span class="badge badge-cat">${t.category||'-'}</span></td>
         <td class="${t.type==='income'?'amount-pos':'amount-neg'}" style="text-align:right;white-space:nowrap">Rp ${fmt(t.amount)}</td>
         <td><button class="del-btn" onclick="delTx(${t.id})">🗑</button></td>
       </tr>`).join('')
-    : '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Tidak ada transaksi ditemukan</td></tr>';
+    : '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">Tidak ada transaksi ditemukan</td></tr>';
   document.getElementById('pagination').innerHTML=pages>1
     ? Array.from({length:pages},(_,i)=>`<button class="btn btn-sm ${i+1===txPage?'btn-primary':''}" onclick="txPage=${i+1};renderTx()">${i+1}</button>`).join('')
     : '';
@@ -2964,6 +2984,7 @@ function saveInlineAset(){
   const modal = parseFloat(document.getElementById('inAddModal').value)||0;
   const nilai = parseFloat(document.getElementById('inAddVal').value)||0;
   const date  = document.getElementById('inAddDate').value || today();
+  const owner = document.getElementById('inAddOwner')?.value || 'Denny';
 
   if(!cat){ alert('Pilih kategori!'); return; }
   if(!name){ alert('Isi nama akun!'); return; }
@@ -2981,7 +3002,7 @@ function saveInlineAset(){
   const month = date.slice(0,7);
   const monthValues = {};
   if(awal>0) monthValues[month] = awal;
-  S.asetItems[cat].push({name, monthValues, modal, note:''});
+  S.asetItems[cat].push({name, monthValues, modal, owner, note:''});
 
   // If Rekening - also sync to rekening list for Input Manual dropdown
   if(cat.toLowerCase()==='rekening'||cat.toLowerCase()==='tunai'){
@@ -3039,6 +3060,9 @@ const ASET_DEFS = [
 
 function renderAsetRangkuman(){
   if(!S.asetItems) S.asetItems={};
+  const ownerFilter = document.getElementById('asetOwnerFilter')?.value || '';
+  const itemOwner = i => i.owner || 'Denny';
+  const filterItems = arr => ownerFilter ? arr.filter(i=>itemOwner(i)===ownerFilter) : arr;
   const asetCats = getCatList('investment');
   if(!asetCats.length){
     document.getElementById('aset-rangkuman-kpi').innerHTML='';
@@ -3115,8 +3139,8 @@ function renderAsetRangkuman(){
   // ── KPI ──
   const utangCat = asetCats.find(c=>c.toLowerCase()==='hutang'||c.toLowerCase()==='utang')||'';
   const totalAset = asetCats.filter(c=>c!==utangCat).reduce((a,cat)=>
-    a+(S.asetItems[cat]||[]).reduce((x,i)=>x+getAcctMonthVal(cat,i.name,nowM),0),0);
-  const totalHutang = utangCat ? (S.asetItems[utangCat]||[]).reduce((a,i)=>a+getAcctMonthVal(utangCat,i.name,nowM),0) : 0;
+    a+filterItems(S.asetItems[cat]||[]).reduce((x,i)=>x+getAcctMonthVal(cat,i.name,nowM),0),0);
+  const totalHutang = utangCat ? filterItems(S.asetItems[utangCat]||[]).reduce((a,i)=>a+getAcctMonthVal(utangCat,i.name,nowM),0) : 0;
   const totalBersih = totalAset - totalHutang;
 
   const kpiEl=document.getElementById('aset-rangkuman-kpi');
@@ -3144,7 +3168,7 @@ function renderAsetRangkuman(){
   </thead><tbody>`;
 
   asetCats.forEach(cat=>{
-    const items = S.asetItems[cat]||[];
+    const items = filterItems(S.asetItems[cat]||[]);
     const isUtang = cat.toLowerCase()==='hutang'||cat.toLowerCase()==='utang';
     const color = isUtang?'var(--red)':'var(--text)';
     const catRowColor = 'var(--red)';
@@ -3162,14 +3186,16 @@ function renderAsetRangkuman(){
     if(!items.length){
       html+=`<tr><td colspan="${months.length+2}" style="padding:8px 28px;font-size:12px;color:var(--text3);font-style:italic">Belum ada akun</td></tr>`;
     } else {
-      items.forEach((item,i)=>{
+      items.forEach((item)=>{
+        const realIdx = S.asetItems[cat].indexOf(item);
+        const ownerBadge = item.owner ? `<span style="font-size:9.5px;color:var(--text3);background:var(--bg3);padding:1px 6px;border-radius:8px;margin-left:6px">${item.owner}</span>` : '';
 
         html+=`<tr style="border-bottom:0.5px solid var(--border)"
           onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='#fff'">
           <td style="padding:10px 16px 10px 28px;font-size:13px;font-weight:400;color:var(--text);position:sticky;left:0;background:#fff">
-            ${item.name}
-            <button onclick="editAkunAset('${cat}',${i})" style="margin-left:6px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--text3)">✏️</button>
-            <button onclick="deleteAkunAset('${cat}',${i})" style="margin-left:2px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--text3)" title="Hapus akun">🗑️</button>
+            ${item.name}${ownerBadge}
+            <button onclick="editAkunAset('${cat}',${realIdx})" style="margin-left:6px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--text3)">✏️</button>
+            <button onclick="deleteAkunAset('${cat}',${realIdx})" style="margin-left:2px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--text3)" title="Hapus akun">🗑️</button>
           </td>
 
           ${months.map(m=>{
@@ -3179,7 +3205,7 @@ function renderAsetRangkuman(){
             // Get transfers for this month for this account
             const monthTransfers = (S.transfers||[]).filter(t=>t.date&&t.date.slice(0,7)===m&&(t.toName===item.name||t.fromName===item.name));
             return `<td style="text-align:right;padding:10px 16px;font-size:13px;font-weight:${last?'500':'400'};color:var(--text);font-family:var(--mono)">
-              <span style="cursor:pointer" onclick="editMonthVal('${cat}',${i},'${m}')" title="Klik untuk edit nilai bulan ${m}">
+              <span style="cursor:pointer" onclick="editMonthVal('${cat}',${realIdx},'${m}')" title="Klik untuk edit nilai bulan ${m}">
                 ${v?'Rp '+fmt(v):'<span style="color:var(--text3)">—</span>'}
               </span>${monthTransfers.length?` <span style="cursor:pointer;font-size:11px" onclick="event.stopPropagation();showTransferPopup('${cat}','${item.name}','${m}')" title="Lihat transfer bulan ini">🔄</span>`:''}
             </td>`;
@@ -3193,8 +3219,8 @@ function renderAsetRangkuman(){
   const totalPerMonth = months.map(m=>{
     if(m>nowM) return 0;
     const asetSum = asetCats.filter(c=>c!==utangCat).reduce((a,cat)=>
-      a+(S.asetItems[cat]||[]).reduce((x,i)=>x+getAcctMonthVal(cat,i.name,m),0),0);
-    const hutangSum = utangCat ? (S.asetItems[utangCat]||[]).reduce((a,i)=>a+getAcctMonthVal(utangCat,i.name,m),0) : 0;
+      a+filterItems(S.asetItems[cat]||[]).reduce((x,i)=>x+getAcctMonthVal(cat,i.name,m),0),0);
+    const hutangSum = utangCat ? filterItems(S.asetItems[utangCat]||[]).reduce((a,i)=>a+getAcctMonthVal(utangCat,i.name,m),0) : 0;
     return asetSum - hutangSum;
   });
   html+=`<tr style="background:var(--bg2);border-top:2px solid var(--border2)">
