@@ -611,7 +611,7 @@ window.addEventListener('load', function(){
                   <div class="fg"><label>Kategori</label><select id="mCat"></select></div>
                   <div class="fg"><label>Jumlah (Rp)</label><input type="number" id="mAmt" placeholder="0" min="0"></div>
                   <div class="fg"><label>Rekening</label><select id="mAcc" id="mAcc"></select></div>
-                  <div class="fg"><label>Pemilik</label><select id="mOwner" onchange="this.dataset.touched='1'"><option value="Denny">Denny</option><option value="Lauren">Lauren</option><option value="Bersama">Bersama</option></select></div>
+                  <div class="fg"><label>Pemilik</label><select id="mOwner" onchange="this.dataset.touched='1'"><option value="Denny">Denny</option><option value="Lauren">Lauren</option></select></div>
                   <div class="fg full"><label>Catatan</label><input type="text" id="mNote" placeholder="Opsional"></div>
                 </div>
                 <button class="btn btn-primary" onclick="addTx()" style="width:100%">➕ Tambah Transaksi</button>
@@ -804,7 +804,7 @@ window.addEventListener('load', function(){
             </div>
             <div class="fg">
               <label>Pemilik</label>
-              <select id="inAddOwner"><option value="Denny">Denny</option><option value="Lauren">Lauren</option><option value="Bersama">Bersama</option></select>
+              <select id="inAddOwner"><option value="Denny">Denny</option><option value="Lauren">Lauren</option></select>
             </div>
           </div>
           <div style="display:flex;gap:8px;margin-top:14px">
@@ -1231,7 +1231,6 @@ let currentPage = 'dashboard';
 
 function isVisibleOwner(ownerVal){
   if(ownerVal === activeOwner) return true;
-  if(ownerVal === 'Bersama') return true;
   if(!ownerVal && activeOwner === 'Denny') return true; // legacy data defaults to Denny
   return false;
 }
