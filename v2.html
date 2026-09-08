@@ -2571,7 +2571,7 @@ function confirmImport(){
   const acc = document.getElementById('importAccSel')?.value || 'BCA 1147';
   parsedBuf.forEach(item=>{
     if(item.amount>0){
-      S.transactions.push({id:Date.now()+Math.random(),date:item.date||today(),type:item.type||'expense',description:item.description,category:item.category||'Lainnya',amount:item.amount,account:acc,note:'AI import'});
+      S.transactions.push({id:Date.now()+Math.random(),date:item.date||today(),type:item.type||'expense',description:item.description,category:item.category||'Lainnya',amount:item.amount,account:acc,owner:activeOwner,note:'AI import'});
       n++;
     }
   });
