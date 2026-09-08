@@ -2842,11 +2842,11 @@ const INV_NAMES = {
 };
 
 function initTransfer(){
-  // Build dropdown from all aset instruments
+  // Build dropdown from aset instruments owned by the active profile
   const allInstruments = [];
   if(S.asetItems){
     Object.keys(S.asetItems).forEach(cat=>{
-      (S.asetItems[cat]||[]).forEach(item=>{
+      visibleAssetItems(cat).forEach(item=>{
         if(item&&item.name)
           allInstruments.push(`<option value="${item.name}">${item.name} (${cat})</option>`);
       });
@@ -2868,12 +2868,18 @@ function initTransfer(){
 function renderTransferList(){
   const tbody = document.getElementById('transferBody');
   if(!tbody) return;
-  const transfers = [...(S.transfers||[])].sort((a,b)=>b.date.localeCompare(a.date));
+  const visibleNames = new Set();
+  if(S.asetItems) Object.keys(S.asetItems).forEach(cat=>visibleAssetItems(cat).forEach(i=>visibleNames.add(i.name)));
+  const transfers = [...(S.transfers||[])]
+    .filter(t=>visibleNames.has(t.fromName||t.from)||visibleNames.has(t.toName||t.to))
+    .sort((a,b)=>b.date.localeCompare(a.date));
   if(!transfers.length){
     tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text3)">Belum ada riwayat transfer</td></tr>';
     return;
   }
-  tbody.innerHTML = transfers.map((t,i)=>`
+  tbody.innerHTML = transfers.map((t)=>{
+    const realIdx = S.transfers.indexOf(t);
+    return `
     <tr style="border-bottom:1px solid var(--border)"
       onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
       <td style="padding:10px 14px;font-size:13px;color:var(--text2)">${t.date}</td>
@@ -2885,9 +2891,10 @@ function renderTransferList(){
       </td>
       <td style="text-align:right;padding:10px 14px;font-size:14px;font-weight:600">Rp ${fmt(t.amount||0)}</td>
       <td style="padding:10px 8px;text-align:center">
-        <button class="btn btn-sm" onclick="deleteTransfer(${i})" style="padding:3px 7px;color:var(--red)">🗑</button>
+        <button class="btn btn-sm" onclick="deleteTransfer(${realIdx})" style="padding:3px 7px;color:var(--red)">🗑</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 
