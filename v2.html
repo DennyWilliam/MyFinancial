@@ -1852,7 +1852,7 @@ function renderTx() {
         <td style="color:var(--text2)">${t.owner||'-'}</td>
         <td><span class="badge ${t.type==='income'?'badge-in':t.type==='investment'?'badge-inv':'badge-out'}">${t.type==='income'?'Income':t.type==='investment'?'Investasi':'Outcome'}</span></td>
         <td><span class="badge badge-cat">${t.category||'-'}</span></td>
-        <td class="${t.type==='income'?'amount-pos':'amount-neg'}" style="text-align:right;white-space:nowrap">Rp ${fmt(t.amount)}</td>
+        <td class="${t.type==='income'?'amount-pos':'amount-neg'}" style="text-align:right;white-space:nowrap;cursor:pointer" onclick="editTxAmount(${t.id})" title="Klik untuk edit jumlah">Rp ${fmt(t.amount)}</td>
         <td><button class="del-btn" onclick="delTx(${t.id})">🗑</button></td>
       </tr>`).join('')
     : '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">Tidak ada transaksi ditemukan</td></tr>';
@@ -1861,6 +1861,16 @@ function renderTx() {
     : '';
 }
 function delTx(id){if(confirm('Hapus transaksi ini?')){S.transactions=S.transactions.filter(t=>t.id!==id);persist();renderTx();}}
+
+function editTxAmount(id){
+  const t = S.transactions.find(x=>x.id===id);
+  if(!t) return;
+  const input = prompt(`Jumlah untuk "${t.description||'transaksi ini'}" (Rp):`, t.amount);
+  if(input===null) return;
+  const newAmt = parseFloat(input.replace(/[^0-9.]/g,''))||0;
+  t.amount = newAmt;
+  persist(); renderTx();
+}
 
 // ═══════════════════════════════════════
 // INVESTASI
