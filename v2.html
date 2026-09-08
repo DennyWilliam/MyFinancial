@@ -3149,14 +3149,19 @@ function renderAsetRangkuman(){
   }
 
   // ── Collect all months that have data ──
-  // Months come from: account creation dates + transfer dates
+  // Months come from: account creation dates + transfer dates (active profile only)
   const allMonthsSet = new Set();
   asetCats.forEach(cat=>{
-    (S.asetItems[cat]||[]).forEach(item=>{
+    filterItems(S.asetItems[cat]||[]).forEach(item=>{
       Object.keys(item.monthValues||{}).forEach(m=>allMonthsSet.add(m));
     });
   });
-  (S.transfers||[]).forEach(t=>{ if(t.date) allMonthsSet.add(t.date.slice(0,7)); });
+  const visibleNamesForMonths = new Set();
+  asetCats.forEach(cat=>filterItems(S.asetItems[cat]||[]).forEach(i=>visibleNamesForMonths.add(i.name)));
+  (S.transfers||[]).forEach(t=>{
+    if(t.date && (visibleNamesForMonths.has(t.fromName)||visibleNamesForMonths.has(t.toName)))
+      allMonthsSet.add(t.date.slice(0,7));
+  });
 
   // Always include current month
   const nowM = today().slice(0,7);
