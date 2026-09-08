@@ -626,7 +626,6 @@ window.addEventListener('load', function(){
                   <div class="fg"><label>Kategori</label><select id="mCat"></select></div>
                   <div class="fg"><label>Jumlah (Rp)</label><input type="number" id="mAmt" placeholder="0" min="0"></div>
                   <div class="fg"><label>Rekening</label><select id="mAcc" id="mAcc"></select></div>
-                  <div class="fg"><label>Pemilik</label><select id="mOwner" onchange="this.dataset.touched='1'"><option value="Denny">Denny</option><option value="Lauren">Lauren</option></select></div>
                   <div class="fg full"><label>Catatan</label><input type="text" id="mNote" placeholder="Opsional"></div>
                 </div>
                 <button class="btn btn-primary" onclick="addTx()" style="width:100%">➕ Tambah Transaksi</button>
@@ -816,10 +815,6 @@ window.addEventListener('load', function(){
             <div class="fg">
               <label>Tanggal Mulai</label>
               <input type="date" id="inAddDate">
-            </div>
-            <div class="fg">
-              <label>Pemilik</label>
-              <select id="inAddOwner"><option value="Denny">Denny</option><option value="Lauren">Lauren</option></select>
             </div>
           </div>
           <div style="display:flex;gap:8px;margin-top:14px">
@@ -1753,8 +1748,6 @@ function renderDash() {
 function updateCats() {
   const type = document.getElementById('mType').value;
   document.getElementById('mCat').innerHTML = getCatList(type).map(c=>`<option>${c}</option>`).join('');
-  const mOwner = document.getElementById('mOwner');
-  if(mOwner && !mOwner.dataset.touched) mOwner.value = activeOwner;
   const mAcc = document.getElementById('mAcc');
   if(mAcc){
     // Pull rekening options from the actual Rekening/Tunai category in Aset
@@ -1775,7 +1768,7 @@ function addTx() {
   const cat    = document.getElementById('mCat').value;
   const amount = parseFloat(document.getElementById('mAmt').value)||0;
   const acc    = document.getElementById('mAcc').value;
-  const owner  = document.getElementById('mOwner').value;
+  const owner  = activeOwner;
   const note   = document.getElementById('mNote').value;
   if(!date||!desc||!amount){alert('Lengkapi tanggal, deskripsi, dan jumlah!');return;}
   S.transactions.push({id:Date.now(),date,type,description:desc,category:cat,amount,account:acc,owner,note});
@@ -3018,8 +3011,6 @@ function toggleTambahAkunForm(){
     document.getElementById('inAddModal').value = '';
     document.getElementById('inAddVal').value = '';
     document.getElementById('inAddDate').value = today();
-    const ownerSel = document.getElementById('inAddOwner');
-    if(ownerSel) ownerSel.value = activeOwner;
     form.style.display = 'block';
     document.getElementById('inAddName').focus();
   } else {
@@ -3033,7 +3024,7 @@ function saveInlineAset(){
   const modal = parseFloat(document.getElementById('inAddModal').value)||0;
   const nilai = parseFloat(document.getElementById('inAddVal').value)||0;
   const date  = document.getElementById('inAddDate').value || today();
-  const owner = document.getElementById('inAddOwner')?.value || 'Denny';
+  const owner = activeOwner;
 
   if(!cat){ alert('Pilih kategori!'); return; }
   if(!name){ alert('Isi nama akun!'); return; }
