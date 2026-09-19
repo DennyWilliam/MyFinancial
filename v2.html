@@ -3420,16 +3420,9 @@ function editAkunAset(cat,idx){
   const item=(S.asetItems[cat]||[])[idx];
   if(!item) return;
   const newName = prompt('Nama akun:', item.name);
-  if(newName===null) return;
-  const nowM = today().slice(0,7);
-  if(!item.monthValues) item.monthValues={};
-  const currentVal = item.monthValues[nowM] || 0;
-  const input = prompt('Nilai bulan ini ('+nowM+') (Rp):', currentVal);
-  if(input===null) return;
-  const newVal = parseFloat(input)||0;
+  if(newName===null || !newName.trim()) return;
   const oldName = item.name;
-  item.name = newName||item.name;
-  item.monthValues[nowM] = newVal;
+  item.name = newName.trim();
   // cascade rename in transfers
   if(oldName!==item.name){
     (S.transfers||[]).forEach(t=>{
@@ -3438,7 +3431,7 @@ function editAkunAset(cat,idx){
     });
     if(S.rekening){
       const r=S.rekening.find(r=>r.name===oldName);
-      if(r){ r.name=item.name; r.balance=newVal; }
+      if(r){ r.name=item.name; }
     }
   }
   persist(); renderAsetRangkuman();
