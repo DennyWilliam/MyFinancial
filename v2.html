@@ -1819,7 +1819,7 @@ function populateFilters() {
   const accs=[...new Set(vt.map(t=>t.account).filter(Boolean))].sort();
   document.getElementById('fAcc').innerHTML='<option value="">Semua rekening</option>'+accs.map(a=>`<option>${a}</option>`).join('');
 }
-function renderTx() {
+function getFilteredTx() {
   let txs=[...visibleTx()];
   const ft=document.getElementById('fType').value;
   const fa=document.getElementById('fAcc').value;
@@ -1840,6 +1840,39 @@ function renderTx() {
     let cmp = av<bv ? -1 : av>bv ? 1 : 0;
     return txSortDir==='asc' ? cmp : -cmp;
   });
+  return txs;
+}
+
+function downloadCSV(rows, filename){
+  const esc = v => `"${String(v??'').replace(/"/g,'""')}"`;
+  const csv = rows.map(r=>r.map(esc).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportCSV(){
+  const txs = getFilteredTx();
+  if(!txs.length){ alert('Tidak ada transaksi untuk di-export (cek filter).'); return; }
+  const rows = [['Tanggal','Deskripsi','Rekening','Pemilik','Tipe','Kategori','Jumlah']];
+  txs.forEach(t=>rows.push([t.date, t.description||'', t.account||'', t.owner||activeOwner, t.type==='income'?'Income':t.type==='investment'?'Investasi':'Outcome', t.category||'', t.amount||0]));
+  downloadCSV(rows, `rincian-transaksi-${activeOwner}-${today()}.csv`);
+}
+
+function exportExcel(){
+  const txs = visibleTx();
+  if(!txs.length){ alert('Belum ada transaksi untuk di-export.'); return; }
+  const sorted = [...txs].sort((a,b)=>a.date.localeCompare(b.date));
+  const rows = [['Tanggal','Deskripsi','Rekening','Pemilik','Tipe','Kategori','Jumlah']];
+  sorted.forEach(t=>rows.push([t.date, t.description||'', t.account||'', t.owner||activeOwner, t.type==='income'?'Income':t.type==='investment'?'Investasi':'Outcome', t.category||'', t.amount||0]));
+  downloadCSV(rows, `myfinancial-${activeOwner}-${today()}.csv`);
+}
+
+function renderTx() {
+  let txs = getFilteredTx();
   updateSortArrows();
   const pages=Math.ceil(txs.length/PER)||1;
   if(txPage>pages) txPage=1;
