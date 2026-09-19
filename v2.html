@@ -3181,9 +3181,9 @@ function renderAsetRangkuman(){
     // Find last manual entry at or before this month
     const entries = (acct.monthValues||{});
     const relevantMonths = Object.keys(entries).filter(m=>m<=month).sort();
-    if(!relevantMonths.length) return 0;
-    const lastMonth = relevantMonths[relevantMonths.length-1];
-    const baseVal = entries[lastMonth];
+    const hasBaseline = relevantMonths.length>0;
+    const lastMonth = hasBaseline ? relevantMonths[relevantMonths.length-1] : '0000-00';
+    const baseVal = hasBaseline ? entries[lastMonth] : 0;
     // Add net transfers from lastMonth+1 to this month
     const transfers = S.transfers||[];
     const inflow  = transfers.filter(t=>t.toName===acctName   && t.date.slice(0,7)>=lastMonth && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
