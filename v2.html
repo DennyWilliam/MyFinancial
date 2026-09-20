@@ -2636,6 +2636,7 @@ function updateParsedCats(i, type){
 function populateImportAccSel(){
   const sel = document.getElementById('importAccSel');
   if(!sel) return;
+  const prevValue = sel.value; // preserve the user's selection across re-renders (e.g. deleting a row)
   const asetCats = getCatList('investment');
   const rekCat = asetCats.find(c=>c.toLowerCase()==='rekening'||c.toLowerCase()==='tunai') || '';
   const rekItems = rekCat ? visibleAssetItems(rekCat) : [];
@@ -2644,6 +2645,7 @@ function populateImportAccSel(){
     : (S.rekening||[]).map(r=>`<option value="${r.name}">${r.name}</option>`).join('') ||
       '<option>BCA 1147</option><option>Cash</option>';
   sel.innerHTML = rekOptions;
+  if(prevValue && [...sel.options].some(o=>o.value===prevValue)) sel.value = prevValue;
 }
 
 function confirmImport(){
