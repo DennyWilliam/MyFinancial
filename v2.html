@@ -2510,6 +2510,11 @@ function parsePipeFormat(txt){
 // Format KlikBCA CSV export: Date, Description, Branch, Mutation, Balance
 // Kita hanya ambil: Date, Description, Mutation amount
 function parseCSV(csv){
+  // Detect BCA Credit Card statement export (Transaction Date + Posting Date columns) —
+  // structurally different from the savings-account CSV export.
+  if(/transaction\s*date/i.test(csv) && /posting\s*date/i.test(csv)){
+    return parseCCStatementCSV(csv);
+  }
   setProgress(40,'Parsing CSV BCA...');
   const lines=csv.trim().split('\n');
   const items=[];
@@ -2553,6 +2558,38 @@ function parseCSV(csv){
   setProgress(100, items.length ? `✅ ${items.length} transaksi ditemukan dari CSV` : '⚠️ Tidak ada transaksi terdeteksi');
   if(items.length) showParsed(items);
   else showSt('⚠️ Tidak ada transaksi. Pastikan file CSV dari KlikBCA (Account Statement export).');
+}
+
+function parseCCStatementCSV(csv){
+  setProgress(40,'Parsing CSV Kartu Kredit BCA...');
+  const lines = csv.split('\n');
+  const items = [];
+  const monthMap = {jan:'01',feb:'02',mar:'03',apr:'04',mei:'05',may:'05',jun:'06',jul:'07',
+                     agu:'08',aug:'08',sep:'09',okt:'10',oct:'10',nov:'11',des:'12',dec:'12'};
+  function parseMonthDate(s){
+    const m = s.match(/(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/);
+    if(!m) return null;
+    const mm = monthMap[m[2].toLowerCase()] || '01';
+    return `${m[3]}-${mm}-${m[1].padStart(2,'0')}`;
+  }
+  // Row format: <no>,<Transaction Date>,<Posting Date>,<Description>,Rp. <amount> (optionally wrapped in parens = payment/internal transfer, not a purchase)
+  const rowRe = /^\d+,(\d{1,2}\s+[A-Za-z]{3}\s+\d{4}),(\d{1,2}\s+[A-Za-z]{3}\s+\d{4}),(.+?),\s*Rp\.\s*(\(?[\d.,]+\)?)\s*$/;
+  lines.forEach(line=>{
+    const clean = line.trim().replace(/\r$/,'');
+    const m = clean.match(rowRe);
+    if(!m) return;
+    const trxDate = parseMonthDate(m[1]);
+    const desc = m[3].replace(/\s{2,}/g,' ').trim().slice(0,60);
+    const amtRaw = m[4].trim();
+    const isPaymentOrTransfer = /^\(/.test(amtRaw) || /^(TRANSFER\s+(KE|DARI)|PEMBAYARAN)/i.test(desc); // internal card payments/transfers, not real purchases
+    if(isPaymentOrTransfer) return;
+    const amount = Math.round(parseFloat(amtRaw.replace(/[().]/g,''))||0);
+    if(!amount || !trxDate || !desc) return;
+    items.push({date:trxDate, description:desc, amount, type:'expense', category:guessCat(desc,'expense')});
+  });
+  setProgress(100, items.length ? `✅ ${items.length} transaksi ditemukan dari CSV Kartu Kredit` : '⚠️ Tidak ada transaksi terdeteksi');
+  if(items.length) showParsed(items);
+  else showSt('⚠️ Tidak ada transaksi. Pastikan file CSV export Kartu Kredit BCA yang benar.');
 }
 
 function showParsed(items){
