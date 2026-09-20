@@ -649,11 +649,22 @@ window.addEventListener('load', function(){
           <select id="fType" onchange="renderTx()"><option value="">Semua tipe</option><option value="income">Income</option><option value="expense">Outcome</option><option value="investment">Aset</option></select>
           <select id="fCat" onchange="renderTx()"><option value="">Semua kategori</option></select>
           <select id="fAcc" onchange="renderTx()"><option value="">Semua rekening</option></select>
-          <span style="font-size:11px;color:var(--text3)">Dari</span>
-          <input type="date" id="fDateFrom" onchange="onDateFromChange()">
-          <span style="font-size:11px;color:var(--text3)">s/d</span>
-          <input type="date" id="fDateTo" onchange="renderTx()">
-          <button class="btn btn-sm" onclick="document.getElementById('fDateFrom').value='';document.getElementById('fDateTo').value='';renderTx()">✕ Reset tanggal</button>
+          <div style="position:relative">
+            <button type="button" id="dateRangeBtn" class="btn btn-sm" onclick="toggleDateRangePicker()" style="min-width:170px;text-align:left">📅 Semua tanggal</button>
+            <div id="dateRangePopup" style="display:none;position:absolute;top:110%;left:0;z-index:50;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.12);padding:12px;width:260px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <button type="button" onclick="drpChangeMonth(-1)" style="background:none;border:none;cursor:pointer;font-size:14px">‹</button>
+                <span id="drpMonthLabel" style="font-size:12.5px;font-weight:600"></span>
+                <button type="button" onclick="drpChangeMonth(1)" style="background:none;border:none;cursor:pointer;font-size:14px">›</button>
+              </div>
+              <div id="drpGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:11px;text-align:center"></div>
+              <div style="font-size:10.5px;color:var(--text3);margin-top:8px">Klik 1 tanggal, lalu klik lagi buat rentang</div>
+              <div style="display:flex;justify-content:space-between;margin-top:8px">
+                <button type="button" class="btn btn-sm" onclick="drpClear()">✕ Semua tanggal</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="drpApply()">Terapkan</button>
+              </div>
+            </div>
+          </div>
           <input type="text" id="fSearch" placeholder="🔍 Cari deskripsi..." oninput="renderTx()" style="flex:1">
           <button class="btn btn-green btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
         </div>
@@ -1812,6 +1823,75 @@ function updateSortArrows(){
 }
 const PER = 25;
 
+// ═══════════════════════════════════════
+// DATE RANGE PICKER (single box) — Rincian Transaksi
+// ═══════════════════════════════════════
+let drpStart = null, drpEnd = null;
+let drpViewMonth = new Date();
+
+function toggleDateRangePicker(){
+  const popup = document.getElementById('dateRangePopup');
+  const isOpen = popup.style.display === 'block';
+  popup.style.display = isOpen ? 'none' : 'block';
+  if(!isOpen){
+    drpViewMonth = drpStart ? new Date(drpStart+'T00:00:00') : new Date();
+    renderDrpGrid();
+  }
+}
+function drpChangeMonth(delta){
+  drpViewMonth.setMonth(drpViewMonth.getMonth()+delta);
+  renderDrpGrid();
+}
+function renderDrpGrid(){
+  const y = drpViewMonth.getFullYear(), m = drpViewMonth.getMonth();
+  document.getElementById('drpMonthLabel').textContent = drpViewMonth.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+  const firstDay = new Date(y,m,1).getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  let html = ['M','S','S','R','K','J','S'].map(d=>`<div style="color:var(--text3);font-weight:600;padding:2px 0">${d}</div>`).join('');
+  for(let i=0;i<firstDay;i++) html += '<div></div>';
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let bg='transparent', color='var(--text)';
+    if(drpStart && dateStr===drpStart){ bg='var(--accent)'; color='#fff'; }
+    if(drpEnd && dateStr===drpEnd){ bg='var(--accent)'; color='#fff'; }
+    if(drpStart && drpEnd && dateStr>drpStart && dateStr<drpEnd){ bg='var(--accent-glow)'; }
+    html += `<div onclick="drpPick('${dateStr}')" style="padding:4px 0;border-radius:6px;cursor:pointer;background:${bg};color:${color}">${d}</div>`;
+  }
+  document.getElementById('drpGrid').innerHTML = html;
+}
+function drpPick(dateStr){
+  if(!drpStart || (drpStart && drpEnd)){
+    drpStart = dateStr; drpEnd = null;
+  } else if(dateStr < drpStart){
+    drpEnd = drpStart; drpStart = dateStr;
+  } else {
+    drpEnd = dateStr;
+  }
+  renderDrpGrid();
+}
+function drpApply(){
+  document.getElementById('dateRangePopup').style.display='none';
+  updateDateRangeLabel();
+  renderTx();
+}
+function drpClear(){
+  drpStart = null; drpEnd = null;
+  document.getElementById('dateRangePopup').style.display='none';
+  updateDateRangeLabel();
+  renderTx();
+}
+function fmtDateShort(iso){
+  const [y,m,d]=iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+function updateDateRangeLabel(){
+  const btn = document.getElementById('dateRangeBtn');
+  if(!btn) return;
+  if(!drpStart) btn.textContent = '📅 Semua tanggal';
+  else if(!drpEnd || drpEnd===drpStart) btn.textContent = '📅 '+fmtDateShort(drpStart);
+  else btn.textContent = '📅 '+fmtDateShort(drpStart)+' – '+fmtDateShort(drpEnd);
+}
+
 function populateFilters() {
   const vt = visibleTx();
   const cats=[...new Set(vt.map(t=>t.category).filter(Boolean))].sort();
@@ -1824,8 +1904,8 @@ function getFilteredTx() {
   const ft=document.getElementById('fType').value;
   const fa=document.getElementById('fAcc').value;
   const fc=document.getElementById('fCat').value;
-  const fdFrom=document.getElementById('fDateFrom').value;
-  const fdTo=document.getElementById('fDateTo').value;
+  const fdFrom=drpStart||'';
+  const fdTo=drpEnd||drpStart||'';
   const fs=document.getElementById('fSearch').value.toLowerCase();
   if(ft) txs=txs.filter(t=>t.type===ft);
   if(fa) txs=txs.filter(t=>t.account===fa);
@@ -1869,13 +1949,6 @@ function exportExcel(){
   const rows = [['Tanggal','Deskripsi','Rekening','Pemilik','Tipe','Kategori','Jumlah']];
   sorted.forEach(t=>rows.push([t.date, t.description||'', t.account||'', t.owner||activeOwner, t.type==='income'?'Income':t.type==='investment'?'Investasi':'Outcome', t.category||'', t.amount||0]));
   downloadCSV(rows, `myfinancial-${activeOwner}-${today()}.csv`);
-}
-
-function onDateFromChange(){
-  const from = document.getElementById('fDateFrom');
-  const to = document.getElementById('fDateTo');
-  if(from.value && !to.value) to.value = from.value;
-  renderTx();
 }
 
 function renderTx() {
@@ -3532,6 +3605,14 @@ function showAsetMonthDetail(key,itemIdx,month){
 window.onerror=function(msg,src,line){console.error('JS Error:',msg,'line',line);};
 
 // Don't call loadState() directly — go through PIN check
+document.addEventListener('click', function(e){
+  const popup = document.getElementById('dateRangePopup');
+  const btn = document.getElementById('dateRangeBtn');
+  if(popup && popup.style.display==='block' && !popup.contains(e.target) && e.target!==btn){
+    popup.style.display='none';
+  }
+});
+
 checkAutoAuth();
 document.getElementById('mDate').value=today();
 
