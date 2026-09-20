@@ -3265,6 +3265,13 @@ const ASET_DEFS = [
   {key:'utang',     label:'Utang',       icon:'📥', isLiability:true},
 ];
 
+let asetCatCollapsed = {}; // per-category collapse state for Rangkuman Aset; undefined = collapsed by default
+function toggleAsetCat(cat){
+  const currentlyCollapsed = asetCatCollapsed[cat] !== false; // undefined or true => collapsed
+  asetCatCollapsed[cat] = !currentlyCollapsed;
+  renderAsetRangkuman();
+}
+
 function renderAsetRangkuman(){
   if(!S.asetItems) S.asetItems={};
   const filterItems = arr => arr.filter(i=>isVisibleOwner(i.owner));
@@ -3387,12 +3394,17 @@ function renderAsetRangkuman(){
 
     const catMonthTotals = months.map(m=> m>nowM ? 0 : items.reduce((a,i)=>a+getAcctMonthVal(cat,i.name,m),0));
 
-    html+=`<tr style="background:var(--bg3);border-top:1.5px solid var(--border2)">
-      <td style="padding:9px 16px;font-size:12px;font-weight:700;color:${catRowColor};text-transform:uppercase;letter-spacing:0.5px;position:sticky;left:0;background:var(--bg3)">${cat}</td>
+    const collapsed = asetCatCollapsed[cat] !== false; // default collapsed
+
+    html+=`<tr style="background:var(--bg3);border-top:1.5px solid var(--border2);cursor:pointer" onclick="toggleAsetCat('${cat}')">
+      <td style="padding:9px 16px;font-size:12px;font-weight:700;color:${catRowColor};text-transform:uppercase;letter-spacing:0.5px;position:sticky;left:0;background:var(--bg3)">
+        <span style="display:inline-block;width:14px;font-size:10px">${collapsed?'▶':'▼'}</span>${cat}
+      </td>
 
       ${catMonthTotals.map(v=>`<td style="text-align:right;padding:9px 16px;font-size:13px;font-weight:600;color:${catRowColor}">${v?'Rp '+fmt(v):'—'}</td>`).join('')}
     </tr>`;
 
+    if(!collapsed){
     if(!items.length){
       html+=`<tr><td colspan="${months.length+2}" style="padding:8px 28px;font-size:12px;color:var(--text3);font-style:italic">Belum ada akun</td></tr>`;
     } else {
@@ -3423,6 +3435,7 @@ function renderAsetRangkuman(){
         </tr>`;
       });
     }
+    } // end if(!collapsed)
   });
 
   // ── TOTAL row (Aset - Hutang, per month) ──
