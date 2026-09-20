@@ -1852,7 +1852,7 @@ function renderDrpGrid(){
     if(drpStart && dateStr===drpStart){ bg='var(--accent)'; color='#fff'; }
     if(drpEnd && dateStr===drpEnd){ bg='var(--accent)'; color='#fff'; }
     if(drpStart && drpEnd && dateStr>drpStart && dateStr<drpEnd){ bg='var(--accent-glow)'; }
-    html += `<div onclick="drpPick('${dateStr}')" style="padding:4px 0;border-radius:6px;cursor:pointer;background:${bg};color:${color}">${d}</div>`;
+    html += `<div onclick="event.stopPropagation();drpPick('${dateStr}')" style="padding:4px 0;border-radius:6px;cursor:pointer;background:${bg};color:${color}">${d}</div>`;
   }
   document.getElementById('drpGrid').innerHTML = html;
 }
@@ -3608,7 +3608,7 @@ window.onerror=function(msg,src,line){console.error('JS Error:',msg,'line',line)
 document.addEventListener('click', function(e){
   const popup = document.getElementById('dateRangePopup');
   const btn = document.getElementById('dateRangeBtn');
-  if(popup && popup.style.display==='block' && !popup.contains(e.target) && e.target!==btn){
+  if(popup && popup.style.display==='block' && !popup.contains(e.target) && !(btn && btn.contains(e.target))){
     popup.style.display='none';
   }
 });
