@@ -2081,8 +2081,8 @@ function renderPnL(){
   // build month headers
   const mLabels = months.map(m=>{ const d=new Date(m+'-01'); return d.toLocaleDateString('en-US',{month:'short',year:'2-digit'}); });
   document.getElementById('pnlHead').innerHTML =
-    '<th style="min-width:160px;position:sticky;left:0;background:var(--bg3);z-index:1">Kategori</th>' +
-    months.map((m,i)=>`<th style="text-align:right;min-width:140px;padding:10px 16px">${mLabels[i]}</th>`).join('');
+    '<th style="min-width:128px;position:sticky;left:0;background:var(--bg3);z-index:1">Kategori</th>' +
+    months.map((m,i)=>`<th style="text-align:right;min-width:112px;padding:10px 16px">${mLabels[i]}</th>`).join('');
 
   // helper: sum by month+type+optionally category
   const sumMT = (m,type,cat) => txs
@@ -2110,7 +2110,7 @@ function renderPnL(){
     const hasData = months.some(m=>sumMT(m,'income',cat)>0);
     if(!hasData) return;
     rows.push(`<tr>
-      <td style="padding-left:28px;color:var(--text2);font-size:13px;position:sticky;left:0;background:var(--bg2)">${cat}</td>
+      <td style="padding-left:28px;color:var(--text2);font-size:13px;font-weight:600;position:sticky;left:0;background:var(--bg2)">${cat}</td>
       ${months.map(m=>cellStyle(sumMT(m,'income',cat),'var(--text2)')).join('')}
     </tr>`);
   });
@@ -2134,7 +2134,7 @@ function renderPnL(){
     const hasData = months.some(m=>sumMT(m,'expense',cat)>0);
     if(!hasData) return;
     rows.push(`<tr>
-      <td style="padding-left:28px;color:var(--text2);font-size:13px;position:sticky;left:0;background:var(--bg2)">${cat}</td>
+      <td style="padding-left:28px;color:var(--text2);font-size:13px;font-weight:600;position:sticky;left:0;background:var(--bg2)">${cat}</td>
       ${months.map(m=>cellStyle(sumMT(m,'expense',cat),'var(--text2)')).join('')}
     </tr>`);
   });
