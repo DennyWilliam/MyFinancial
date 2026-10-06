@@ -3299,21 +3299,7 @@ function renderAsetRangkuman(){
 
   // ── Calc monthly value per instrument from transfers ──
   // value(acct, month) = awal + sum(transfers IN up to month) - sum(transfers OUT up to month)
-  function getAcctMonthVal(catName, acctName, month){
-    const acct = (S.asetItems[catName]||[]).find(i=>i.name===acctName);
-    if(!acct) return 0;
-    // Find last manual entry at or before this month
-    const entries = (acct.monthValues||{});
-    const relevantMonths = Object.keys(entries).filter(m=>m<=month).sort();
-    const hasBaseline = relevantMonths.length>0;
-    const lastMonth = hasBaseline ? relevantMonths[relevantMonths.length-1] : '0000-00';
-    const baseVal = hasBaseline ? entries[lastMonth] : 0;
-    // Add net transfers from lastMonth+1 to this month
-    const transfers = S.transfers||[];
-    const inflow  = transfers.filter(t=>t.toName===acctName   && t.date.slice(0,7)>=lastMonth && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
-    const outflow = transfers.filter(t=>t.fromName===acctName && t.date.slice(0,7)>=lastMonth && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
-    return baseVal + inflow - outflow;
-  }
+  function getAcctMonthVal(catName, acctName, month){ return acctMonthVal(catName, acctName, month); }
 
   // ── Collect all months that have data ──
   // Months come from: account creation dates + transfer dates (active profile only)
@@ -3522,14 +3508,42 @@ function addHistRow(){
   box.appendChild(row);
 }
 
+// Nilai akun pada suatu bulan = nilai manual terakhir (<= bulan itu) + transfer masuk - transfer keluar sejak bulan itu
+function acctMonthVal(catName, acctName, month){
+  const acct = (S.asetItems[catName]||[]).find(i=>i.name===acctName);
+  if(!acct) return 0;
+  const entries = (acct.monthValues||{});
+  const relevantMonths = Object.keys(entries).filter(m=>m<=month).sort();
+  const hasBaseline = relevantMonths.length>0;
+  const lastMonth = hasBaseline ? relevantMonths[relevantMonths.length-1] : '0000-00';
+  const baseVal = hasBaseline ? entries[lastMonth] : 0;
+  const transfers = S.transfers||[];
+  const inflow  = transfers.filter(t=>t.toName===acctName   && t.date.slice(0,7)>=lastMonth && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
+  const outflow = transfers.filter(t=>t.fromName===acctName && t.date.slice(0,7)>=lastMonth && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
+  return baseVal + inflow - outflow;
+}
+
 function editMonthVal(cat, idx, month){
   const item=(S.asetItems[cat]||[])[idx];
   if(!item) return;
   if(!item.monthValues) item.monthValues={};
-  const current = item.monthValues[month] || 0;
-  const input = prompt(`Nilai "${item.name}" bulan ${month} (Rp):`, current);
+  // Isi awal = angka yang TAMPIL di tabel (bukan nilai manual mentah), supaya klik-OK tanpa ubah tidak menimpa apa pun
+  const shown = Math.round(acctMonthVal(cat, item.name, month)) || 0;
+  const input = prompt(`Nilai "${item.name}" bulan ${month} (Rp):`, shown);
   if(input===null) return;
-  item.monthValues[month] = parseFloat(input)||0;
+  const txt = String(input).trim();
+  if(txt==='') return;                                   // kosong = batal, jangan tulis 0
+  const newVal = parseFloat(txt.replace(/\./g,'').replace(',','.'));
+  if(isNaN(newVal)) return;                              // bukan angka = batal
+  if(newVal===shown) return;                             // tidak ada perubahan = jangan tulis apa pun
+  // Simpan sebagai nilai awal bulan: kurangi transfer bulan itu, supaya angka yang tampil = angka yang diketik
+  const net = (S.transfers||[]).reduce((a,t)=>{
+    if(t.date.slice(0,7)!==month) return a;
+    if(t.toName===item.name)   return a+(t.amount||0);
+    if(t.fromName===item.name) return a-(t.amount||0);
+    return a;
+  },0);
+  item.monthValues[month] = newVal - net;
   persist(); renderAsetRangkuman();
 }
 
