@@ -441,11 +441,13 @@ window.addEventListener('load', function(){
       <div class="nav-item" onclick="go('aset-rangkuman',this)">
         <span class="nav-icon">📊</span>Rangkuman
       </div>
-      <div class="nav-item" onclick="go('invtrack',this)">
-        <span class="nav-icon">🚀</span>Investasi
-      </div>
       <div class="nav-item" onclick="go('transfer',this)">
         <span class="nav-icon">💸</span>Transfer Dana
+      </div>
+
+      <div class="nav-section">Investasi</div>
+      <div class="nav-item" onclick="go('invtrack',this)">
+        <span class="nav-icon">🚀</span>Investasi
       </div>
 
       <div class="nav-section">Master Data</div>
@@ -799,7 +801,7 @@ window.addEventListener('load', function(){
       <div class="page" id="page-invtrack">
         <div class="sec-head">
           <div class="sec-title">🚀 Investasi</div>
-          <div class="sec-sub">Pergerakan nilai instrumen investasi · diambil dari Rangkuman Aset · Rekening/kas tidak dihitung · klik nilai untuk update</div>
+          <div class="sec-sub">Nilai instrumen investasi per bulan · diambil dari Rangkuman Aset · rekening bank tidak dihitung · klik angka untuk update</div>
         </div>
         <div id="invTrackBody"></div>
       </div>
@@ -3284,182 +3286,168 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal('pnlDet
 
 
 // ═══════════════════════════════════════
-// INVESTASI — pergerakan, return % murni, target 2027
+// INVESTASI — nilai per bulan (mulai Okt 2026), target 2027 +10% vs Des 2026
 // ═══════════════════════════════════════
 const INV_TRACK_NAMES = ['saham indo','saham luar','deposito','crypto'];
-const INV_BASE_MONTH = '2026-12';      // baseline target
-const INV_TARGET_GROWTH = 0.10;        // +10% dibanding Des 2026
+const INV_KAS_CATS = ['saham indo','saham luar'];   // punya sub-baris: Nilai Portfolio + Kas
+const INV_START_MONTH = '2026-10';
+const INV_BASE_MONTH = '2026-12';
+const INV_TARGET_GROWTH = 0.10;
 const INV_TARGET_MONTH = '2027-12';
+let invCatCollapsed = {};   // default collapsed
+let invItemOpen = {};       // item (Saham) dibuka -> tampil Portfolio & Kas
 
-function invTrackItems(){
-  const keys = new Set([...Object.keys(S.asetItems||{}), ...getCatList('investment')]);
-  const out = [];
-  [...keys].forEach(cat=>{
-    if(!INV_TRACK_NAMES.includes(String(cat).toLowerCase())) return;
-    (S.asetItems[cat]||[]).forEach((item,idx)=>{
-      if(isVisibleOwner(item.owner)) out.push({cat,idx,item,name:item.name});
-    });
-  });
-  return out;
+function invToggleCat(cat){ invCatCollapsed[cat] = !(invCatCollapsed[cat] !== false); renderInvTrack(); }
+function invToggleItem(key){ invItemOpen[key] = !invItemOpen[key]; renderInvTrack(); }
+function invTrackCats(){
+  const keys = [...new Set([...Object.keys(S.asetItems||{}), ...getCatList('investment')])];
+  const order = INV_TRACK_NAMES;
+  return keys.filter(k=>order.includes(String(k).toLowerCase())).sort((a,b)=>order.indexOf(a.toLowerCase())-order.indexOf(b.toLowerCase()));
 }
 function invMonthAdd(m,n){ const [y,mo]=m.split('-').map(Number); const d=new Date(y,mo-1+n,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
-function invHasData(it,m){ return Object.keys(it.item.monthValues||{}).some(k=>k<=m); }
-function invHasEntry(it,m){ return (it.item.monthValues||{}).hasOwnProperty(m); }
-function invVal(it,m){ return invHasData(it,m) ? acctMonthVal(it.cat,it.name,m) : null; }
-
-// hitung per instrumen per bulan: nilai, setoran (transfer bersih), kenaikan murni, % (Modified Dietz)
-function invCalc(items,m){
-  const names = new Set(items.map(i=>i.name));
-  const prevM = invMonthAdd(m,-1);
-  const [y,mo] = m.split('-').map(Number);
-  const D = new Date(y,mo,0).getDate();
-  return items.map(it=>{
-    const v = invVal(it,m), pv = invVal(it,prevM);
-    let flow=0, ext=0, wflow=0;
-    (S.transfers||[]).forEach(t=>{
-      if(!t.date || t.date.slice(0,7)!==m) return;
-      let sign=0, other=null;
-      if(t.toName===it.name){ sign=1; other=t.fromName; } else if(t.fromName===it.name){ sign=-1; other=t.toName; } else return;
-      const a=(t.amount||0)*sign, day=parseInt(t.date.slice(8,10),10)||1;
-      flow+=a; wflow+=a*((D-day)/D);
-      if(!names.has(other)) ext+=a;
-    });
-    let gain=null, pct=null;
-    if(v!==null && pv!==null){
-      gain = v - pv - flow;
-      const base = pv + wflow;
-      pct = base>0 ? gain/base : null;
-    }
-    return {it,v,pv,flow,ext,gain,pct,base:(pv!==null?pv+wflow:null),entry:invHasEntry(it,m)};
-  });
+function invHasEntry(item,m){ return Object.prototype.hasOwnProperty.call(item.monthValues||{},m); }
+function invHasData(item,m){ return Object.keys(item.monthValues||{}).some(k=>k<=m); }
+function invPortfolio(cat,item,m){ return invHasData(item,m) ? acctMonthVal(cat,item.name,m) : 0; }
+function invKas(item,m){
+  const ks = Object.keys(item.kasValues||{}).filter(k=>k<=m).sort();
+  return ks.length ? (item.kasValues[ks[ks.length-1]]||0) : 0;
+}
+function invItemTotal(cat,item,m){
+  return invPortfolio(cat,item,m) + (INV_KAS_CATS.includes(cat.toLowerCase()) ? invKas(item,m) : 0);
+}
+function editKasVal(cat, idx, month){
+  const item=(S.asetItems[cat]||[])[idx]; if(!item) return;
+  if(!item.kasValues) item.kasValues={};
+  const shown = Math.round(invKas(item,month))||0;
+  const input = prompt(`Saldo KAS "${item.name}" bulan ${month} (Rp, dana yang belum dibelikan saham):`, shown);
+  if(input===null) return;
+  const txt=String(input).trim(); if(txt==='') return;
+  const v=parseFloat(txt.replace(/\./g,'').replace(',','.')); if(isNaN(v)) return;
+  if(v===shown && Object.prototype.hasOwnProperty.call(item.kasValues,month)) return;
+  item.kasValues[month]=v;
+  persist(); renderInvTrack();
 }
 
 function renderInvTrack(){
   const box = document.getElementById('invTrackBody'); if(!box) return;
-  const items = invTrackItems();
+  const cats = invTrackCats();
+  const itemsOf = cat => (S.asetItems[cat]||[]).filter(i=>isVisibleOwner(i.owner));
+  const all = []; cats.forEach(c=>itemsOf(c).forEach(i=>all.push({cat:c,item:i})));
   const rp = n => 'Rp '+fmt(n);
-  const pc = x => x===null||x===undefined||isNaN(x) ? '<span style="color:var(--text3)">—</span>' :
-      `<span style="color:${x>=0?'#059669':'#dc2626'};font-weight:700">${x>=0?'▲ +':'▼ '}${(x*100).toFixed(1).replace('.',',')}%</span>`;
-  if(!items.length){
-    box.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3)">Belum ada instrumen investasi (Saham Indo, Saham Luar, Deposito, Crypto) di Rangkuman Aset.</div>';
+  if(!all.length){
+    box.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">Belum ada instrumen investasi (Saham Indo, Saham Luar, Deposito, Crypto) di Rangkuman Aset.</div>';
     return;
   }
-  // bulan pertama yang punya data
-  let first=null;
-  items.forEach(it=>Object.keys(it.item.monthValues||{}).forEach(k=>{ if(!first||k<first) first=k; }));
-  if(!first){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3)">Isi nilai bulanan instrumen di Rangkuman Aset dulu.</div>'; return; }
   const nowM = today().slice(0,7);
-  let lastTable = nowM > INV_BASE_MONTH ? nowM : INV_BASE_MONTH;
-  if(lastTable > INV_TARGET_MONTH) lastTable = INV_TARGET_MONTH;
-  const months=[]; for(let m=first; m<=lastTable; m=invMonthAdd(m,1)) months.push(m);
-  const mLbl = m => new Date(m+'-01').toLocaleDateString('id-ID',{month:'short',year:'2-digit'});
-  const calc = {}; months.forEach(m=>calc[m]=invCalc(items,m));
-  const totalOf = m => { let any=false,t=0; calc[m].forEach(c=>{ if(c.v!==null){any=true;t+=c.v;} }); return any?t:null; };
-  const sumPct = m => { let g=0,b=0,ok=false; calc[m].forEach(c=>{ if(c.gain!==null&&c.base>0){g+=c.gain;b+=c.base;ok=true;} }); return ok?g/b:null; };
-  const sumGain = m => { let g=0,ok=false; calc[m].forEach(c=>{ if(c.gain!==null){g+=c.gain;ok=true;} }); return ok?g:null; };
-  const sumExt = m => calc[m].reduce((a,c)=>a+c.ext,0);
+  let last = nowM > INV_BASE_MONTH ? nowM : INV_BASE_MONTH; if(last>INV_TARGET_MONTH) last=INV_TARGET_MONTH;
+  let months=[]; for(let m=INV_START_MONTH; m<=last; m=invMonthAdd(m,1)) months.push(m);
+  while(months.length<5) months.push(invMonthAdd(months[months.length-1],1));
+  const mLbl = m => new Date(m+'-01').toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+  const totalOf = m => m>nowM ? 0 : all.reduce((a,x)=>a+invItemTotal(x.cat,x.item,m),0);
 
-  // posisi terakhir (bulan terakhir <= sekarang yang punya data)
-  const posM = [...months].reverse().find(m=>m<=nowM && items.some(it=>invHasEntry(it,m))) || first;
-  const posTotal = totalOf(posM) || 0;
-  const posPrev = months[months.indexOf(posM)-1];
+  // posisi terakhir yang benar-benar diupdate
+  const upd = months.filter(m=>m<=nowM && all.some(x=>invHasEntry(x.item,m)));
+  const posM = upd.length ? upd[upd.length-1] : INV_START_MONTH;
+  const posTotal = totalOf(posM);
 
   // baseline & target
-  const baseDone = items.filter(it=>invHasData(it,INV_BASE_MONTH)).length>0 && items.filter(it=>invHasData(it,INV_BASE_MONTH)).every(it=>invHasEntry(it,INV_BASE_MONTH));
-  const baseVal = baseDone ? items.reduce((a,it)=>a+(invVal(it,INV_BASE_MONTH)||0),0) : null;
+  const withBase = all.filter(x=>invHasData(x.item,INV_BASE_MONTH));
+  const baseDone = withBase.length>0 && withBase.every(x=>invHasEntry(x.item,INV_BASE_MONTH));
+  const baseVal = baseDone ? all.reduce((a,x)=>a+invItemTotal(x.cat,x.item,INV_BASE_MONTH),0) : null;
   const targetVal = baseVal!==null ? baseVal*(1+INV_TARGET_GROWTH) : null;
 
-  // YTD murni (rantai % bulanan) per tahun
-  const chain = (arr)=>{ let f=1,ok=false; arr.forEach(x=>{ if(x!==null){f*=1+x;ok=true;} }); return ok?f-1:null; };
-  const yearOf = posM.slice(0,4);
-  const ytdPure = chain(months.filter(m=>m.slice(0,4)===yearOf && m<=posM).map(sumPct));
+  // setoran dari luar (transfer ke/dari instrumen yang bukan instrumen investasi) sejak baseline
+  const names = new Set(all.map(x=>x.item.name));
+  const extSince = (fromM,toM) => (S.transfers||[]).reduce((a,t)=>{
+    const m=(t.date||'').slice(0,7); if(!m||m<=fromM||m>toM) return a;
+    const inN=names.has(t.toName), outN=names.has(t.fromName);
+    if(inN && !outN) return a+(t.amount||0);
+    if(outN && !inN) return a-(t.amount||0);
+    return a;
+  },0);
 
-  // belum update bulan ini
-  const warnM = months.includes(nowM) ? nowM : posM;
-  const stale = items.filter(it=>invHasData(it,warnM) && !invHasEntry(it,warnM)).map(i=>i.name);
+  // ── KPI ──
+  const stale = all.filter(x=>invHasData(x.item,nowM) && !invHasEntry(x.item,nowM) && months.includes(nowM)).map(x=>x.item.name);
+  const warn = stale.length ? `<div style="background:#fef3c7;border:1px solid #fcd34d;color:#92400e;font-size:12px;padding:9px 12px;border-radius:8px;margin-bottom:14px">⏰ Belum diupdate bulan ${mLbl(nowM)}: <b>${stale.join(', ')}</b>. Klik angka di tabel untuk mengisi nilai terbaru.</div>` : '';
+  const kpi = `<div class="kpi-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-bottom:18px">
+    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">🚀 TOTAL INVESTASI</div><div class="kpi-val" style="font-size:18px">${rp(posTotal)}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">${mLbl(posM)}</div></div>
+    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">📌 BASELINE DES 2026</div><div class="kpi-val" style="font-size:18px">${baseVal!==null?rp(baseVal):'<span style="color:var(--text3)">menunggu</span>'}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">${baseVal!==null?'nilai akhir Des 2026':'terisi saat semua nilai Des 2026 diupdate'}</div></div>
+    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">🎯 TARGET DES 2027 (+10%)</div><div class="kpi-val" style="font-size:18px">${targetVal!==null?rp(targetVal):'<span style="color:var(--text3)">—</span>'}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">= baseline × 1,10</div></div>
+    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">⏳ SISA KE TARGET</div><div class="kpi-val" style="font-size:18px">${targetVal!==null?rp(Math.max(0,targetVal-posTotal)):'<span style="color:var(--text3)">—</span>'}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">${targetVal!==null?((posTotal/baseVal-1)*100).toFixed(1).replace('.',',')+'% vs Des 2026':''}</div></div>
+  </div>`;
 
-  // ── KPI cards ──
-  const card=(l,v,sub,col)=>`<div style="border:1px solid var(--border);border-radius:12px;padding:14px;background:#fff"><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">${l}</div><div style="font-size:19px;font-weight:800;margin-top:6px;font-family:var(--mono);${col?'color:'+col:''}">${v}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">${sub}</div></div>`;
-  const posPct = posPrev? sumPct(posM):null;
-  let kpi = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">';
-  kpi += card('Total Investasi', rp(posTotal), mLbl(posM)+(posPrev&&sumGain(posM)!==null?` · ${sumGain(posM)>=0?'+':'−'}${rp(Math.abs(sumGain(posM)))} murni`:''));
-  kpi += card('Return Murni '+mLbl(posM), posPct===null?'—':(posPct>=0?'+':'')+(posPct*100).toFixed(1).replace('.',',')+'%', 'tanpa setoran/transfer', posPct===null?'':(posPct>=0?'#059669':'#dc2626'));
-  kpi += card('Baseline Des 2026', baseVal!==null?rp(baseVal):'<span style="color:var(--text3)">menunggu</span>', baseVal!==null?'total nilai akhir Des 2026':'terisi saat semua nilai Des 2026 diupdate');
-  kpi += card('Target Des 2027 (+10%)', targetVal!==null?rp(targetVal):'<span style="color:var(--text3)">—</span>', targetVal!==null?`butuh +${rp(targetVal-baseVal)}`:'= baseline × 1,10');
-  kpi += '</div>';
-
-  // ── Progress target ──
+  // ── Progres (mulai berarti setelah Des 2026) ──
   let prog='';
-  if(baseVal!==null){
-    const cur = totalOf(posM) ?? 0;
-    const inYear = posM > INV_BASE_MONTH;
-    let ext27=0; if(inYear) months.filter(m=>m>INV_BASE_MONTH && m<=posM).forEach(m=>ext27+=sumExt(m));
-    const pureGain = inYear ? (cur - baseVal - ext27) : 0;
-    const pctTarget = Math.max(0,Math.min(100,((cur-baseVal)/(targetVal-baseVal))*100));
-    prog = `<div style="border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;background:#fff">
+  if(baseVal!==null && posM>INV_BASE_MONTH){
+    const ext = extSince(INV_BASE_MONTH,posM), gain = posTotal-baseVal-ext;
+    const pctT = Math.max(0,Math.min(100,((posTotal-baseVal)/(targetVal-baseVal))*100));
+    prog=`<div style="background:#fff;border:0.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
       <div style="font-weight:700;font-size:13px;margin-bottom:10px">🎯 Progres Target 2027</div>
-      <div style="height:10px;background:#eef2ff;border-radius:6px;overflow:hidden"><div style="height:100%;width:${pctTarget.toFixed(1)}%;background:#2563eb"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-top:8px;flex-wrap:wrap;gap:6px">
-        <span>Sekarang ${rp(cur)} (${((cur/baseVal-1)*100).toFixed(1).replace('.',',')}% vs Des 2026)</span><span>Target ${rp(targetVal)}</span></div>
-      ${inYear?`<div style="font-size:12px;color:var(--text2);margin-top:10px;line-height:1.7">Kenaikan sejak Des 2026 = ${rp(cur-baseVal)}: <b style="color:#059669">${rp(pureGain)}</b> dari kenaikan murni + <b>${rp(ext27)}</b> dari setoran luar (mis. rekening). Pindah antar-instrumen tidak menambah total.</div>`:'<div style="font-size:12px;color:var(--text3);margin-top:10px">Pelacakan mulai Jan 2027.</div>'}
-    </div>`;
+      <div style="height:10px;background:#eef2ff;border-radius:6px;overflow:hidden"><div style="height:100%;width:${pctT.toFixed(1)}%;background:#2563eb"></div></div>
+      <div style="font-size:12px;color:var(--text2);margin-top:10px;line-height:1.7">Kenaikan sejak Des 2026 = ${rp(posTotal-baseVal)}: <b style="color:#059669">${rp(gain)}</b> dari kenaikan murni + <b>${rp(ext)}</b> dari setoran luar (mis. rekening). Pindah antar-instrumen tidak menambah total.</div></div>`;
   }
 
-  // ── Chart ──
-  const cm=[]; for(let m=first; m<=INV_TARGET_MONTH; m=invMonthAdd(m,1)) cm.push(m);
-  const pts = cm.map(m=>({m,t:(m<=nowM||months.includes(m))?totalOf(m):null}));
+  // ── Grafik (Okt 2026 →) ──
+  const cm=[]; for(let m=INV_START_MONTH; m<=INV_TARGET_MONTH; m=invMonthAdd(m,1)) cm.push(m);
+  const pts = cm.map(m=>({m,t:(m<=nowM && all.some(x=>invHasData(x.item,m)))?totalOf(m):null}));
   const vals = pts.filter(p=>p.t!==null).map(p=>p.t).concat(targetVal!==null?[targetVal,baseVal]:[]);
   let chart='';
   if(vals.length){
     let lo=Math.min(...vals), hi=Math.max(...vals); const pad=(hi-lo)*0.15||hi*0.02||1; lo-=pad; hi+=pad;
     const W=640,H=200,L=64,R=16,T=18,B=28, X=i=>L+(cm.length>1?i*(W-L-R)/(cm.length-1):0), Y=v=>T+(hi-v)/(hi-lo)*(H-T-B);
-    let line='', dots='', ticks='', grid='';
+    let dots='',ticks='',grid='';
     const seg = pts.map((p,i)=>p.t!==null?`${X(i).toFixed(1)},${Y(p.t).toFixed(1)}`:null).filter(Boolean);
-    if(seg.length>1) line=`<polyline points="${seg.join(' ')}" fill="none" stroke="#2563eb" stroke-width="2.5"/>`;
+    const line = seg.length>1 ? `<polyline points="${seg.join(' ')}" fill="none" stroke="#2563eb" stroke-width="2.5"/>` : '';
     pts.forEach((p,i)=>{ if(p.t!==null) dots+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(p.t).toFixed(1)}" r="3.5" fill="#2563eb"><title>${mLbl(p.m)}: ${rp(p.t)}</title></circle>`; });
     [0,0.5,1].forEach(f=>{ const v=lo+(hi-lo)*(1-f), y=T+f*(H-T-B); grid+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="#eef2f7"/><text x="4" y="${y+3}" font-size="10" fill="#9ca3af">${(v/1e9).toFixed(2).replace('.',',')} M</text>`; });
-    cm.forEach((m,i)=>{ if(cm.length<=9||i%2===0||m===INV_TARGET_MONTH) ticks+=`<text x="${X(i)}" y="${H-8}" font-size="10" text-anchor="middle" fill="#9ca3af">${mLbl(m)}</text>`; });
-    let tl='';
-    if(targetVal!==null){
-      const bi=cm.indexOf(INV_BASE_MONTH), ti=cm.indexOf(INV_TARGET_MONTH);
-      if(bi>=0&&ti>=0) tl=`<line x1="${X(bi)}" y1="${Y(baseVal)}" x2="${X(ti)}" y2="${Y(targetVal)}" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5 4"/><text x="${X(ti)-4}" y="${Y(targetVal)-6}" font-size="10" text-anchor="end" fill="#b45309">target +10%</text>`;
-    }
-    chart=`<div style="border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;background:#fff"><div style="font-weight:700;font-size:13px;margin-bottom:8px">📉 Pergerakan Total Investasi</div><svg viewBox="0 0 ${W} ${H}" width="100%">${grid}${ticks}${tl}${line}${dots}</svg></div>`;
+    cm.forEach((m,i)=>{ if(i%2===0||m===INV_TARGET_MONTH) ticks+=`<text x="${X(i)}" y="${H-8}" font-size="10" text-anchor="middle" fill="#9ca3af">${mLbl(m)}</text>`; });
+    let tl=''; const bi=cm.indexOf(INV_BASE_MONTH), ti=cm.indexOf(INV_TARGET_MONTH);
+    if(targetVal!==null && bi>=0 && ti>=0) tl=`<line x1="${X(bi)}" y1="${Y(baseVal)}" x2="${X(ti)}" y2="${Y(targetVal)}" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5 4"/><text x="${X(ti)-4}" y="${Y(targetVal)-6}" font-size="10" text-anchor="end" fill="#b45309">target +10%</text>`;
+    chart=`<div style="background:#fff;border:0.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">📉 Pergerakan Total Investasi</div><svg viewBox="0 0 ${W} ${H}" width="100%">${grid}${ticks}${tl}${line}${dots}</svg></div>`;
   }
 
-  // ── Tabel 1: Nilai ──
-  const th = (t,extra='') => `<th style="text-align:right;padding:8px 10px;font-size:11px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap;${extra}">${t}</th>`;
-  const lblTd = (t,b) => `<td style="padding:9px 10px;text-align:left;white-space:nowrap;position:sticky;left:0;background:#fff;${b?'font-weight:800':'font-weight:600'};font-size:13px;border-bottom:1px solid #f1f5f9">${t}</td>`;
-  const catIcon = {'saham indo':'📈','saham luar':'🌎','deposito':'🏦','crypto':'₿'};
-  let t1 = `<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr><th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);position:sticky;left:0;background:#fff">Instrumen</th>${months.map(m=>th(mLbl(m))).join('')}</tr></thead><tbody>`;
-  items.forEach((it,i)=>{
-    t1+=`<tr>${lblTd((catIcon[it.cat.toLowerCase()]||'')+' '+it.cat+' — '+it.name)}${months.map(m=>{
-      const c=calc[m][i]; if(c.v===null) return '<td style="text-align:right;padding:9px 10px;color:var(--text3);border-bottom:1px solid #f1f5f9">—</td>';
-      const stale=!c.entry;
-      return `<td onclick="editMonthVal('${it.cat.replace(/'/g,"\\'")}',${it.idx},'${m}')" title="${stale?'Belum diupdate bulan ini (angka terbawa). ':''}Klik untuk update" style="cursor:pointer;text-align:right;padding:9px 10px;font-family:var(--mono);border-bottom:1px solid #f1f5f9;${stale?'color:var(--text3);font-style:italic':'font-weight:600'}">${fmt(c.v)}</td>`;
-    }).join('')}</tr>`;
+  // ── Tabel (format sama dengan Rangkuman Aset) ──
+  const esc = x => String(x).replace(/'/g,"\\'");
+  let html=`<div style="background:#fff;border:0.5px solid var(--border);border-radius:12px;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead>
+    <tr style="background:var(--bg3);border-bottom:1px solid var(--border)">
+      <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--text3);min-width:200px;position:sticky;left:0;background:var(--bg3);z-index:2">Kategori / Instrumen</th>
+      ${months.map(m=>`<th style="text-align:right;padding:10px 16px;font-size:11px;font-weight:600;color:${m===nowM?'var(--accent)':'var(--text3)'};min-width:140px;white-space:nowrap">${mLbl(m)}</th>`).join('')}
+    </tr></thead><tbody>`;
+  const cellV = v => v?'Rp '+fmt(v):'<span style="color:var(--text3)">—</span>';
+  cats.forEach(cat=>{
+    const items=itemsOf(cat), hasKas=INV_KAS_CATS.includes(cat.toLowerCase());
+    const collapsed = invCatCollapsed[cat] !== false;
+    const catTot = months.map(m=> m>nowM?0: items.reduce((a,i)=>a+invItemTotal(cat,i,m),0));
+    html+=`<tr style="background:var(--bg3);border-top:1.5px solid var(--border2);cursor:pointer" onclick="invToggleCat('${esc(cat)}')">
+      <td style="padding:9px 16px;font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.5px;position:sticky;left:0;background:var(--bg3)"><span style="display:inline-block;width:14px;font-size:10px">${collapsed?'▶':'▼'}</span>${cat}</td>
+      ${catTot.map(v=>`<td style="text-align:right;padding:9px 16px;font-size:13px;font-weight:600;color:var(--red)">${v?'Rp '+fmt(v):'—'}</td>`).join('')}</tr>`;
+    if(collapsed) return;
+    if(!items.length){ html+=`<tr><td colspan="${months.length+1}" style="padding:8px 28px;font-size:12px;color:var(--text3);font-style:italic">Belum ada akun</td></tr>`; return; }
+    items.forEach(item=>{
+      const idx=S.asetItems[cat].indexOf(item), key=cat+'|'+item.name, open=!!invItemOpen[key];
+      const ownerBadge = item.owner ? `<span style="font-size:9.5px;color:var(--text3);background:var(--bg3);padding:1px 6px;border-radius:8px;margin-left:6px">${item.owner}</span>` : '';
+      if(hasKas){
+        html+=`<tr style="border-bottom:0.5px solid var(--border);cursor:pointer" onclick="invToggleItem('${esc(key)}')" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='#fff'">
+          <td style="padding:10px 16px 10px 28px;font-size:13px;color:var(--text);position:sticky;left:0;background:#fff"><span style="display:inline-block;width:14px;font-size:10px;color:var(--text3)">${open?'▼':'▶'}</span>${item.name}${ownerBadge}</td>
+          ${months.map(m=>`<td style="text-align:right;padding:10px 16px;font-size:13px;color:var(--text);font-family:var(--mono)">${cellV(m>nowM?0:invItemTotal(cat,item,m))}</td>`).join('')}</tr>`;
+        if(open){
+          html+=`<tr style="border-bottom:0.5px solid var(--border)"><td style="padding:8px 16px 8px 52px;font-size:12px;color:var(--text2);position:sticky;left:0;background:#fff">📈 Nilai Portfolio</td>
+            ${months.map(m=>{ const f=m>nowM; return `<td style="text-align:right;padding:8px 16px;font-size:12.5px;font-family:var(--mono);color:var(--text2)">${f?'<span style="color:var(--text3)">—</span>':`<span style="cursor:pointer" onclick="editMonthVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit nilai portfolio ${m}">${cellV(invPortfolio(cat,item,m))}</span>`}</td>`; }).join('')}</tr>
+          <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:8px 16px 8px 52px;font-size:12px;color:var(--text2);position:sticky;left:0;background:#fff">💵 Kas (belum dibeli)</td>
+            ${months.map(m=>{ const f=m>nowM; return `<td style="text-align:right;padding:8px 16px;font-size:12.5px;font-family:var(--mono);color:var(--text2)">${f?'<span style="color:var(--text3)">—</span>':`<span style="cursor:pointer" onclick="editKasVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit saldo kas ${m}">${cellV(invKas(item,m))}</span>`}</td>`; }).join('')}</tr>`;
+        }
+      } else {
+        html+=`<tr style="border-bottom:0.5px solid var(--border)" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='#fff'">
+          <td style="padding:10px 16px 10px 28px;font-size:13px;color:var(--text);position:sticky;left:0;background:#fff">${item.name}${ownerBadge}</td>
+          ${months.map(m=>`<td style="text-align:right;padding:10px 16px;font-size:13px;color:var(--text);font-family:var(--mono)">${m>nowM?'<span style="color:var(--text3)">—</span>':`<span style="cursor:pointer" onclick="editMonthVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit nilai ${m}">${cellV(invPortfolio(cat,item,m))}</span>`}</td>`).join('')}</tr>`;
+      }
+    });
   });
-  t1+=`<tr style="background:var(--bg3)">${lblTd('Total Investasi',1).replace('background:#fff','background:var(--bg3)')}${months.map(m=>{const t=totalOf(m);return `<td style="text-align:right;padding:9px 10px;font-family:var(--mono);font-weight:800;border-top:2px solid var(--border2)">${t===null?'—':fmt(t)}</td>`;}).join('')}</tr>`;
-  t1+=`<tr>${lblTd('Setoran luar (net)')}${months.map(m=>{const e=sumExt(m);return `<td style="text-align:right;padding:9px 10px;font-family:var(--mono);color:var(--text2);border-bottom:1px solid #f1f5f9">${e?(e>0?'+':'−')+fmt(Math.abs(e)):'—'}</td>`;}).join('')}</tr>`;
-  t1+=`<tr>${lblTd('Kenaikan murni')}${months.map(m=>{const g=sumGain(m);return `<td style="text-align:right;padding:9px 10px;font-family:var(--mono);font-weight:700;border-bottom:1px solid #f1f5f9;color:${g===null?'var(--text3)':(g>=0?'#059669':'#dc2626')}">${g===null?'—':(g>=0?'+':'−')+fmt(Math.abs(g))}</td>`;}).join('')}</tr></tbody></table>`;
+  html+=`<tr style="background:var(--bg2);border-top:2px solid var(--border2)"><td style="padding:11px 16px;font-size:13px;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;position:sticky;left:0;background:var(--bg2)">Total Investasi</td>
+    ${months.map(m=>{const v=totalOf(m);return `<td style="text-align:right;padding:11px 16px;font-size:14px;font-weight:800;color:var(--text);font-family:var(--mono)">${v?'Rp '+fmt(v):'—'}</td>`;}).join('')}</tr></tbody></table></div></div>
+    <p style="font-size:11.5px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Klik nama kategori/saham untuk membuka. Total = Nilai Portfolio + Kas (Saham) + Deposito + Crypto. Rekening bank tidak dihitung.</p>`;
 
-  // ── Tabel 2: Return % ──
-  const ytdOf = (arr,ym)=>chain(arr.filter((_,i)=>months[i].slice(0,4)===ym));
-  const years=[...new Set(months.map(m=>m.slice(0,4)))];
-  let t2 = `<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr><th style="text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);position:sticky;left:0;background:#fff">Instrumen</th>${months.map(m=>th(mLbl(m))).join('')}${years.map(y=>th('YTD '+y,'border-left:2px solid var(--border2)')).join('')}</tr></thead><tbody>`;
-  items.forEach((it,i)=>{
-    const arr = months.map(m=>{const c=calc[m][i]; return c.entry? c.pct : null;});
-    t2+=`<tr>${lblTd((catIcon[it.cat.toLowerCase()]||'')+' '+it.cat+' — '+it.name)}${months.map((m,j)=>`<td style="text-align:right;padding:9px 10px;border-bottom:1px solid #f1f5f9">${j===0&&calc[m][i].v!==null?'<span style="color:var(--text3)">awal</span>':pc(arr[j])}</td>`).join('')}${years.map(y=>`<td style="text-align:right;padding:9px 10px;border-bottom:1px solid #f1f5f9;border-left:2px solid var(--border2)">${pc(ytdOf(arr,y))}</td>`).join('')}</tr>`;
-  });
-  const totArr = months.map(m=>sumPct(m));
-  t2+=`<tr style="background:var(--bg3)">${lblTd('Total (murni)',1).replace('background:#fff','background:var(--bg3)')}${months.map((m,j)=>`<td style="text-align:right;padding:9px 10px;border-top:2px solid var(--border2)">${j===0?'<span style="color:var(--text3)">awal</span>':pc(totArr[j])}</td>`).join('')}${years.map(y=>`<td style="text-align:right;padding:9px 10px;border-top:2px solid var(--border2);border-left:2px solid var(--border2)">${pc(ytdOf(totArr,y))}</td>`).join('')}</tr></tbody></table>`;
-
-  const warn = stale.length ? `<div style="background:#fef3c7;border:1px solid #fcd34d;color:#92400e;font-size:12px;padding:9px 12px;border-radius:8px;margin-bottom:14px">⏰ Belum diupdate bulan ${mLbl(warnM)}: <b>${stale.join(', ')}</b>. Klik angka di tabel untuk mengisi nilai terbaru.</div>` : '';
-
-  box.innerHTML = warn + kpi + prog + chart +
-    `<div style="border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;background:#fff"><div style="font-weight:700;font-size:13px;margin-bottom:10px">📋 Nilai per Instrumen <span style="font-weight:400;color:var(--text3);font-size:11px">· italik abu-abu = belum diupdate bulan itu</span></div><div style="overflow-x:auto">${t1}</div></div>` +
-    `<div style="border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;background:#fff"><div style="font-weight:700;font-size:13px;margin-bottom:10px">📊 Return Murni per Bulan</div><div style="overflow-x:auto">${t2}</div>
-     <p style="font-size:11.5px;color:var(--text2);line-height:1.6;margin:12px 0 0">💡 % = (nilai akhir − nilai awal − setoran/transfer) ÷ modal rata-rata (setoran tengah bulan dibobot sisa hari). Pindah antar-instrumen dan top-up dari rekening <b>tidak</b> dihitung sebagai kenaikan. Rekening/kas tidak ikut dihitung.</p></div>`;
+  box.innerHTML = warn + kpi + prog + chart + html;
 }
 
 // ── Modal helpers ──────────────────────────────────────────────
