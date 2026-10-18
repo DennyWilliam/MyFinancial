@@ -3307,7 +3307,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal('pnlDet
 // INVESTASI — nilai per bulan (mulai Okt 2026), target 2027 +10% vs Des 2026
 // ═══════════════════════════════════════
 const INV_TRACK_NAMES = ['saham indo','saham luar','deposito','crypto'];
-const INV_KAS_CATS = ['saham indo','saham luar'];   // punya sub-baris: Nilai Portfolio + Kas
+const INV_KAS_CATS = ['saham indo','saham luar','deposito'];   // punya sub-baris: nilai + Uang Kas
 const INV_START_MONTH = '2026-10';
 const INV_BASE_MONTH = '2026-12';
 const INV_TARGET_GROWTH = 0.10;
@@ -3337,7 +3337,7 @@ function editKasVal(cat, idx, month){
   const item=(S.asetItems[cat]||[])[idx]; if(!item) return;
   if(!item.kasValues) item.kasValues={};
   const shown = Math.round(invKas(item,month))||0;
-  const input = prompt(`Saldo KAS "${item.name}" bulan ${month} (Rp, dana yang belum dibelikan saham):`, shown);
+  const input = prompt(`Uang Kas "${item.name}" bulan ${month} (Rp):`, shown);
   if(input===null) return;
   const txt=String(input).trim(); if(txt==='') return;
   const v=parseFloat(txt.replace(/\./g,'').replace(',','.')); if(isNaN(v)) return;
@@ -3449,10 +3449,10 @@ function renderInvTrack(){
         html+=`<tr class="it-item" onclick="invToggleItem('${esc(key)}')"><td style="padding-left:30px"><span class="it-chev">${open?'▼':'▶'}</span>${item.name}${badge}</td>
           ${months.map(m=>`<td style="font-weight:600">${num(m>nowM?0:invItemTotal(cat,item,m))}</td>`).join('')}</tr>`;
         if(open){
-          html+=`<tr class="it-sub"><td><span class="it-dot" style="background:#3b82f6"></span>Nilai Portfolio</td>
-            ${months.map(m=>`<td>${m>nowM?'<span class="it-na">—</span>':`<span class="it-edit" onclick="editMonthVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit nilai portfolio ${m}">${num(invPortfolio(cat,item,m))}</span>`}</td>`).join('')}</tr>
-          <tr class="it-sub"><td><span class="it-dot" style="background:#f59e0b"></span>Kas (belum dibeli)</td>
-            ${months.map(m=>`<td>${m>nowM?'<span class="it-na">—</span>':`<span class="it-edit" onclick="editKasVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit saldo kas ${m}">${num(invKas(item,m))}</span>`}</td>`).join('')}</tr>`;
+          html+=`<tr class="it-sub"><td><span class="it-dot" style="background:#3b82f6"></span>${cat.toLowerCase()==='deposito'?'Deposito':'Nilai Portfolio'}</td>
+            ${months.map(m=>`<td>${m>nowM?'<span class="it-na">—</span>':`<span class="it-edit" onclick="editMonthVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit ${m}">${num(invPortfolio(cat,item,m))}</span>`}</td>`).join('')}</tr>
+          <tr class="it-sub"><td><span class="it-dot" style="background:#f59e0b"></span>Uang Kas</td>
+            ${months.map(m=>`<td>${m>nowM?'<span class="it-na">—</span>':`<span class="it-edit" onclick="editKasVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit Uang Kas ${m}">${num(invKas(item,m))}</span>`}</td>`).join('')}</tr>`;
         }
       } else {
         html+=`<tr class="it-item"><td style="padding-left:30px"><span class="it-chev"></span>${item.name}${badge}</td>
@@ -3461,7 +3461,7 @@ function renderInvTrack(){
     });
   });
   html+=`<tr class="it-tot"><td>Total Investasi</td>${months.map(m=>`<td>${num(totalOf(m))}</td>`).join('')}</tr></tbody></table></div></div>
-    <p style="font-size:11px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Klik nama kategori untuk membuka/menutup · klik angka bergaris putus-putus untuk update · Total = Portfolio + Kas (saham) + Deposito + Crypto · rekening bank tidak dihitung · versi Investasi v3</p>`;
+    <p style="font-size:11px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Klik nama kategori untuk membuka/menutup · klik angka bergaris putus-putus untuk update · Total = nilai instrumen + Uang Kas (Saham &amp; Deposito) + Crypto · rekening bank tidak dihitung · versi Investasi v4</p>`;
 
   box.innerHTML = warn + kpi + prog + chart + html;
 }
