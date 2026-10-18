@@ -344,6 +344,24 @@ input[readonly]{color:var(--text2)}
 
 .pnl-click{cursor:pointer;transition:background .12s}
 .pnl-click:hover{background:rgba(91,143,249,0.10)}
+.it-wrap{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.04)}
+.it-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.it-tbl th{padding:9px 14px;font-size:10.5px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;text-align:right;white-space:nowrap;min-width:118px;background:#f8fafc;border-bottom:1px solid var(--border)}
+.it-tbl th:first-child{text-align:left;min-width:210px;position:sticky;left:0;z-index:2}
+.it-tbl td{padding:9px 14px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--text);border-bottom:1px solid #f1f5f9;white-space:nowrap}
+.it-tbl td:first-child{text-align:left;font-family:inherit;position:sticky;left:0;background:#fff;z-index:1}
+.it-cat td{background:#f8fafc;font-weight:700;cursor:pointer;border-top:1px solid var(--border)}
+.it-cat td:first-child{background:#f8fafc;font-size:12px;letter-spacing:.2px}
+.it-item{cursor:pointer}.it-item:hover td,.it-item:hover td:first-child{background:#f8fafc}
+.it-sub td{font-size:11.5px;color:var(--text2);background:#fff}
+.it-sub td:first-child{padding-left:46px;font-size:11.5px;color:var(--text2)}
+.it-sub .it-edit{cursor:pointer;border-bottom:1px dashed #cbd5e1}.it-sub .it-edit:hover{color:var(--accent);border-color:var(--accent)}
+.it-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:8px;vertical-align:middle}
+.it-chev{display:inline-block;width:16px;font-size:9px;color:var(--text3)}
+.it-pill{font-size:10px;font-weight:600;color:var(--text3);background:#eef2f7;border-radius:10px;padding:1px 7px;margin-left:8px;font-family:var(--font)}
+.it-tot td{background:#eff6ff;color:#1d4ed8;font-weight:800;font-size:12.5px;border-top:2px solid #bfdbfe;border-bottom:none}
+.it-tot td:first-child{background:#eff6ff;font-size:12px;letter-spacing:.4px;text-transform:uppercase}
+.it-na{color:#cbd5e1}
 /* ─── FILTER ROW ─── */
 .filter-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .filter-row select,.filter-row input{padding:7px 10px;font-size:12px}
@@ -3370,10 +3388,10 @@ function renderInvTrack(){
   const stale = all.filter(x=>invHasData(x.item,nowM) && !invHasEntry(x.item,nowM) && months.includes(nowM)).map(x=>x.item.name);
   const warn = stale.length ? `<div style="background:#fef3c7;border:1px solid #fcd34d;color:#92400e;font-size:12px;padding:9px 12px;border-radius:8px;margin-bottom:14px">⏰ Belum diupdate bulan ${mLbl(nowM)}: <b>${stale.join(', ')}</b>. Klik angka di tabel untuk mengisi nilai terbaru.</div>` : '';
   const kpi = `<div class="kpi-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-bottom:18px">
-    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">🚀 TOTAL INVESTASI</div><div class="kpi-val" style="font-size:18px">${rp(posTotal)}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">${mLbl(posM)}</div></div>
-    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">📌 BASELINE DES 2026</div><div class="kpi-val" style="font-size:18px">${baseVal!==null?rp(baseVal):'<span style="color:var(--text3)">menunggu</span>'}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">${baseVal!==null?'nilai akhir Des 2026':'terisi saat semua nilai Des 2026 diupdate'}</div></div>
-    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">🎯 TARGET DES 2027 (+10%)</div><div class="kpi-val" style="font-size:18px">${targetVal!==null?rp(targetVal):'<span style="color:var(--text3)">—</span>'}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">= baseline × 1,10</div></div>
-    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">⏳ SISA KE TARGET</div><div class="kpi-val" style="font-size:18px">${targetVal!==null?rp(Math.max(0,targetVal-posTotal)):'<span style="color:var(--text3)">—</span>'}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">${targetVal!==null?((posTotal/baseVal-1)*100).toFixed(1).replace('.',',')+'% vs Des 2026':''}</div></div>
+    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">🚀 TOTAL INVESTASI</div><div class="kpi-val" style="font-size:16px">${rp(posTotal)}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">${mLbl(posM)}</div></div>
+    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">📌 BASELINE DES 2026</div><div class="kpi-val" style="font-size:16px">${baseVal!==null?rp(baseVal):'<span style="color:var(--text3)">menunggu</span>'}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">${baseVal!==null?'nilai akhir Des 2026':'terisi saat semua nilai Des 2026 diupdate'}</div></div>
+    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">🎯 TARGET DES 2027 (+10%)</div><div class="kpi-val" style="font-size:16px">${targetVal!==null?rp(targetVal):'<span style="color:var(--text3)">—</span>'}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">= baseline × 1,10</div></div>
+    <div class="kpi"><div class="kpi-lbl" style="font-size:10px">⏳ SISA KE TARGET</div><div class="kpi-val" style="font-size:16px">${targetVal!==null?rp(Math.max(0,targetVal-posTotal)):'<span style="color:var(--text3)">—</span>'}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">${targetVal!==null?((posTotal/baseVal-1)*100).toFixed(1).replace('.',',')+'% vs Des 2026':''}</div></div>
   </div>`;
 
   // ── Progres (mulai berarti setelah Des 2026) ──
@@ -3406,46 +3424,44 @@ function renderInvTrack(){
     chart=`<div style="background:#fff;border:0.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">📉 Pergerakan Total Investasi</div><svg viewBox="0 0 ${W} ${H}" width="100%">${grid}${ticks}${tl}${line}${dots}</svg></div>`;
   }
 
-  // ── Tabel (format sama dengan Rangkuman Aset) ──
+  // ── Tabel ──
   const esc = x => String(x).replace(/'/g,"\\'");
-  let html=`<div style="background:#fff;border:0.5px solid var(--border);border-radius:12px;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead>
-    <tr style="background:var(--bg3);border-bottom:1px solid var(--border)">
-      <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--text3);min-width:200px;position:sticky;left:0;background:var(--bg3);z-index:2">Kategori / Instrumen</th>
-      ${months.map(m=>`<th style="text-align:right;padding:10px 16px;font-size:11px;font-weight:600;color:${m===nowM?'var(--accent)':'var(--text3)'};min-width:140px;white-space:nowrap">${mLbl(m)}</th>`).join('')}
-    </tr></thead><tbody>`;
-  const cellV = v => v?'Rp '+fmt(v):'<span style="color:var(--text3)">—</span>';
+  const mShort = m => new Date(m+'-01').toLocaleDateString('id-ID',{month:'short',year:'2-digit'});
+  const ico = {'saham indo':'📈','saham luar':'🌎','deposito':'🏦','crypto':'₿'};
+  const num = v => v ? fmt(v) : '<span class="it-na">—</span>';
+  let html=`<div class="it-wrap"><div style="overflow-x:auto"><table class="it-tbl"><thead><tr>
+      <th>Kategori / Instrumen <span style="text-transform:none;letter-spacing:0;font-weight:400">(Rp)</span></th>
+      ${months.map(m=>`<th style="${m===nowM?'color:var(--accent)':''}">${mShort(m)}</th>`).join('')}</tr></thead><tbody>`;
+  const grand = totalOf(posM) || 0;
   cats.forEach(cat=>{
     const items=itemsOf(cat), hasKas=INV_KAS_CATS.includes(cat.toLowerCase());
     const collapsed = invCatCollapsed[cat] !== false;
     const catTot = months.map(m=> m>nowM?0: items.reduce((a,i)=>a+invItemTotal(cat,i,m),0));
-    html+=`<tr style="background:var(--bg3);border-top:1.5px solid var(--border2);cursor:pointer" onclick="invToggleCat('${esc(cat)}')">
-      <td style="padding:9px 16px;font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.5px;position:sticky;left:0;background:var(--bg3)"><span style="display:inline-block;width:14px;font-size:10px">${collapsed?'▶':'▼'}</span>${cat}</td>
-      ${catTot.map(v=>`<td style="text-align:right;padding:9px 16px;font-size:13px;font-weight:600;color:var(--red)">${v?'Rp '+fmt(v):'—'}</td>`).join('')}</tr>`;
+    const share = grand>0 ? Math.round(items.reduce((a,i)=>a+invItemTotal(cat,i,posM),0)/grand*100) : 0;
+    html+=`<tr class="it-cat" onclick="invToggleCat('${esc(cat)}')"><td><span class="it-chev">${collapsed?'▶':'▼'}</span>${ico[cat.toLowerCase()]||''} ${cat}<span class="it-pill">${share}%</span></td>
+      ${catTot.map(v=>`<td>${num(v)}</td>`).join('')}</tr>`;
     if(collapsed) return;
-    if(!items.length){ html+=`<tr><td colspan="${months.length+1}" style="padding:8px 28px;font-size:12px;color:var(--text3);font-style:italic">Belum ada akun</td></tr>`; return; }
+    if(!items.length){ html+=`<tr><td colspan="${months.length+1}" style="text-align:left;color:var(--text3);font-style:italic;font-family:inherit">Belum ada akun</td></tr>`; return; }
     items.forEach(item=>{
-      const idx=S.asetItems[cat].indexOf(item), key=cat+'|'+item.name, open=!!invItemOpen[key];
-      const ownerBadge = item.owner ? `<span style="font-size:9.5px;color:var(--text3);background:var(--bg3);padding:1px 6px;border-radius:8px;margin-left:6px">${item.owner}</span>` : '';
+      const idx=S.asetItems[cat].indexOf(item), key=cat+'|'+item.name, open=invItemOpen[key]!==false;
+      const badge = item.owner ? `<span class="it-pill">${item.owner}</span>` : '';
       if(hasKas){
-        html+=`<tr style="border-bottom:0.5px solid var(--border);cursor:pointer" onclick="invToggleItem('${esc(key)}')" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='#fff'">
-          <td style="padding:10px 16px 10px 28px;font-size:13px;color:var(--text);position:sticky;left:0;background:#fff"><span style="display:inline-block;width:14px;font-size:10px;color:var(--text3)">${open?'▼':'▶'}</span>${item.name}${ownerBadge}</td>
-          ${months.map(m=>`<td style="text-align:right;padding:10px 16px;font-size:13px;color:var(--text);font-family:var(--mono)">${cellV(m>nowM?0:invItemTotal(cat,item,m))}</td>`).join('')}</tr>`;
+        html+=`<tr class="it-item" onclick="invToggleItem('${esc(key)}')"><td style="padding-left:30px"><span class="it-chev">${open?'▼':'▶'}</span>${item.name}${badge}</td>
+          ${months.map(m=>`<td style="font-weight:600">${num(m>nowM?0:invItemTotal(cat,item,m))}</td>`).join('')}</tr>`;
         if(open){
-          html+=`<tr style="border-bottom:0.5px solid var(--border)"><td style="padding:8px 16px 8px 52px;font-size:12px;color:var(--text2);position:sticky;left:0;background:#fff">📈 Nilai Portfolio</td>
-            ${months.map(m=>{ const f=m>nowM; return `<td style="text-align:right;padding:8px 16px;font-size:12.5px;font-family:var(--mono);color:var(--text2)">${f?'<span style="color:var(--text3)">—</span>':`<span style="cursor:pointer" onclick="editMonthVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit nilai portfolio ${m}">${cellV(invPortfolio(cat,item,m))}</span>`}</td>`; }).join('')}</tr>
-          <tr style="border-bottom:0.5px solid var(--border)"><td style="padding:8px 16px 8px 52px;font-size:12px;color:var(--text2);position:sticky;left:0;background:#fff">💵 Kas (belum dibeli)</td>
-            ${months.map(m=>{ const f=m>nowM; return `<td style="text-align:right;padding:8px 16px;font-size:12.5px;font-family:var(--mono);color:var(--text2)">${f?'<span style="color:var(--text3)">—</span>':`<span style="cursor:pointer" onclick="editKasVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit saldo kas ${m}">${cellV(invKas(item,m))}</span>`}</td>`; }).join('')}</tr>`;
+          html+=`<tr class="it-sub"><td><span class="it-dot" style="background:#3b82f6"></span>Nilai Portfolio</td>
+            ${months.map(m=>`<td>${m>nowM?'<span class="it-na">—</span>':`<span class="it-edit" onclick="editMonthVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit nilai portfolio ${m}">${num(invPortfolio(cat,item,m))}</span>`}</td>`).join('')}</tr>
+          <tr class="it-sub"><td><span class="it-dot" style="background:#f59e0b"></span>Kas (belum dibeli)</td>
+            ${months.map(m=>`<td>${m>nowM?'<span class="it-na">—</span>':`<span class="it-edit" onclick="editKasVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit saldo kas ${m}">${num(invKas(item,m))}</span>`}</td>`).join('')}</tr>`;
         }
       } else {
-        html+=`<tr style="border-bottom:0.5px solid var(--border)" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='#fff'">
-          <td style="padding:10px 16px 10px 28px;font-size:13px;color:var(--text);position:sticky;left:0;background:#fff">${item.name}${ownerBadge}</td>
-          ${months.map(m=>`<td style="text-align:right;padding:10px 16px;font-size:13px;color:var(--text);font-family:var(--mono)">${m>nowM?'<span style="color:var(--text3)">—</span>':`<span style="cursor:pointer" onclick="editMonthVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit nilai ${m}">${cellV(invPortfolio(cat,item,m))}</span>`}</td>`).join('')}</tr>`;
+        html+=`<tr class="it-item"><td style="padding-left:30px"><span class="it-chev"></span>${item.name}${badge}</td>
+          ${months.map(m=>`<td>${m>nowM?'<span class="it-na">—</span>':`<span class="it-edit" style="cursor:pointer;border-bottom:1px dashed #cbd5e1" onclick="editMonthVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit nilai ${m}">${num(invPortfolio(cat,item,m))}</span>`}</td>`).join('')}</tr>`;
       }
     });
   });
-  html+=`<tr style="background:var(--bg2);border-top:2px solid var(--border2)"><td style="padding:11px 16px;font-size:13px;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;position:sticky;left:0;background:var(--bg2)">Total Investasi</td>
-    ${months.map(m=>{const v=totalOf(m);return `<td style="text-align:right;padding:11px 16px;font-size:14px;font-weight:800;color:var(--text);font-family:var(--mono)">${v?'Rp '+fmt(v):'—'}</td>`;}).join('')}</tr></tbody></table></div></div>
-    <p style="font-size:11.5px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Klik nama kategori/saham untuk membuka. Total = Nilai Portfolio + Kas (Saham) + Deposito + Crypto. Rekening bank tidak dihitung.</p>`;
+  html+=`<tr class="it-tot"><td>Total Investasi</td>${months.map(m=>`<td>${num(totalOf(m))}</td>`).join('')}</tr></tbody></table></div></div>
+    <p style="font-size:11px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Klik nama kategori untuk membuka/menutup · klik angka bergaris putus-putus untuk update · Total = Portfolio + Kas (saham) + Deposito + Crypto · rekening bank tidak dihitung · versi Investasi v3</p>`;
 
   box.innerHTML = warn + kpi + prog + chart + html;
 }
