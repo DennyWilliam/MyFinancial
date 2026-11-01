@@ -2725,30 +2725,48 @@ function showParsed(items){
   hideProgress();
   populateImportAccSel();
   parsedBuf=items.map(i=>({...i,category:i.category||guessCat(i.description||'',i.type),type:i.type||'expense'}));
+  renderParsedList();
+  document.getElementById('aiPanel').style.display='block';
+}
 
-  function getCatsForType(type){
-    return getCatList(type).map(c=>`<option>${c}</option>`).join('');
-  }
+// Baca isi kolom di layar -> parsedBuf (supaya editan manual / hasil isian otomatis tidak hilang saat render ulang atau simpan)
+function syncParsedFromDOM(){
+  document.querySelectorAll('#parsedList .parsed-row').forEach((row,i)=>{
+    const it = parsedBuf[i]; if(!it) return;
+    const ins = row.querySelectorAll('input'), sels = row.querySelectorAll('select');
+    if(ins[0]) it.date = ins[0].value || it.date;
+    if(ins[1]) it.description = ins[1].value;
+    if(sels[0]) it.type = sels[0].value;
+    if(sels[1] && sels[1].value) it.category = sels[1].value;
+    if(ins[2]) it.amount = parseFloat(ins[2].value)||0;
+  });
+}
 
+function deleteParsedRow(i){
+  syncParsedFromDOM();          // simpan dulu semua editan
+  parsedBuf.splice(i,1);
+  renderParsedList();           // render ulang dari data yang SUDAH diedit
+}
+
+function renderParsedList(){
+  const ea = x => String(x==null?'':x).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   document.getElementById('parsedList').innerHTML = parsedBuf.map((item,i)=>`
     <div class="parsed-row" id="pr_${i}" style="display:grid;grid-template-columns:106px 1fr 90px 130px 110px 40px 30px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
-      <input type="date" value="${item.date||today()}" onchange="parsedBuf[${i}].date=this.value">
-      <input type="text" value="${item.description||''}" onchange="parsedBuf[${i}].description=this.value" placeholder="Deskripsi">
+      <input type="date" value="${ea(item.date||today())}" onchange="parsedBuf[${i}].date=this.value">
+      <input type="text" value="${ea(item.description||'')}" oninput="parsedBuf[${i}].description=this.value" onchange="parsedBuf[${i}].description=this.value" placeholder="Deskripsi">
       <select onchange="parsedBuf[${i}].type=this.value;updateParsedCats(${i},this.value)">
         <option value="expense" ${item.type==='expense'?'selected':''}>Outcome</option>
         <option value="income" ${item.type==='income'?'selected':''}>Income</option>
         <option value="investment" ${item.type==='investment'?'selected':''}>Aset</option>
       </select>
       <select id="pr_cat_${i}" onchange="parsedBuf[${i}].category=this.value">
-        ${getCatList(item.type||'expense').map(c=>`<option ${c===item.category?'selected':''}>${c}</option>`).join('')}
+        ${getCatList(item.type||'expense').map(c=>`<option ${c===item.category?'selected':''}>${ea(c)}</option>`).join('')}
       </select>
       <input type="number" value="${item.amount||0}" onchange="parsedBuf[${i}].amount=parseFloat(this.value)||0" style="text-align:right">
       <span class="${item.type==='income'?'cr-pill':'db-pill'}" id="pr_pill_${i}">${item.type==='income'?'CR':'DB'}</span>
-      <button class="del-btn" onclick="parsedBuf.splice(${i},1);showParsed(parsedBuf)">🗑</button>
+      <button class="del-btn" onclick="deleteParsedRow(${i})">🗑</button>
     </div>`).join('');
-
   document.getElementById('parsedCnt').textContent=parsedBuf.length+' transaksi ditemukan';
-  document.getElementById('aiPanel').style.display='block';
 }
 
 function updateParsedCats(i, type){
@@ -2776,6 +2794,7 @@ function populateImportAccSel(){
 }
 
 function confirmImport(){
+  syncParsedFromDOM();   // pastikan isi kolom terakhir (termasuk hasil edit otomatis) ikut tersimpan
   let n=0;
   const acc = document.getElementById('importAccSel')?.value || 'BCA 1147';
   parsedBuf.forEach(item=>{
