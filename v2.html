@@ -3337,6 +3337,8 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal('pnlDet
 // INVESTASI — nilai per bulan (mulai Okt 2026), target 2027 +10% vs Des 2026
 // ═══════════════════════════════════════
 const INV_TRACK_NAMES = ['saham indo','saham luar','deposito','crypto'];
+const INV_AUTO_CATS = ['saham indo','saham luar'];   // standar: hanya saldo yang diinvestasikan, TANPA isi manual — naik/turun lewat Transfer Dana
+function invIsAutoCat(cat){ return INV_AUTO_CATS.includes(String(cat).toLowerCase()); }
 const INV_KAS_CATS = ['saham indo','saham luar','deposito'];   // punya sub-baris: nilai + Uang Kas
 const INV_START_MONTH = '2026-10';
 const INV_BASE_MONTH = '2026-12';
@@ -3494,7 +3496,7 @@ function renderInvTrack(){
           ${months.map(m=>`<td style="font-weight:600">${num(m>nowM?0:invItemTotal(cat,item,m))}</td>`).join('')}</tr>`;
         if(open){
           html+=`<tr class="it-sub"><td><span class="it-dot" style="background:#3b82f6"></span>${cat.toLowerCase()==='deposito'?'Deposito':'Nilai Portfolio'}</td>
-            ${months.map(m=>`<td>${m>nowM?'<span class="it-na">—</span>':`<span class="it-edit" onclick="editMonthVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit ${m}">${num(invPortfolio(cat,item,m))}</span>`}</td>`).join('')}</tr>
+            ${months.map(m=>`<td>${m>nowM?'<span class="it-na">—</span>':(invIsAutoCat(cat)?`<span title="Otomatis dari Transfer Dana">${num(invPortfolio(cat,item,m))}</span>`:`<span class="it-edit" onclick="editMonthVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit ${m}">${num(invPortfolio(cat,item,m))}</span>`)}</td>`).join('')}</tr>
           <tr class="it-sub"><td><span class="it-dot" style="background:#f59e0b"></span>Uang Kas</td>
             ${months.map(m=>`<td>${m>nowM?'<span class="it-na">—</span>':`<span class="it-edit" onclick="editKasVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit Uang Kas ${m}">${num(invKas(item,m))}</span>`}</td>`).join('')}</tr>`;
         }
@@ -3505,7 +3507,7 @@ function renderInvTrack(){
     });
   });
   html+=`<tr class="it-tot"><td>Total Investasi</td>${months.map(m=>`<td>${num(totalOf(m))}</td>`).join('')}</tr></tbody></table></div></div>
-    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Klik nama kategori untuk membuka/menutup · klik angka bergaris putus-putus untuk update · Total = nilai instrumen + Uang Kas (Saham &amp; Deposito) + Crypto · rekening bank tidak dihitung · versi Investasi v5</p>`;
+    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Klik nama kategori untuk membuka/menutup · klik angka bergaris putus-putus untuk update · Saham Indo/Luar otomatis dari Transfer Dana (tanpa isi manual) · Total = nilai instrumen + Uang Kas (Saham &amp; Deposito) + Crypto · rekening bank tidak dihitung · versi Investasi v6</p>`;
 
   box.innerHTML = warn + kpi + prog + chart + html;
 }
@@ -3813,6 +3815,10 @@ function acctMonthVal(catName, acctName, month){
 function editMonthVal(cat, idx, month){
   const item=(S.asetItems[cat]||[])[idx];
   if(!item) return;
+  if(invIsAutoCat(cat) && Object.keys(item.monthValues||{}).length>0){
+    alert('Saham Indo & Saham Luar tidak diisi manual.\n\nNilainya otomatis dari saldo awal + Transfer Dana (setoran masuk / penarikan keluar). Catat pemindahan dana di menu Transfer Dana.');
+    return;
+  }
   if(!item.monthValues) item.monthValues={};
   // Isi awal = angka yang TAMPIL di tabel (bukan nilai manual mentah), supaya klik-OK tanpa ubah tidak menimpa apa pun
   const shown = Math.round(acctMonthVal(cat, item.name, month)) || 0;
