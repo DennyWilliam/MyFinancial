@@ -830,7 +830,7 @@ window.addEventListener('load', function(){
       <div class="page" id="page-invtrack">
         <div class="sec-head">
           <div class="sec-title">🚀 Investasi</div>
-          <div class="sec-sub">Nilai instrumen investasi per bulan · diambil dari Rangkuman Aset · rekening bank tidak dihitung · klik angka untuk update</div>
+          <div class="sec-sub">Nilai pasar instrumen per bulan (naik/turun) · daftar instrumen dari Rangkuman Aset, tapi angkanya terpisah · klik angka untuk update</div>
         </div>
         <div id="invTrackBody"></div>
       </div>
@@ -1402,6 +1402,7 @@ function loadState() {
       S.asetItems       = p.asetItems     || {};
       S.asetSnapshots   = p.asetSnapshots || {};
       S.transfers       = p.transfers      || [];
+      S.invMigrated     = p.invMigrated    || false;
       S.github          = p.github         || {token:'',repo:'',branch:'main'};
       S.topups        = p.topups        || [];
       S.apiKey        = p.apiKey        || '';
@@ -1610,22 +1611,25 @@ async function supaLoad(){
     });
     if(!res.ok) throw new Error(res.status+' '+(await res.text()));
     const rows = await res.json();
-    if(!rows.length){ setSyncBadge('', 'Data: Lokal (belum ada di cloud)'); return; }
+    if(!rows.length){ migrateInvestasi(); setSyncBadge('', 'Data: Lokal (belum ada di cloud)'); return; }
     const cloud = rows[0].data || {};
     const localTxCount = (S.transactions||[]).length;
     const cloudTxCount = (cloud.transactions||[]).length;
     if(cloudTxCount >= localTxCount){
       Object.keys(cloud).forEach(k=>{ S[k] = cloud[k]; });
+      migrateInvestasi();
       localStorage.setItem(STORE_KEY, JSON.stringify(S));
       setSyncBadge('ok', 'Data: Cloud ✓');
       const activePage = document.querySelector('.page.active');
       if(activePage) go(activePage.id.replace('page-',''), null);
       updateGitHubUI();
     } else {
+      migrateInvestasi();
       setSyncBadge('ok', 'Data: Lokal lebih baru');
     }
   }catch(err){
     console.error('supaLoad failed', err);
+    try{ migrateInvestasi(); }catch(e){}
     setSyncBadge('err', 'Data: Gagal cek cloud');
   }
 }
@@ -3337,45 +3341,62 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal('pnlDet
 // INVESTASI — nilai per bulan (mulai Okt 2026), target 2027 +10% vs Des 2026
 // ═══════════════════════════════════════
 const INV_TRACK_NAMES = ['saham indo','saham luar','deposito','crypto'];
-const INV_AUTO_CATS = ['saham indo','saham luar'];   // standar: hanya saldo yang diinvestasikan, TANPA isi manual — naik/turun lewat Transfer Dana
+const INV_AUTO_CATS = ['saham indo','saham luar','deposito'];   // menu ASET: hanya modal; tanpa isian manual — berubah lewat Transfer Dana. Naik/turun dicatat di menu Investasi
 function invIsAutoCat(cat){ return INV_AUTO_CATS.includes(String(cat).toLowerCase()); }
-const INV_KAS_CATS = ['saham indo','saham luar','deposito'];   // punya sub-baris: nilai + Uang Kas
 const INV_START_MONTH = '2026-10';
 const INV_BASE_MONTH = '2026-12';
 const INV_TARGET_GROWTH = 0.10;
 const INV_TARGET_MONTH = '2027-12';
 let invCatCollapsed = {};   // default collapsed
-let invItemOpen = {};       // item (Saham) dibuka -> tampil Portfolio & Kas
 
 function invToggleCat(cat){ invCatCollapsed[cat] = !(invCatCollapsed[cat] !== false); renderInvTrack(); }
-function invToggleItem(key){ invItemOpen[key] = !invItemOpen[key]; renderInvTrack(); }
 function invTrackCats(){
   const keys = [...new Set([...Object.keys(S.asetItems||{}), ...getCatList('investment')])];
   const order = INV_TRACK_NAMES;
   return keys.filter(k=>order.includes(String(k).toLowerCase())).sort((a,b)=>order.indexOf(a.toLowerCase())-order.indexOf(b.toLowerCase()));
 }
 function invMonthAdd(m,n){ const [y,mo]=m.split('-').map(Number); const d=new Date(y,mo-1+n,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
-function invHasEntry(item,m){ return Object.prototype.hasOwnProperty.call(item.monthValues||{},m); }
-function invHasData(item,m){ return Object.keys(item.monthValues||{}).some(k=>k<=m); }
-function invPortfolio(cat,item,m){ return invHasData(item,m) ? acctMonthVal(cat,item.name,m) : 0; }
-function invKas(item,m){
-  const ks = Object.keys(item.kasValues||{}).filter(k=>k<=m).sort();
-  return ks.length ? (item.kasValues[ks[ks.length-1]]||0) : 0;
+function invHasEntry(item,m){ return Object.prototype.hasOwnProperty.call(item.invValues||{},m); }
+function invHasData(item,m){ return Object.keys(item.invValues||{}).some(k=>k<=m); }
+function invPortfolio(cat,item,m){
+  const ks = Object.keys(item.invValues||{}).filter(k=>k<=m).sort();
+  return ks.length ? (item.invValues[ks[ks.length-1]]||0) : 0;
 }
-function invItemTotal(cat,item,m){
-  return invPortfolio(cat,item,m) + (INV_KAS_CATS.includes(cat.toLowerCase()) ? invKas(item,m) : 0);
-}
-function editKasVal(cat, idx, month){
+function invItemTotal(cat,item,m){ return invPortfolio(cat,item,m); }
+function editInvVal(cat, idx, month){
   const item=(S.asetItems[cat]||[])[idx]; if(!item) return;
-  if(!item.kasValues) item.kasValues={};
-  const shown = Math.round(invKas(item,month))||0;
-  const input = prompt(`Uang Kas "${item.name}" bulan ${month} (Rp):`, shown);
+  if(!item.invValues) item.invValues={};
+  const shown = Math.round(invPortfolio(cat,item,month))||0;
+  const input = prompt(`Nilai "${item.name}" bulan ${month} (Rp) — nilai pasar saat ini, naik/turun:`, shown);
   if(input===null) return;
   const txt=String(input).trim(); if(txt==='') return;
   const v=parseFloat(txt.replace(/\./g,'').replace(',','.')); if(isNaN(v)) return;
-  if(v===shown && Object.prototype.hasOwnProperty.call(item.kasValues,month)) return;
-  item.kasValues[month]=v;
+  if(v===shown && invHasEntry(item,month)) return;
+  item.invValues[month]=v;
   persist(); renderInvTrack();
+}
+
+// Migrasi satu kali: nilai manual lama di Aset -> dipindah ke Investasi; Aset kembali hanya modal (saldo awal + transfer)
+function migrateInvestasi(){
+  if(S.invMigrated) return false;
+  let changed=false;
+  Object.keys(S.asetItems||{}).forEach(cat=>{
+    if(!INV_TRACK_NAMES.includes(String(cat).toLowerCase())) return;
+    (S.asetItems[cat]||[]).forEach(item=>{
+      const keys=Object.keys(item.monthValues||{}).sort();
+      if(!keys.length || item.invValues) return;
+      item.invValues={};
+      keys.forEach(k=>{ item.invValues[k]=Math.round(acctMonthVal(cat,item.name,k)); });
+      if(keys.length>1){
+        item._monthValuesBackup = JSON.parse(JSON.stringify(item.monthValues));  // cadangan, bisa dikembalikan
+        const first=keys[0], mv={}; mv[first]=item.monthValues[first]; item.monthValues=mv;
+      }
+      changed=true;
+    });
+  });
+  S.invMigrated=true;
+  persist();
+  return changed;
 }
 
 function renderInvTrack(){
@@ -3385,7 +3406,7 @@ function renderInvTrack(){
   const all = []; cats.forEach(c=>itemsOf(c).forEach(i=>all.push({cat:c,item:i})));
   const rp = n => 'Rp '+fmt(n);
   if(!all.length){
-    box.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">Belum ada instrumen investasi (Saham Indo, Saham Luar, Deposito, Crypto) di Rangkuman Aset.</div>';
+    box.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">Belum ada instrumen investasi (Saham Indo, Saham Luar, Deposito, Crypto). Tambahkan akunnya dulu di Rangkuman Aset.</div>';
     return;
   }
   const nowM = today().slice(0,7);
@@ -3480,7 +3501,7 @@ function renderInvTrack(){
       ${months.map(m=>`<th style="${m===nowM?'color:var(--accent)':''}">${mShort(m)}</th>`).join('')}</tr></thead><tbody>`;
   const grand = totalOf(posM) || 0;
   cats.forEach(cat=>{
-    const items=itemsOf(cat), hasKas=INV_KAS_CATS.includes(cat.toLowerCase());
+    const items=itemsOf(cat);
     const collapsed = invCatCollapsed[cat] !== false;
     const catTot = months.map(m=> m>nowM?0: items.reduce((a,i)=>a+invItemTotal(cat,i,m),0));
     const share = grand>0 ? Math.round(items.reduce((a,i)=>a+invItemTotal(cat,i,posM),0)/grand*100) : 0;
@@ -3489,25 +3510,18 @@ function renderInvTrack(){
     if(collapsed) return;
     if(!items.length){ html+=`<tr><td colspan="${months.length+1}" style="text-align:left;color:var(--text3);font-style:italic;font-family:inherit">Belum ada akun</td></tr>`; return; }
     items.forEach(item=>{
-      const idx=S.asetItems[cat].indexOf(item), key=cat+'|'+item.name, open=invItemOpen[key]!==false;
+      const idx=S.asetItems[cat].indexOf(item);
       const badge = item.owner ? `<span class="it-pill">${item.owner}</span>` : '';
-      if(hasKas){
-        html+=`<tr class="it-item" onclick="invToggleItem('${esc(key)}')"><td style="padding-left:30px"><span class="it-chev">${open?'▼':'▶'}</span>${item.name}${badge}</td>
-          ${months.map(m=>`<td style="font-weight:600">${num(m>nowM?0:invItemTotal(cat,item,m))}</td>`).join('')}</tr>`;
-        if(open){
-          html+=`<tr class="it-sub"><td><span class="it-dot" style="background:#3b82f6"></span>${cat.toLowerCase()==='deposito'?'Deposito':'Nilai Portfolio'}</td>
-            ${months.map(m=>`<td>${m>nowM?'<span class="it-na">—</span>':(invIsAutoCat(cat)?`<span title="Otomatis dari Transfer Dana">${num(invPortfolio(cat,item,m))}</span>`:`<span class="it-edit" onclick="editMonthVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit ${m}">${num(invPortfolio(cat,item,m))}</span>`)}</td>`).join('')}</tr>
-          <tr class="it-sub"><td><span class="it-dot" style="background:#f59e0b"></span>Uang Kas</td>
-            ${months.map(m=>`<td>${m>nowM?'<span class="it-na">—</span>':`<span class="it-edit" onclick="editKasVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit Uang Kas ${m}">${num(invKas(item,m))}</span>`}</td>`).join('')}</tr>`;
-        }
-      } else {
-        html+=`<tr class="it-item"><td style="padding-left:30px"><span class="it-chev"></span>${item.name}${badge}</td>
-          ${months.map(m=>`<td>${m>nowM?'<span class="it-na">—</span>':`<span class="it-edit" style="cursor:pointer;border-bottom:1px dashed #cbd5e1" onclick="editMonthVal('${esc(cat)}',${idx},'${m}')" title="Klik untuk edit nilai ${m}">${num(invPortfolio(cat,item,m))}</span>`}</td>`).join('')}</tr>`;
-      }
+      html+=`<tr class="it-item"><td style="padding-left:30px"><span class="it-chev"></span>${item.name}${badge}</td>
+        ${months.map(m=>{
+          if(m>nowM) return '<td><span class="it-na">—</span></td>';
+          const stale = invHasData(item,m) && !invHasEntry(item,m);
+          return `<td><span class="it-edit" style="cursor:pointer;border-bottom:1px dashed #cbd5e1;${stale?'color:#94a3b8;font-style:italic':''}" onclick="editInvVal('${esc(cat)}',${idx},'${m}')" title="${stale?'Belum diupdate bulan ini (angka terbawa). ':''}Klik untuk update nilai ${m}">${num(invPortfolio(cat,item,m))}</span></td>`;
+        }).join('')}</tr>`;
     });
   });
   html+=`<tr class="it-tot"><td>Total Investasi</td>${months.map(m=>`<td>${num(totalOf(m))}</td>`).join('')}</tr></tbody></table></div></div>
-    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Klik nama kategori untuk membuka/menutup · klik angka bergaris putus-putus untuk update · Saham Indo/Luar otomatis dari Transfer Dana (tanpa isi manual) · Total = nilai instrumen + Uang Kas (Saham &amp; Deposito) + Crypto · rekening bank tidak dihitung · versi Investasi v6</p>`;
+    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Klik nama kategori untuk membuka/menutup · klik angka bergaris putus-putus untuk update nilai (naik/turun) · terpisah dari menu Aset yang hanya mencatat modal · versi Investasi v7</p>`;
 
   box.innerHTML = warn + kpi + prog + chart + html;
 }
@@ -3816,7 +3830,7 @@ function editMonthVal(cat, idx, month){
   const item=(S.asetItems[cat]||[])[idx];
   if(!item) return;
   if(invIsAutoCat(cat) && Object.keys(item.monthValues||{}).length>0){
-    alert('Saham Indo & Saham Luar tidak diisi manual.\n\nNilainya otomatis dari saldo awal + Transfer Dana (setoran masuk / penarikan keluar). Catat pemindahan dana di menu Transfer Dana.');
+    alert('Menu Aset hanya mencatat MODAL untuk Saham Indo, Saham Luar & Deposito — tidak diisi manual.\n\nNilai berubah hanya lewat Transfer Dana. Untuk mencatat naik/turun nilai, pakai menu Investasi.');
     return;
   }
   if(!item.monthValues) item.monthValues={};
