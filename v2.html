@@ -3570,7 +3570,7 @@ function renderInvTrack(){
   const mLbl = d => new Date(d.slice(0,7)+'-01').toLocaleDateString('id-ID',{month:'short',year:'numeric'});
   const posIdx = ds.length-1, posD=ds[posIdx];
   const A0=aset[0], Ap=aset[posIdx], hasilAset=Ap-A0, hasilAsetPct=A0>0?hasilAset/A0:0;
-  const hasilInv = totInv[posIdx].v-totInv[posIdx].modal, hasilInvPct=invChain(totInv,posIdx);
+  const hasilInv = totInv[posIdx].v-totInv[posIdx].modal, hasilInvPct=totInv[posIdx].modal>0?hasilInv/totInv[posIdx].modal:0;
 
   // kolom yang ditampilkan: Awal + N update terakhir
   const rest=[]; for(let i=1;i<ds.length;i++) rest.push(i);
@@ -3636,7 +3636,7 @@ function renderInvTrack(){
 
   cats.forEach(cat=>{
     const open = invCatCollapsed[cat]===false, arr=calc[cat];
-    const hasil=arr[posIdx].v-arr[posIdx].modal, hp=invChain(arr,posIdx);
+    const hasil=arr[posIdx].v-arr[posIdx].modal, hp=arr[posIdx].modal>0?hasil/arr[posIdx].modal:0;   // ROI = (nilai terakhir − modal) ÷ modal; modal = nilai Agu + top-up
     html+=`<tr class="it-cat" onclick="invToggleCat('${esc(cat)}')"><td><span class="it-chev">${open?'▼':'▶'}</span>${ico[cat.toLowerCase()]||''} ${cat}</td>${vis.map(i=>{
       const c=arr[i]; const st = i>0&&!c.fresh;
       return `<td${st?' class="it-stale"':''}><b>${fmt(c.v)}</b>${st?'':pc(invRet(arr,i))}</td>`;
@@ -3659,7 +3659,7 @@ function renderInvTrack(){
     const r = i===0?null:(aset[i-1]>0?(aset[i]-aset[i-1])/aset[i-1]:0);
     return `<td><b>${fmt(aset[i])}</b>${r===null?'<div style="font-size:11px;opacity:.7">awal</div>':`<div style="font-size:11.5px;color:${cc(r)}">${pct(r)}</div>`}</td>`;
   }).join('')}<td class="it-sep"><b style="color:${cc(hasilAset)}">${sgn(hasilAset)}</b><div style="font-size:11.5px;color:${cc(hasilAsetPct)}">${pct(hasilAsetPct)}</div></td></tr></tbody></table></div></div>
-    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Kolom = tanggal update · angka abu-abu miring = terbawa dari update sebelumnya · % kolom membandingkan dengan update sebelumnya (top-up dari Transfer Dana tidak dihitung untung) · ROI membandingkan dengan Nilai Awal Agu 2026 · klik tanggal/angka untuk ubah · versi Investasi v10</p>`;
+    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Kolom = tanggal update · angka abu-abu miring = terbawa dari update sebelumnya · % kolom membandingkan dengan update sebelumnya (top-up dari Transfer Dana tidak dihitung untung) · ROI = nilai terakhir dibanding Nilai Awal Agu 2026 (instrumen: setelah dikurangi top-up) · klik tanggal/angka untuk ubah · versi Investasi v11</p>`;
 
   const bar = `<div class="it-bar"><div style="font-size:11.5px;color:var(--text3)">Klik <b>baris kategori</b> untuk membuka · klik <b>tanggal</b> untuk ubah/hapus update${hidden>0?` · <span>${hidden} update lama disembunyikan</span>`:''}</div>
     <div style="display:flex;gap:8px;align-items:center">${rest.length>INV_SHOW_LAST?`<button class="btn" onclick="invToggleAll()">${invShowAll?`Tampilkan ${INV_SHOW_LAST} terakhir`:'Tampilkan semua'}</button>`:''}<button class="btn btn-primary" onclick="openInvUpdate()">＋ Update nilai</button></div></div>`;
