@@ -3566,11 +3566,11 @@ function renderInvTrack(){
   const pct = x => (x>=0?'+':'−')+Math.abs(x*100).toFixed(1).replace('.',',')+'%';
   const sgn = n => (n>=0?'+':'−')+fmt(Math.abs(n));
   const cc = x => x>=0?'#059669':'#dc2626';
-  const dLbl = d => new Date(d+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'short'});
+  const dLbl = d => new Date(d+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'2-digit'});
   const mLbl = d => new Date(d.slice(0,7)+'-01').toLocaleDateString('id-ID',{month:'short',year:'numeric'});
   const posIdx = ds.length-1, posD=ds[posIdx];
   const A0=aset[0], Ap=aset[posIdx], hasilAset=Ap-A0, hasilAsetPct=A0>0?hasilAset/A0:0;
-  const hasilInv = totInv[posIdx].v-totInv[posIdx].modal, hasilInvPct=totInv[posIdx].modal>0?hasilInv/totInv[posIdx].modal:0;
+  const hasilInv = totInv[posIdx].v-totInv[posIdx].modal, hasilInvPct=totInv[0].v>0?hasilInv/totInv[0].v:0;
 
   // kolom yang ditampilkan: Awal + N update terakhir
   const rest=[]; for(let i=1;i<ds.length;i++) rest.push(i);
@@ -3584,7 +3584,7 @@ function renderInvTrack(){
     : (age>35 ? `<div style="background:#fef3c7;border:1px solid #fcd34d;color:#92400e;font-size:11px;padding:8px 12px;border-radius:10px;margin-bottom:12px">⏰ Update terakhir ${dLbl(posD)} (${age} hari lalu). Klik <b>＋ Update nilai</b> untuk mengisi yang terbaru.</div>` : '');
   const kpi = `<div class="it-kpis">
     ${kpiCard('Nilai Awal', rp(A0), 'Agu 2026 · Tunai + Investasi (dari menu Aset)', '#8b5cf6')}
-    ${kpiCard('Nilai Akhir', rp(Ap), posIdx>0 ? 'Update '+dLbl(posD)+' '+posD.slice(0,4) : 'belum ada update', '#3b82f6')}
+    ${kpiCard('Nilai Akhir', rp(Ap), posIdx>0 ? 'Update '+dLbl(posD) : 'belum ada update', '#3b82f6')}
     ${kpiCard('Hasil', `<span style="color:${cc(hasilAset)}">${hasilAset<0?'−':'+'}Rp ${fmt(Math.abs(hasilAset))} <span style="font-size:12px">(${pct(hasilAsetPct)})</span></span>`, `Investasi saja: ${hasilInv<0?'−':'+'}Rp ${fmt(Math.abs(hasilInv))} (${pct(hasilInvPct)})`, cc(hasilAset))}
   </div>`;
 
@@ -3597,11 +3597,11 @@ function renderInvTrack(){
       const invGain=(totInv[posIdx].v-totInv[bi].v)-(totInv[posIdx].modal-totInv[bi].modal), other=(Ap-base)-invGain;
       const pctT=Math.max(0,Math.min(100,((Ap-base)/(target-base))*100));
       prog=`<div class="it-card"><h4>🎯 Progres Target 2027 — Total Aset +10%</h4>
-        <div style="font-size:10.5px;color:#94a3b8;margin-bottom:8px">Baseline ${dLbl(ds[bi])} Des 2026 = ${rp(base)} · Target Des 2027 = ${rp(target)}</div>
+        <div style="font-size:10.5px;color:#94a3b8;margin-bottom:8px">Baseline ${dLbl(ds[bi])} = ${rp(base)} · Target Des 2027 = ${rp(target)}</div>
         <div style="height:10px;background:#eef2ff;border-radius:6px;overflow:hidden"><div style="height:100%;width:${pctT.toFixed(1)}%;background:#2563eb"></div></div>
         <div style="font-size:11px;color:var(--text2);margin-top:8px;line-height:1.7">Sekarang ${rp(Ap)} (${pct(Ap/base-1)} dari baseline) · sisa ${rp(Math.max(0,target-Ap))}<br>Dari kenaikan investasi: <b style="color:${cc(invGain)}">${sgn(invGain)}</b> · dari tambahan saldo/tabungan: <b>${sgn(other)}</b></div></div>`;
     } else {
-      prog=`<div class="it-card"><h4>🎯 Target 2027 — Total Aset +10%</h4><div style="font-size:11px;color:var(--text2)">Baseline ${dLbl(ds[bi])} Des 2026 = <b>${rp(base)}</b> · Target Des 2027 = <b>${rp(target)}</b>. Progres tampil setelah ada update 2027.</div></div>`;
+      prog=`<div class="it-card"><h4>🎯 Target 2027 — Total Aset +10%</h4><div style="font-size:11px;color:var(--text2)">Baseline ${dLbl(ds[bi])} = <b>${rp(base)}</b> · Target Des 2027 = <b>${rp(target)}</b>. Progres tampil setelah ada update 2027.</div></div>`;
     }
   } else {
     prog=`<div class="it-card"><h4>🎯 Target 2027 — Total Aset +10%</h4><div style="font-size:11px;color:#94a3b8">Baseline = Total Aset akhir Des 2026 <b>(menunggu update Des 2026)</b>. Target = baseline × 1,10 di Des 2027.</div></div>`;
@@ -3614,18 +3614,13 @@ function renderInvTrack(){
   const pc = r => r===null ? mut('awal') : `<div style="color:${cc(r)}">${pct(r)}</div>`;
   const roi = (h,p,extra) => `<td class="it-sep"><b style="color:${cc(h)}">${sgn(h)}</b><div style="color:${cc(p)}">${pct(p)}</div></td>`;
 
-  // header: baris bulan (group) + baris tanggal
-  let g1='', g2='', run=null, cnt=0;
-  const flush=()=>{ if(run!==null) g1+=`<th class="it-g" colspan="${cnt}">${run}</th>`; };
+  // header: satu baris tanggal (tanpa baris bulan)
+  let g2='';
   vis.forEach(i=>{
-    const grp = i===0 ? 'Agu 2026' : mLbl(ds[i]);
-    if(grp!==run){ flush(); run=grp; cnt=0; } cnt++;
-    g2+= i===0 ? `<th class="it-d">Awal</th>` : `<th class="it-d${i===posIdx?' it-new':''}" style="cursor:pointer" onclick="openInvUpdate('${ds[i]}')" title="Klik untuk ubah / hapus update ini">${dLbl(ds[i])}</th>`;
+    g2+= i===0 ? `<th class="it-d">Awal · Agu 26</th>` : `<th class="it-d${i===posIdx?' it-new':''}" style="cursor:pointer" onclick="openInvUpdate('${ds[i]}')" title="Klik untuk ubah / hapus update ini">${dLbl(ds[i])}</th>`;
   });
-  flush();
   let html=`<div class="it-wrap"><div style="overflow-x:auto"><table class="it-tbl"><thead>
-    <tr><th rowspan="2" class="it-c1">Investasi <span style="text-transform:none;letter-spacing:0;font-weight:400">(Rp)</span></th>${g1}<th rowspan="2" class="it-sep it-roi">ROI<br><span style="text-transform:none;letter-spacing:0;font-weight:400">Dari Nilai Awal</span></th></tr>
-    <tr>${g2}</tr></thead><tbody>`;
+    <tr><th class="it-c1">Investasi <span style="text-transform:none;letter-spacing:0;font-weight:400">(Rp)</span></th>${g2}<th class="it-sep it-roi">ROI<br><span style="text-transform:none;letter-spacing:0;font-weight:400">Dari Nilai Awal</span></th></tr></thead><tbody>`;
 
   // Tunai
   const tunH=tun[posIdx]-tun[0];
@@ -3636,7 +3631,7 @@ function renderInvTrack(){
 
   cats.forEach(cat=>{
     const open = invCatCollapsed[cat]===false, arr=calc[cat];
-    const hasil=arr[posIdx].v-arr[posIdx].modal, hp=arr[posIdx].modal>0?hasil/arr[posIdx].modal:0;   // ROI = (nilai terakhir − modal) ÷ modal; modal = nilai Agu + top-up
+    const hasil=arr[posIdx].v-arr[posIdx].modal, hp=arr[0].v>0?hasil/arr[0].v:0;   // ROI = (nilai terakhir − tambahan saldo − nilai awal) ÷ nilai awal
     html+=`<tr class="it-cat" onclick="invToggleCat('${esc(cat)}')"><td><span class="it-chev">${open?'▼':'▶'}</span>${ico[cat.toLowerCase()]||''} ${cat}</td>${vis.map(i=>{
       const c=arr[i]; const st = i>0&&!c.fresh;
       return `<td${st?' class="it-stale"':''}><b>${fmt(c.v)}</b>${st?'':pc(invRet(arr,i))}</td>`;
@@ -3659,7 +3654,7 @@ function renderInvTrack(){
     const r = i===0?null:(aset[i-1]>0?(aset[i]-aset[i-1])/aset[i-1]:0);
     return `<td><b>${fmt(aset[i])}</b>${r===null?'<div style="font-size:11px;opacity:.7">awal</div>':`<div style="font-size:11.5px;color:${cc(r)}">${pct(r)}</div>`}</td>`;
   }).join('')}<td class="it-sep"><b style="color:${cc(hasilAset)}">${sgn(hasilAset)}</b><div style="font-size:11.5px;color:${cc(hasilAsetPct)}">${pct(hasilAsetPct)}</div></td></tr></tbody></table></div></div>
-    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Kolom = tanggal update · angka abu-abu miring = terbawa dari update sebelumnya · % kolom membandingkan dengan update sebelumnya (top-up dari Transfer Dana tidak dihitung untung) · ROI = nilai terakhir dibanding Nilai Awal Agu 2026 (instrumen: setelah dikurangi top-up) · klik tanggal/angka untuk ubah · versi Investasi v11</p>`;
+    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Kolom = tanggal update · angka abu-abu miring = terbawa dari update sebelumnya · % kolom membandingkan dengan update sebelumnya (top-up dari Transfer Dana tidak dihitung untung) · ROI = (nilai terakhir − tambahan saldo − nilai awal) ÷ nilai awal Agu 2026 · klik tanggal/angka untuk ubah · versi Investasi v12</p>`;
 
   const bar = `<div class="it-bar"><div style="font-size:11.5px;color:var(--text3)">Klik <b>baris kategori</b> untuk membuka · klik <b>tanggal</b> untuk ubah/hapus update${hidden>0?` · <span>${hidden} update lama disembunyikan</span>`:''}</div>
     <div style="display:flex;gap:8px;align-items:center">${rest.length>INV_SHOW_LAST?`<button class="btn" onclick="invToggleAll()">${invShowAll?`Tampilkan ${INV_SHOW_LAST} terakhir`:'Tampilkan semua'}</button>`:''}<button class="btn btn-primary" onclick="openInvUpdate()">＋ Update nilai</button></div></div>`;
