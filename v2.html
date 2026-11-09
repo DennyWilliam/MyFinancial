@@ -347,7 +347,7 @@ input[readonly]{color:var(--text2)}
 .it-wrap{background:#fff;border:1px solid #e8ecf2;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(15,23,42,.05)}
 .it-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
 .it-tbl th{padding:12px 12px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;text-align:right;white-space:nowrap;min-width:108px;background:#fff;border-bottom:1px solid #eef1f6}
-.it-tbl th:first-child{text-align:left;min-width:200px;position:sticky;left:0;z-index:2;padding-left:16px}
+.it-tbl th.it-c1,.it-tbl th:first-child{text-align:left;min-width:200px;position:sticky;left:0;z-index:2;padding-left:16px}
 .it-tbl td{padding:10px 12px;text-align:right;font-family:var(--mono);font-size:13px;color:#334155;border-bottom:1px solid #f4f6fa;white-space:nowrap}
 .it-tbl td:first-child{text-align:left;font-family:inherit;position:sticky;left:0;background:#fff;z-index:1;padding-left:16px}
 .it-cat td{background:#f7f9fc;font-weight:700;cursor:pointer;color:#0f172a;padding-top:9px;padding-bottom:9px}
@@ -374,6 +374,7 @@ input[readonly]{color:var(--text2)}
 .it-sep{background:#f8fafc;border-left:1px solid #e8ecf2}.it-mut{font-size:11px;color:#94a3b8;font-weight:400}.it-tbl td div{font-size:11.5px;font-family:var(--font);font-weight:600;margin-top:1px}.it-stale b,.it-stale{color:#94a3b8;font-style:italic}.it-nocur{cursor:default!important}.it-cat.it-nocur td{background:#fff}.it-cat.it-nocur td:first-child{background:#fff}.it-cat.it-nocur:hover td,.it-cat.it-nocur:hover td:first-child{background:#fff}.it-item .it-edit{cursor:pointer;border-bottom:1px dashed #cbd5e1}.it-item .it-edit:hover{color:var(--accent)}
 .it-tot td.it-sep{background:#dbeafe}
 .it-kpis{grid-template-columns:repeat(3,1fr)}
+.it-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}.it-tbl th.it-g{text-align:center;background:#f8fafc;color:#64748b;border-left:1px solid #eef1f6;padding:8px 12px}.it-tbl th.it-d{text-transform:none;letter-spacing:0;font-size:12.5px;color:#0f172a}.it-tbl th.it-d.it-new{color:var(--accent);font-weight:800}.it-tbl th.it-d:hover{color:var(--accent)}.it-tbl th.it-c1{vertical-align:bottom}.it-tbl th.it-roi{vertical-align:bottom;color:#475569;font-size:12px}.it-tbl th.it-sep,.it-tbl td.it-sep{position:sticky;right:0;z-index:2}.it-tbl th.it-sep{z-index:3}
 @media(max-width:760px){.it-kpis{grid-template-columns:1fr 1fr}}
 .it-na{color:#d5dbe5}
 /* ─── FILTER ROW ─── */
@@ -833,7 +834,7 @@ window.addEventListener('load', function(){
       <div class="page" id="page-invtrack">
         <div class="sec-head">
           <div class="sec-title">🚀 Investasi</div>
-          <div class="sec-sub">Hasil investasi per bulan · Agu 2026 = modal awal dari menu Aset · klik angka untuk isi Investasi &amp; Uang Kas dari aplikasi</div>
+          <div class="sec-sub">Hasil investasi per tanggal update · Agu 2026 = nilai awal dari menu Aset · klik ＋ Update nilai untuk mengisi Tunai, Investasi &amp; Uang Kas</div>
         </div>
         <div id="invTrackBody"></div>
       </div>
@@ -1407,6 +1408,8 @@ function loadState() {
       S.transfers       = p.transfers      || [];
       S.invMigrated     = p.invMigrated    || false;
       S.invShifted      = p.invShifted     || false;
+      S.invDated        = p.invDated       || false;
+      S.invTunai        = p.invTunai       || {};
       S.github          = p.github         || {token:'',repo:'',branch:'main'};
       S.topups        = p.topups        || [];
       S.apiKey        = p.apiKey        || '';
@@ -3347,52 +3350,36 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal('pnlDet
 const INV_TRACK_NAMES = ['saham indo','saham luar','deposito','crypto'];
 const INV_AUTO_CATS = ['saham indo','saham luar','deposito'];   // menu ASET: hanya modal; tanpa isian manual — berubah lewat Transfer Dana. Naik/turun dicatat di menu Investasi
 function invIsAutoCat(cat){ return INV_AUTO_CATS.includes(String(cat).toLowerCase()); }
-const INV_START_MONTH = '2026-08';   // Agu 2026 = modal awal (diambil dari menu Aset) — dasar perbandingan
+const INV_START_MONTH = '2026-08';   // Agu 2026 = nilai awal (modal dari menu Aset) — dasar perbandingan
 const INV_BASE_MONTH = '2026-12';
 const INV_TARGET_GROWTH = 0.10;
-let invCatCollapsed = {};   // default tertutup (kecuali dibuka)
-
+const INV_SHOW_LAST = 6;
+let invCatCollapsed = {};   // default tertutup
+let invShowAll = false;
+const invHas = (o,k) => Object.prototype.hasOwnProperty.call(o||{},k);
+const invIsDate = k => /^\d{4}-\d{2}-\d{2}$/.test(k);
+function invMonthEnd(m){ const [y,mo]=m.split('-').map(Number); return m+'-'+String(new Date(y,mo,0).getDate()).padStart(2,'0'); }
+function invMonthAdd(m,n){ const [y,mo]=m.split('-').map(Number); const d=new Date(y,mo-1+n,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
 function invToggleCat(cat){ invCatCollapsed[cat] = !(invCatCollapsed[cat] !== false); renderInvTrack(); }
+function invToggleAll(){ invShowAll=!invShowAll; renderInvTrack(); }
 function invTrackCats(){
   const keys = [...new Set([...Object.keys(S.asetItems||{}), ...getCatList('investment')])];
   const order = INV_TRACK_NAMES;
   return keys.filter(k=>order.includes(String(k).toLowerCase())).sort((a,b)=>order.indexOf(a.toLowerCase())-order.indexOf(b.toLowerCase()));
 }
-function invMonthAdd(m,n){ const [y,mo]=m.split('-').map(Number); const d=new Date(y,mo-1+n,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
-function invHasEntry(item,m){ return Object.prototype.hasOwnProperty.call(item.invValues||{},m); }
-function invHasKas(item,m){ return Object.prototype.hasOwnProperty.call(item.kasValues||{},m); }
-function invHasData(item,m){ return Object.keys(item.invValues||{}).some(k=>k<=m); }
-function invPortfolio(cat,item,m){
-  const ks = Object.keys(item.invValues||{}).filter(k=>k<=m).sort();
-  return ks.length ? (item.invValues[ks[ks.length-1]]||0) : 0;
+function invRekCat(){
+  const cs=[...new Set([...getCatList('investment'), ...Object.keys(S.asetItems||{})])];
+  return cs.find(c=>c.toLowerCase()==='rekening') || cs.find(c=>c.toLowerCase()==='tunai') || '';
 }
-function invItemTotal(cat,item,m){ return invPortfolio(cat,item,m); }
-
-// Modal (dasar) = angka di menu Aset (saldo awal + Transfer Dana)
-function invModal(cat,item,m){ return acctMonthVal(cat,item.name,m); }
-// Nilai Investasi / Kas per bulan. Agu = modal Aset. Bulan tanpa isian = nilai bulan lalu + top-up bulan itu (dianggap tidak berubah)
-function invNilai(cat,item,m,field){
-  if(m<=INV_START_MONTH) return field==='inv' ? invModal(cat,item,INV_START_MONTH) : 0;
-  const map = (field==='inv'?item.invValues:item.kasValues)||{};
-  if(Object.prototype.hasOwnProperty.call(map,m)) return map[m]||0;
-  const prev = invNilai(cat,item,invMonthAdd(m,-1),field);
-  return field==='inv' ? prev + (invModal(cat,item,m)-invModal(cat,item,invMonthAdd(m,-1))) : prev;
-}
-function invFresh(item,m){ return m>INV_START_MONTH && (invHasEntry(item,m)||invHasKas(item,m)); }
-function editInvVal(cat, idx, month, field){
-  field = field||'inv';
-  const item=(S.asetItems[cat]||[])[idx]; if(!item) return;
-  if(month<=INV_START_MONTH) return;
-  const key = field==='inv'?'invValues':'kasValues';
-  if(!item[key]) item[key]={};
-  const shown = Math.round(invNilai(cat,item,month,field))||0;
-  const input = prompt(`${field==='inv'?'Investasi':'Uang Kas'} "${item.name}" bulan ${month} (Rp) — nilai dari aplikasi:`, shown);
-  if(input===null) return;
-  const txt=String(input).trim(); if(txt==='') return;
-  const v=parseFloat(txt.replace(/\./g,'').replace(',','.')); if(isNaN(v)) return;
-  if(v===shown && Object.prototype.hasOwnProperty.call(item[key],month)) return;
-  item[key][month]=v;
-  persist(); renderInvTrack();
+// Modal pada suatu tanggal = saldo Aset Agu 2026 + Transfer Dana setelah Agu sampai tanggal itu
+function invModalAt(cat,item,d){
+  let v=acctMonthVal(cat,item.name,INV_START_MONTH);
+  (S.transfers||[]).forEach(t=>{
+    if(!t.date||t.date.slice(0,7)<=INV_START_MONTH||t.date>d) return;
+    if(t.toName===item.name) v+=t.amount||0;
+    if(t.fromName===item.name) v-=t.amount||0;
+  });
+  return v;
 }
 
 // Migrasi satu kali: nilai manual lama di Aset -> dipindah ke Investasi; Aset kembali hanya modal (saldo awal + transfer)
@@ -3425,8 +3412,8 @@ function shiftInvOctToSep(){
     if(!INV_TRACK_NAMES.includes(String(cat).toLowerCase())) return;
     (S.asetItems[cat]||[]).forEach(item=>{
       ['invValues','kasValues'].forEach(key=>{
-        const m=item[key]; if(!m || !Object.prototype.hasOwnProperty.call(m,'2026-10')) return;
-        if(Object.prototype.hasOwnProperty.call(m,'2026-09')) return;
+        const m=item[key]; if(!m || !invHas(m,'2026-10')) return;
+        if(invHas(m,'2026-09')) return;
         item['_'+key+'Backup'] = JSON.parse(JSON.stringify(m));   // cadangan sebelum geser
         m['2026-09']=m['2026-10']; delete m['2026-10']; changed=true;
       });
@@ -3436,137 +3423,248 @@ function shiftInvOctToSep(){
   persist();
   return changed;
 }
-function runInvMigrations(){ migrateInvestasi(); shiftInvOctToSep(); }
+// Migrasi satu kali: isian per BULAN (YYYY-MM) -> per TANGGAL (akhir bulan); Tunai ikut disimpan dari saldo rekening di Aset bulan itu
+function migrateInvDates(){
+  if(S.invDated) return false;
+  if(!S.invTunai) S.invTunai={};
+  const months=new Set();
+  Object.keys(S.asetItems||{}).forEach(cat=>{
+    if(!INV_TRACK_NAMES.includes(String(cat).toLowerCase())) return;
+    (S.asetItems[cat]||[]).forEach(item=>{
+      ['invValues','kasValues'].forEach(key=>{
+        const m=item[key]; if(!m) return;
+        Object.keys(m).forEach(k=>{
+          if(/^\d{4}-\d{2}$/.test(k) && k>INV_START_MONTH){
+            if(!item['_'+key+'DateBackup']) item['_'+key+'DateBackup']=JSON.parse(JSON.stringify(m));
+            m[invMonthEnd(k)]=m[k]; delete m[k]; months.add(k);
+          }
+        });
+      });
+    });
+  });
+  const rc=invRekCat();
+  months.forEach(mo=>{
+    const d=invMonthEnd(mo);
+    if(rc && !invHas(S.invTunai,d)) S.invTunai[d]=Math.round((S.asetItems[rc]||[]).filter(i=>isVisibleOwner(i.owner)).reduce((a,i)=>a+acctMonthVal(rc,i.name,mo),0));
+  });
+  S.invDated=true;
+  persist();
+  return months.size>0;
+}
+function runInvMigrations(){ migrateInvestasi(); shiftInvOctToSep(); migrateInvDates(); }
+
+// ── Hitung seluruh seri (kolom = tanggal update) ──
+function invSeries(){
+  const itemsOf = cat => (S.asetItems[cat]||[]).filter(i=>isVisibleOwner(i.owner));
+  const cats = invTrackCats().filter(c=>itemsOf(c).length && (String(c).toLowerCase()!=='crypto' || itemsOf(c).some(i=>Object.keys(i.invValues||{}).length>1)));
+  const base = invMonthEnd(INV_START_MONTH);
+  const set = new Set();
+  cats.forEach(c=>itemsOf(c).forEach(i=>{ ['invValues','kasValues'].forEach(k=>Object.keys(i[k]||{}).forEach(d=>{ if(invIsDate(d)&&d>base) set.add(d); })); }));
+  Object.keys(S.invTunai||{}).forEach(d=>{ if(invIsDate(d)&&d>base) set.add(d); });
+  const ds=[base, ...[...set].sort()];
+  const calc={}, per={};
+  cats.forEach(cat=>{
+    const items=itemsOf(cat);
+    const rows = items.map(item=>{
+      const I=[],K=[],M=[],F=[];
+      ds.forEach((d,i)=>{
+        const m=invModalAt(cat,item,d); M.push(m);
+        if(i===0){ I.push(m); K.push(0); F.push(true); return; }
+        const hi=invHas(item.invValues,d), hk=invHas(item.kasValues,d);
+        I.push(hi ? (item.invValues[d]||0) : I[i-1]+(m-M[i-1]));
+        K.push(hk ? (item.kasValues[d]||0) : K[i-1]);
+        F.push(hi||hk);
+      });
+      return {item,I,K,M,F};
+    });
+    per[cat]=rows;
+    calc[cat]=ds.map((d,i)=>({
+      v: rows.reduce((a,r)=>a+r.I[i]+r.K[i],0),
+      modal: rows.reduce((a,r)=>a+r.M[i],0),
+      fresh: i===0 || rows.every(r=>r.F[i])
+    }));
+  });
+  // Tunai
+  const rc=invRekCat();
+  const tun=[], tf=[];
+  ds.forEach((d,i)=>{
+    if(i===0){ tun.push(rc ? itemsOf(rc).reduce((a,it)=>a+acctMonthVal(rc,it.name,INV_START_MONTH),0) : 0); tf.push(true); return; }
+    if(invHas(S.invTunai,d)){ tun.push(S.invTunai[d]||0); tf.push(true); } else { tun.push(tun[i-1]); tf.push(false); }
+  });
+  const totInv = ds.map((d,i)=>({ v:cats.reduce((a,c)=>a+calc[c][i].v,0), modal:cats.reduce((a,c)=>a+calc[c][i].modal,0) }));
+  const aset = ds.map((d,i)=>totInv[i].v+tun[i]);
+  return {itemsOf,cats,ds,calc,per,tun,tf,totInv,aset};
+}
+const invRet = (arr,i) => { if(i===0) return null; const p=arr[i-1], c=arr[i], tp=c.modal-p.modal, den=p.v+tp; return den>0 ? (c.v-p.v-tp)/den : 0; };
+const invChain = (arr,upto) => { let c=1; for(let i=1;i<=upto;i++) c*=1+(invRet(arr,i)||0); return c-1; };
+
+// ── Form update (tanggal + Tunai + Investasi/Kas tiap instrumen) ──
+function invNum(txt){ const t=String(txt==null?'':txt).trim(); if(t==='') return null; const v=parseFloat(t.replace(/\./g,'').replace(',','.')); return isNaN(v)?null:v; }
+function openInvUpdate(date){
+  const D=invSeries(); const edit = !!date && D.ds.includes(date);
+  const idx = edit ? D.ds.indexOf(date) : D.ds.length-1;
+  const val = edit ? date : today();
+  let el=document.getElementById('invUpdModal');
+  if(!el){ el=document.createElement('div'); el.className='overlay'; el.id='invUpdModal'; el.addEventListener('click',e=>{ if(e.target===el) closeModal('invUpdModal'); }); document.body.appendChild(el); }
+  const inp = (id,v) => `<input id="${id}" type="text" inputmode="numeric" value="${v==null||v===''?'':fmt(v)}" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:var(--mono);font-size:13px;margin-top:3px" onfocus="this.select()">`;
+  const lab = t => `<label style="font-size:11px;font-weight:700;color:var(--text2)">${t}</label>`;
+  let body='';
+  D.cats.forEach((cat,ci)=>{
+    D.per[cat].forEach((r,ii)=>{
+      const k=ci+'_'+ii;
+      body+=`<div style="font-size:12.5px;font-weight:700;margin:12px 0 4px">${cat} · ${r.item.name}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div>${lab('Investasi')}${inp('iu-i-'+k, r.I[idx])}</div><div>${lab('Uang Kas')}${inp('iu-k-'+k, r.K[idx])}</div></div>`;
+    });
+  });
+  el.innerHTML=`<div class="modal" style="width:480px">
+    <div class="modal-title">${edit?'Ubah update':'＋ Update nilai investasi'}</div>
+    <div class="modal-sub">Isi dari aplikasi pada tanggal tersebut. Kolom yang dikosongkan tidak diubah (${edit?'akan dihapus dari tanggal ini':'memakai angka terakhir'}).</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div>${lab('Tanggal')}<input id="iu-date" type="date" min="2026-09-01" value="${val}" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-top:3px"></div>
+      <div>${lab('💵 Tunai (total rekening)')}${inp('iu-tunai', D.tun[idx])}</div></div>
+    ${body}
+    <div class="modal-foot">${edit?`<button class="btn" style="margin-right:auto;color:var(--red)" onclick="deleteInvUpdate('${date}')">Hapus update</button>`:''}<button class="btn" onclick="closeModal('invUpdModal')">Batal</button><button class="btn btn-primary" onclick="saveInvUpdate(${edit?`'${date}'`:'null'})">Simpan</button></div>
+  </div>`;
+  openModal('invUpdModal');
+}
+function saveInvUpdate(oldDate){
+  const D=invSeries();
+  const d=(document.getElementById('iu-date')||{}).value||'';
+  if(!invIsDate(d) || d<='2026-08-31'){ alert('Tanggal tidak valid (harus setelah Agu 2026).'); return; }
+  if(oldDate && oldDate!==d && D.ds.includes(d) && !confirm(`Sudah ada update di tanggal ${d}. Timpa?`)) return;
+  if(!S.invTunai) S.invTunai={};
+  const setOrDel=(o,key,v)=>{ if(v===null){ if(oldDate) delete o[key]; } else o[key]=v; };
+  const t=invNum(document.getElementById('iu-tunai').value);
+  if(oldDate && oldDate!==d) delete S.invTunai[oldDate];
+  setOrDel(S.invTunai,d,t);
+  D.cats.forEach((cat,ci)=>{
+    D.per[cat].forEach((r,ii)=>{
+      const k=ci+'_'+ii, item=r.item;
+      if(!item.invValues) item.invValues={}; if(!item.kasValues) item.kasValues={};
+      if(oldDate && oldDate!==d){ delete item.invValues[oldDate]; delete item.kasValues[oldDate]; }
+      setOrDel(item.invValues,d,invNum(document.getElementById('iu-i-'+k).value));
+      setOrDel(item.kasValues,d,invNum(document.getElementById('iu-k-'+k).value));
+    });
+  });
+  persist(); closeModal('invUpdModal'); renderInvTrack();
+}
+function deleteInvUpdate(d){
+  if(!confirm(`Hapus update tanggal ${d}?`)) return;
+  const D=invSeries();
+  if(S.invTunai) delete S.invTunai[d];
+  D.cats.forEach(cat=>D.per[cat].forEach(r=>{ if(r.item.invValues) delete r.item.invValues[d]; if(r.item.kasValues) delete r.item.kasValues[d]; }));
+  persist(); closeModal('invUpdModal'); renderInvTrack();
+}
 
 function renderInvTrack(){
   const box = document.getElementById('invTrackBody'); if(!box) return;
-  const itemsOf = cat => (S.asetItems[cat]||[]).filter(i=>isVisibleOwner(i.owner));
-  const cats = invTrackCats().filter(c=>itemsOf(c).length && (String(c).toLowerCase()!=='crypto' || itemsOf(c).some(i=>Object.keys(i.invValues||{}).length>1)));
+  const D=invSeries(); const {cats,ds,calc,per,tun,tf,totInv,aset}=D;
   const rp = n => 'Rp '+fmt(n);
   if(!cats.length){
     box.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">Belum ada instrumen investasi (Saham Indo, Saham Luar, Deposito). Tambahkan akunnya dulu di Rangkuman Aset.</div>';
     return;
   }
-  const nowM = today().slice(0,7);
-  let last = nowM > INV_BASE_MONTH ? nowM : INV_BASE_MONTH;
-  const months=[]; for(let m=INV_START_MONTH; m<=last; m=invMonthAdd(m,1)) months.push(m);
-  const mShort = m => new Date(m+'-01').toLocaleDateString('id-ID',{month:'short',year:'2-digit'});
   const pct = x => (x>=0?'+':'−')+Math.abs(x*100).toFixed(1).replace('.',',')+'%';
   const sgn = n => (n>=0?'+':'−')+fmt(Math.abs(n));
   const cc = x => x>=0?'#059669':'#dc2626';
-
-  // Tunai = total rekening di menu Aset
-  const asetCats = [...new Set([...getCatList('investment'), ...Object.keys(S.asetItems||{})])];
-  const rekCat = asetCats.find(c=>c.toLowerCase()==='rekening') || asetCats.find(c=>c.toLowerCase()==='tunai') || '';
-  const tunai = m => rekCat ? itemsOf(rekCat).reduce((a,i)=>a+acctMonthVal(rekCat,i.name,m),0) : 0;
-
-  // per kategori & per bulan
-  const calc = {};   // calc[cat][m] = {v, modal, fresh}
-  const prevM = m => invMonthAdd(m,-1);
-  cats.forEach(cat=>{
-    const items=itemsOf(cat); calc[cat]={};
-    months.forEach(m=>{
-      let v=0, modal=0, fresh=true;
-      items.forEach(i=>{ v+=invNilai(cat,i,m,'inv')+invNilai(cat,i,m,'kas'); modal+=invModal(cat,i,m); if(m>INV_START_MONTH && !invFresh(i,m)) fresh=false; });
-      calc[cat][m]={v,modal,fresh};
-    });
-  });
-  const retOf = (arr,m,i) => { // arr: [{v,modal}] per bulan
-    if(i===0) return null; const p=arr[i-1], c=arr[i], tp=c.modal-p.modal;
-    const den=p.v+tp; return den>0 ? (c.v-p.v-tp)/den : 0;
-  };
-  const posIdx = (()=>{ let k=0; months.forEach((m,i)=>{ if(m<=nowM && cats.some(c=>itemsOf(c).some(it=>invFresh(it,m)))) k=i; }); return k; })();
-  const posM = months[posIdx];
-  const chain = (arr)=>{ let c=1; for(let i=1;i<=posIdx;i++) c*=1+(retOf(arr,months[i],i)||0); return c-1; };
-
-  // total investasi, tunai, total aset
-  const totInv = months.map((m,i)=>({ v:cats.reduce((a,c)=>a+calc[c][m].v,0), modal:cats.reduce((a,c)=>a+calc[c][m].modal,0) }));
-  const tun = months.map(m=>tunai(m));
-  const aset = months.map((m,i)=>totInv[i].v+tun[i]);
+  const dLbl = d => new Date(d+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'short'});
+  const mLbl = d => new Date(d.slice(0,7)+'-01').toLocaleDateString('id-ID',{month:'short',year:'numeric'});
+  const posIdx = ds.length-1, posD=ds[posIdx];
   const A0=aset[0], Ap=aset[posIdx], hasilAset=Ap-A0, hasilAsetPct=A0>0?hasilAset/A0:0;
-  const hasilInv = totInv[posIdx].v - totInv[posIdx].modal, hasilInvPct = chain(totInv);
+  const hasilInv = totInv[posIdx].v-totInv[posIdx].modal, hasilInvPct=invChain(totInv,posIdx);
+
+  // kolom yang ditampilkan: Awal + N update terakhir
+  const rest=[]; for(let i=1;i<ds.length;i++) rest.push(i);
+  const shown = invShowAll ? rest : rest.slice(-INV_SHOW_LAST);
+  const vis=[0,...shown], hidden=rest.length-shown.length;
 
   // ── KPI ──
   const kpiCard=(l,v,sub,c)=>`<div class="it-kpi" style="--kc:${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${sub||'&nbsp;'}</div></div>`;
-  const stale = [], chkM = invMonthAdd(nowM,-1);
-  if(chkM>INV_START_MONTH) cats.forEach(cat=>itemsOf(cat).forEach(i=>{ if(!invFresh(i,chkM)) stale.push(i.name); }));
-  const warn = stale.length ? `<div style="background:#fef3c7;border:1px solid #fcd34d;color:#92400e;font-size:11px;padding:8px 12px;border-radius:10px;margin-bottom:12px">⏰ Belum diisi bulan ${mShort(chkM)}: <b>${stale.join(', ')}</b>. Klik angka di tabel untuk mengisi nilai dari aplikasi (angka abu-abu = terbawa dari bulan lalu).</div>` : '';
+  const age = posIdx>0 ? Math.floor((new Date(today()+'T00:00:00')-new Date(posD+'T00:00:00'))/86400000) : null;
+  const warn = (age===null) ? `<div style="background:#fef3c7;border:1px solid #fcd34d;color:#92400e;font-size:11px;padding:8px 12px;border-radius:10px;margin-bottom:12px">Belum ada update. Klik <b>＋ Update nilai</b> untuk mengisi nilai dari aplikasi.</div>`
+    : (age>35 ? `<div style="background:#fef3c7;border:1px solid #fcd34d;color:#92400e;font-size:11px;padding:8px 12px;border-radius:10px;margin-bottom:12px">⏰ Update terakhir ${dLbl(posD)} (${age} hari lalu). Klik <b>＋ Update nilai</b> untuk mengisi yang terbaru.</div>` : '');
   const kpi = `<div class="it-kpis">
-    ${kpiCard('Nilai Awal', rp(A0), 'Agu 2026 · Investasi + Tunai (dari menu Aset)', '#8b5cf6')}
-    ${kpiCard('Nilai Akhir', rp(Ap), mShort(posM)+' · total bulan terakhir yang terisi', '#3b82f6')}
+    ${kpiCard('Nilai Awal', rp(A0), 'Agu 2026 · Tunai + Investasi (dari menu Aset)', '#8b5cf6')}
+    ${kpiCard('Nilai Akhir', rp(Ap), posIdx>0 ? 'Update '+dLbl(posD)+' '+posD.slice(0,4) : 'belum ada update', '#3b82f6')}
     ${kpiCard('Hasil', `<span style="color:${cc(hasilAset)}">${hasilAset<0?'−':'+'}Rp ${fmt(Math.abs(hasilAset))} <span style="font-size:12px">(${pct(hasilAsetPct)})</span></span>`, `Investasi saja: ${hasilInv<0?'−':'+'}Rp ${fmt(Math.abs(hasilInv))} (${pct(hasilInvPct)})`, cc(hasilAset))}
   </div>`;
 
   // ── Target 2027 ──
   let prog='';
-  const bi = months.indexOf(INV_BASE_MONTH);
-  const baseFilled = cats.every(c=>itemsOf(c).every(i=>invFresh(i,INV_BASE_MONTH))) && INV_BASE_MONTH<=nowM;
-  if(baseFilled && posIdx>bi){
-    const base=aset[bi], target=base*(1+INV_TARGET_GROWTH), cur=Ap;
-    const invGain = (totInv[posIdx].v-totInv[bi].v) - (totInv[posIdx].modal-totInv[bi].modal);
-    const other = (cur-base)-invGain;
-    const pctT = Math.max(0,Math.min(100,((cur-base)/(target-base))*100));
-    prog=`<div class="it-card"><h4>🎯 Progres Target 2027 — Total Aset +10%</h4>
-      <div style="font-size:10.5px;color:#94a3b8;margin-bottom:8px">Baseline 31 Des 2026 = ${rp(base)} · Target Des 2027 = ${rp(target)}</div>
-      <div style="height:10px;background:#eef2ff;border-radius:6px;overflow:hidden"><div style="height:100%;width:${pctT.toFixed(1)}%;background:#2563eb"></div></div>
-      <div style="font-size:11px;color:var(--text2);margin-top:8px;line-height:1.7">Sekarang ${rp(cur)} (${pct(cur/base-1)} dari baseline) · sisa ${rp(Math.max(0,target-cur))}<br>Dari kenaikan investasi: <b style="color:${cc(invGain)}">${sgn(invGain)}</b> · dari tambahan saldo/tabungan: <b>${sgn(other)}</b></div></div>`;
+  let bi=-1; ds.forEach((d,i)=>{ if(d.slice(0,7)===INV_BASE_MONTH) bi=i; });
+  if(bi>0){
+    const base=aset[bi], target=base*(1+INV_TARGET_GROWTH);
+    if(posIdx>bi){
+      const invGain=(totInv[posIdx].v-totInv[bi].v)-(totInv[posIdx].modal-totInv[bi].modal), other=(Ap-base)-invGain;
+      const pctT=Math.max(0,Math.min(100,((Ap-base)/(target-base))*100));
+      prog=`<div class="it-card"><h4>🎯 Progres Target 2027 — Total Aset +10%</h4>
+        <div style="font-size:10.5px;color:#94a3b8;margin-bottom:8px">Baseline ${dLbl(ds[bi])} Des 2026 = ${rp(base)} · Target Des 2027 = ${rp(target)}</div>
+        <div style="height:10px;background:#eef2ff;border-radius:6px;overflow:hidden"><div style="height:100%;width:${pctT.toFixed(1)}%;background:#2563eb"></div></div>
+        <div style="font-size:11px;color:var(--text2);margin-top:8px;line-height:1.7">Sekarang ${rp(Ap)} (${pct(Ap/base-1)} dari baseline) · sisa ${rp(Math.max(0,target-Ap))}<br>Dari kenaikan investasi: <b style="color:${cc(invGain)}">${sgn(invGain)}</b> · dari tambahan saldo/tabungan: <b>${sgn(other)}</b></div></div>`;
+    } else {
+      prog=`<div class="it-card"><h4>🎯 Target 2027 — Total Aset +10%</h4><div style="font-size:11px;color:var(--text2)">Baseline ${dLbl(ds[bi])} Des 2026 = <b>${rp(base)}</b> · Target Des 2027 = <b>${rp(target)}</b>. Progres tampil setelah ada update 2027.</div></div>`;
+    }
   } else {
-    prog=`<div class="it-card"><h4>🎯 Target 2027 — Total Aset +10%</h4><div style="font-size:11px;color:#94a3b8">Baseline = Total Aset 31 Des 2026 <b>(menunggu isian Des 2026)</b>. Target = baseline × 1,10 di Des 2027.</div></div>`;
+    prog=`<div class="it-card"><h4>🎯 Target 2027 — Total Aset +10%</h4><div style="font-size:11px;color:#94a3b8">Baseline = Total Aset akhir Des 2026 <b>(menunggu update Des 2026)</b>. Target = baseline × 1,10 di Des 2027.</div></div>`;
   }
 
   // ── Tabel ──
   const esc = x => String(x).replace(/'/g,"\\'");
   const ico = {'saham indo':'📈','saham luar':'🌎','deposito':'🏦','crypto':'₿'};
-  const num = v => (v||v===0) ? fmt(v) : '<span class="it-na">—</span>';
-  const pcell = (r,cls) => r===null ? '<div class="it-mut">awal</div>' : `<div style="color:${cc(r)}">${pct(r)}</div>`;
-  const colTd = (m,i,valHtml,r,stl) => m>nowM ? '<td><span class="it-na">—</span></td>' : `<td${stl?' class="it-stale"':''}>${valHtml}${r===undefined?'':pcell(r)}</td>`;
-  const lastTd = (hasil,p) => `<td class="it-sep"><b style="color:${cc(hasil)}">${sgn(hasil)}</b><div style="color:${cc(p)}">${pct(p)}</div></td>`;
+  const mut = t => `<div class="it-mut">${t}</div>`;
+  const pc = r => r===null ? mut('awal') : `<div style="color:${cc(r)}">${pct(r)}</div>`;
+  const roi = (h,p,extra) => `<td class="it-sep"><b style="color:${cc(h)}">${sgn(h)}</b><div style="color:${cc(p)}">${pct(p)}</div></td>`;
 
-  let html=`<div class="it-wrap"><div style="overflow-x:auto"><table class="it-tbl"><thead><tr>
-      <th>Investasi <span style="text-transform:none;letter-spacing:0;font-weight:400">(Rp)</span></th>
-      ${months.map(m=>`<th style="${m===nowM?'color:var(--accent)':''}">${mShort(m)}</th>`).join('')}<th class="it-sep">Sejak Agu<br><span style="text-transform:none;letter-spacing:0;font-weight:400">(Hasil Rp · %)</span></th></tr></thead><tbody>`;
+  // header: baris bulan (group) + baris tanggal
+  let g1='', g2='', run=null, cnt=0;
+  const flush=()=>{ if(run!==null) g1+=`<th class="it-g" colspan="${cnt}">${run}</th>`; };
+  vis.forEach(i=>{
+    const grp = i===0 ? 'Agu 2026' : mLbl(ds[i]);
+    if(grp!==run){ flush(); run=grp; cnt=0; } cnt++;
+    g2+= i===0 ? `<th class="it-d">Awal</th>` : `<th class="it-d${i===posIdx?' it-new':''}" style="cursor:pointer" onclick="openInvUpdate('${ds[i]}')" title="Klik untuk ubah / hapus update ini">${dLbl(ds[i])}</th>`;
+  });
+  flush();
+  let html=`<div class="it-wrap"><div style="overflow-x:auto"><table class="it-tbl"><thead>
+    <tr><th rowspan="2" class="it-c1">Investasi <span style="text-transform:none;letter-spacing:0;font-weight:400">(Rp)</span></th>${g1}<th rowspan="2" class="it-sep it-roi">ROI<br><span style="text-transform:none;letter-spacing:0;font-weight:400">Dari Nilai Awal</span></th></tr>
+    <tr>${g2}</tr></thead><tbody>`;
 
   // Tunai
-  const tunHasil=tun[posIdx]-tun[0];
-  html+=`<tr class="it-cat it-nocur"><td>💵 Tunai <span class="it-mut" style="font-weight:400;font-size:9.5px">(total rekening di Aset)</span></td>${months.map((m,i)=>{
-    if(m>nowM) return '<td><span class="it-na">—</span></td>';
+  const tunH=tun[posIdx]-tun[0];
+  html+=`<tr class="it-cat it-nocur"><td>💵 Tunai <span class="it-mut" style="display:inline;font-weight:400;font-size:11px">(total rekening)</span></td>${vis.map(i=>{
     const r = i===0?null:(tun[i-1]>0?(tun[i]-tun[i-1])/tun[i-1]:0);
-    return `<td><b>${fmt(tun[i])}</b>${pcell(r)}</td>`;
-  }).join('')}${lastTd(tunHasil, tun[0]>0?tunHasil/tun[0]:0)}</tr>`;
+    return `<td${i>0&&!tf[i]?' class="it-stale"':''}><b>${fmt(tun[i])}</b>${i>0&&!tf[i]?'':pc(r)}</td>`;
+  }).join('')}${roi(tunH, tun[0]>0?tunH/tun[0]:0)}</tr>`;
 
   cats.forEach(cat=>{
-    const items=itemsOf(cat), open = invCatCollapsed[cat]===false;
-    const arr=months.map(m=>calc[cat][m]);
-    const hasil = arr[posIdx].v-arr[posIdx].modal, hp = chain(arr);
-    html+=`<tr class="it-cat" onclick="invToggleCat('${esc(cat)}')"><td><span class="it-chev">${open?'▼':'▶'}</span>${ico[cat.toLowerCase()]||''} ${cat}</td>${months.map((m,i)=>{
-      const c=calc[cat][m]; const r=retOf(arr,m,i);
-      return colTd(m,i,`<b>${fmt(c.v)}</b>`, (i>0 && !c.fresh)?undefined:r, i>0&&!c.fresh);
-    }).join('')}${lastTd(hasil,hp)}</tr>`;
+    const open = invCatCollapsed[cat]===false, arr=calc[cat];
+    const hasil=arr[posIdx].v-arr[posIdx].modal, hp=invChain(arr,posIdx);
+    html+=`<tr class="it-cat" onclick="invToggleCat('${esc(cat)}')"><td><span class="it-chev">${open?'▼':'▶'}</span>${ico[cat.toLowerCase()]||''} ${cat}</td>${vis.map(i=>{
+      const c=arr[i]; const st = i>0&&!c.fresh;
+      return `<td${st?' class="it-stale"':''}><b>${fmt(c.v)}</b>${st?'':pc(invRet(arr,i))}</td>`;
+    }).join('')}${roi(hasil,hp)}</tr>`;
     if(!open) return;
-    items.forEach(item=>{
-      const idx=S.asetItems[cat].indexOf(item);
-      const badge = item.owner ? `<span class="it-pill">${item.owner}</span>` : '';
-      [['inv','Investasi'],['kas','Kas']].forEach(([f,lbl])=>{
-        html+=`<tr class="it-item"><td style="padding-left:32px">${item.name} ${lbl}${f==='inv'?badge:''}</td>${months.map(m=>{
-          if(m>nowM) return '<td><span class="it-na">—</span></td>';
-          const val = invNilai(cat,item,m,f);
-          if(m<=INV_START_MONTH) return `<td title="Dasar perhitungan: modal Agu 2026 dari menu Aset">${f==='inv'?fmt(val):'<span class="it-na">0</span>'}</td>`;
-          const has = f==='inv'?invHasEntry(item,m):invHasKas(item,m);
-          return `<td><span class="it-edit" style="${has?'':'color:#94a3b8;font-style:italic'}" onclick="event.stopPropagation();editInvVal('${esc(cat)}',${idx},'${m}','${f}')" title="${has?'':'Belum diupdate bulan ini (angka terbawa). '}Klik untuk update ${m}">${fmt(val)}</span></td>`;
+    per[cat].forEach(r=>{
+      const badge = r.item.owner ? `<span class="it-pill">${r.item.owner}</span>` : '';
+      [['I','Investasi'],['K','Kas']].forEach(([f,lbl])=>{
+        html+=`<tr class="it-item"><td style="padding-left:32px">${r.item.name} ${lbl}${f==='I'?badge:''}</td>${vis.map(i=>{
+          const v=r[f][i];
+          if(i===0) return `<td title="Dasar perhitungan: saldo Agu 2026 dari menu Aset">${f==='I'?fmt(v):'<span class="it-na">0</span>'}</td>`;
+          return `<td${r.F[i]?'':' class="it-stale"'}><span class="it-edit" onclick="event.stopPropagation();openInvUpdate('${ds[i]}')" title="Klik untuk ubah update ${ds[i]}">${fmt(v)}</span></td>`;
         }).join('')}<td class="it-sep"></td></tr>`;
       });
     });
   });
 
   // Total Aset
-  html+=`<tr class="it-tot"><td>Total Aset <span style="text-transform:none;letter-spacing:0;font-weight:400;font-size:9.5px">(Tunai + Investasi)</span></td>${months.map((m,i)=>{
-    if(m>nowM) return '<td><span class="it-na">—</span></td>';
+  html+=`<tr class="it-tot"><td>Total Aset <span style="text-transform:none;letter-spacing:0;font-weight:400;font-size:10px">(Tunai + Investasi)</span></td>${vis.map(i=>{
     const r = i===0?null:(aset[i-1]>0?(aset[i]-aset[i-1])/aset[i-1]:0);
     return `<td><b>${fmt(aset[i])}</b>${r===null?'<div style="font-size:11px;opacity:.7">awal</div>':`<div style="font-size:11.5px;color:${cc(r)}">${pct(r)}</div>`}</td>`;
   }).join('')}<td class="it-sep"><b style="color:${cc(hasilAset)}">${sgn(hasilAset)}</b><div style="font-size:11.5px;color:${cc(hasilAsetPct)}">${pct(hasilAsetPct)}</div></td></tr></tbody></table></div></div>
-    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Agu 2026 = modal awal (dari menu Aset, dasar perbandingan) · klik kategori untuk membuka · klik angka untuk update Investasi / Kas dari aplikasi · % bulanan membandingkan dengan bulan lalu (top-up tidak dihitung untung); Total Aset dibandingkan langsung total bulan lalu · versi Investasi v9</p>`;
+    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Kolom = tanggal update · angka abu-abu miring = terbawa dari update sebelumnya · % kolom membandingkan dengan update sebelumnya (top-up dari Transfer Dana tidak dihitung untung) · ROI membandingkan dengan Nilai Awal Agu 2026 · klik tanggal/angka untuk ubah · versi Investasi v10</p>`;
 
-  box.innerHTML = warn + kpi + html + prog;
+  const bar = `<div class="it-bar"><div style="font-size:11.5px;color:var(--text3)">Klik <b>baris kategori</b> untuk membuka · klik <b>tanggal</b> untuk ubah/hapus update${hidden>0?` · <span>${hidden} update lama disembunyikan</span>`:''}</div>
+    <div style="display:flex;gap:8px;align-items:center">${rest.length>INV_SHOW_LAST?`<button class="btn" onclick="invToggleAll()">${invShowAll?`Tampilkan ${INV_SHOW_LAST} terakhir`:'Tampilkan semua'}</button>`:''}<button class="btn btn-primary" onclick="openInvUpdate()">＋ Update nilai</button></div></div>`;
+
+  box.innerHTML = warn + kpi + bar + html + prog;
 }
 
 // ── Modal helpers ──────────────────────────────────────────────
