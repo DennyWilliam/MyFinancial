@@ -376,6 +376,13 @@ input[readonly]{color:var(--text2)}
 .it-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}.it-tbl th.it-g{text-align:center;background:#f8fafc;color:#64748b;border-left:1px solid #eef1f6;padding:8px 12px}.it-tbl th.it-d{text-transform:none;letter-spacing:0;font-size:12.5px;color:#0f172a}.it-tbl th.it-d.it-new{color:var(--accent);font-weight:800}.it-tbl th.it-d:hover{color:var(--accent)}.it-tbl th.it-c1{vertical-align:bottom}.it-tbl th.it-roi{vertical-align:bottom;color:#475569;font-size:12px}.it-tbl th.it-sep,.it-tbl td.it-sep{position:sticky;right:0;z-index:2}.it-tbl th.it-sep{z-index:3}
 @media(max-width:760px){.it-kpis{grid-template-columns:1fr 1fr}}
 .it-na{color:#d5dbe5}
+.it-tbl td{padding:10px 16px;color:var(--text)}.it-tbl th{padding:12px 16px}
+.it-tbl th.it-d{width:160px}
+.it-cat td{padding:9px 16px;font-size:13px;font-weight:600;background:var(--bg3);border-top:1.5px solid var(--border2)}
+.it-cat td:first-child{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:var(--bg3)}
+.it-item td{font-weight:400}.it-item td:first-child{font-weight:400}
+.it-tot td,.it-tot td.it-totc,.it-tot td.it-sep{background:var(--bg2);color:var(--text);font-size:14px;font-weight:800;border-top:2px solid var(--border2)}
+.it-tot td:first-child{font-size:13px;letter-spacing:.5px;text-transform:uppercase;background:var(--bg2)}
 .it-tbl th.it-c1{width:215px;min-width:215px}.it-tbl th.it-d{min-width:0}.it-tbl th.it-sep{position:sticky;right:0;z-index:2}.it-tbl td.it-sep{position:sticky;right:0;z-index:1;background:#f8fafc}
 .it-tbl td.it-tbh{color:#0f172a}.it-clk{cursor:pointer}.it-clk:hover{background:#f1f5f9}
 .it-tbl th{white-space:normal;line-height:1.35}.it-thsub{font-size:10px;font-weight:500;text-transform:none;letter-spacing:0;color:#94a3b8}
@@ -383,7 +390,7 @@ input[readonly]{color:var(--text2)}
 .it-tabs{display:flex;gap:6px}.it-tab{border:1px solid #e2e8f0;background:#fff;border-radius:10px;padding:6px 14px;font-weight:700;font-size:13px;cursor:pointer;color:#64748b}.it-tab.on{background:#2563eb;border-color:#2563eb;color:#fff}
 .it-warn{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:12px;padding:10px 14px;font-size:12.5px;margin-bottom:12px}
 .it-new{color:#2563eb!important}.it-edit{cursor:pointer;border-bottom:1px dashed #cbd5e1}.it-edit:hover{color:var(--accent);border-color:var(--accent)}
-.it-tot td.it-totc{background:linear-gradient(#eff6ff,#e6f0ff);color:#1d4ed8}.it-tot td.it-sep{position:sticky;right:0}
+.it-tot td.it-sep{position:sticky;right:0}
 /* ─── FILTER ROW ─── */
 .filter-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .filter-row select,.filter-row input{padding:7px 10px;font-size:12px}
@@ -841,7 +848,7 @@ window.addEventListener('load', function(){
       <div class="page" id="page-invtrack">
         <div class="sec-head">
           <div class="sec-title">🚀 Investasi</div>
-          <div class="sec-sub">Hasil investasi per tanggal update · Agu 2026 = nilai awal dari menu Aset · klik ＋ Update nilai untuk mengisi Tunai, Investasi &amp; Uang Kas</div>
+          <div class="sec-sub">Hasil investasi per tanggal update · Agu 2026 = nilai awal dari menu Aset · klik ＋ Update nilai untuk mengisi Investasi, Uang Kas &amp; Tambahan Modal</div>
         </div>
         <div id="invTrackBody"></div>
       </div>
@@ -3600,7 +3607,7 @@ function renderInvTrack(){
   if(invYear===null || !years.includes(invYear)) invYear = years.includes(curY) ? curY : years[years.length-1];
   const Y=invYear, V=invYearView(D,Y), s=V.s, idx=V.idx;
   const pct = x => (x>=0?'+':'−')+Math.abs(x*100).toFixed(1).replace('.',',')+'%';
-  const sgn = n => (n>=0?'+':'−')+fmt(Math.abs(n));
+  const sgn = n => (n>=0?'+':'−')+'Rp '+fmt(Math.abs(n));
   const cc = x => x>=0?'#059669':'#dc2626';
   const dLbl = d => new Date(d+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'2-digit'});
   const lastIdx = idx.length ? idx[idx.length-1] : s;
@@ -3655,30 +3662,30 @@ function renderInvTrack(){
     const cum=invCum(arr,s,lastIdx), n=per[cat].reduce((a,r)=>{ for(let k=s+1;k<=lastIdx;k++) if(r.T[k]) a++; return a; },0);
     const h=arr[lastIdx].v-cum-arr[s].v, p=arr[s].v>0?h/arr[s].v:0;
     rows+=`<tr class="it-cat" onclick="invToggleCat('${esc(cat)}')"><td><span class="it-chev">${open?'▼':'▶'}</span>${ico[cat.toLowerCase()]||''} ${cat}</td>
-      <td><b>${fmt(arr[s].v)}</b>${mut('awal')}</td>${tbhCell(cum,n,`showInvTopups('${esc(cat)}')`)}
-      ${shown.map(i=>{ const c=arr[i], st=!c.fresh; return `<td${st?' class="it-stale"':''}><b>${fmt(c.v)}</b>${st?'':pc(invRet(arr,i))}</td>`; }).join('')}${roiCell(h,p)}</tr>`;
+      <td><b>${rp(arr[s].v)}</b>${mut('awal')}</td>${tbhCell(cum,n,`showInvTopups('${esc(cat)}')`)}
+      ${shown.map(i=>{ const c=arr[i], st=!c.fresh; return `<td${st?' class="it-stale"':''}><b>${rp(c.v)}</b>${st?'':pc(invRet(arr,i))}</td>`; }).join('')}${roiCell(h,p)}</tr>`;
     if(!open) return;
     per[cat].forEach(r=>{
       const badge = r.item.owner ? `<span class="it-pill">${r.item.owner}</span>` : '';
       [['I','Investasi'],['K','Kas']].forEach(([f,lbl])=>{
         rows+=`<tr class="it-item"><td style="padding-left:32px">${r.item.name} ${lbl}${f==='I'?badge:''}</td>
-          <td>${f==='K'&&r[f][s]===0?'<span class="it-na">0</span>':fmt(r[f][s])}</td><td class="it-tbh"></td>
-          ${shown.map(i=>`<td${r.F[i]?'':' class="it-stale"'}><span class="it-edit" onclick="event.stopPropagation();openInvUpdate('${ds[i]}')" title="Klik untuk ubah update ${ds[i]}">${fmt(r[f][i])}</span></td>`).join('')}<td class="it-sep"></td></tr>`;
+          <td>${f==='K'&&r[f][s]===0?'<span class="it-na">0</span>':rp(r[f][s])}</td><td class="it-tbh"></td>
+          ${shown.map(i=>`<td${r.F[i]?'':' class="it-stale"'}><span class="it-edit" onclick="event.stopPropagation();openInvUpdate('${ds[i]}')" title="Klik untuk ubah update ${ds[i]}">${rp(r[f][i])}</span></td>`).join('')}<td class="it-sep"></td></tr>`;
       });
     });
   });
   const tn=cats.reduce((a,c)=>a+per[c].reduce((b,r)=>{ for(let k=s+1;k<=lastIdx;k++) if(r.T[k]) b++; return b; },0),0);
   rows+=`<tr class="it-tot"><td>Total Investasi <span class="it-thsub" style="text-transform:none;letter-spacing:0">(Investasi + Kas)</span></td>
-    <td><b>${fmt(A0)}</b><div class="it-mut" style="opacity:.8">awal</div></td>${tbhCell(TP,tn,`showInvTopups('*')`).replace('it-tbh','it-tbh it-totc')}
-    ${shown.map(i=>`<td><b>${fmt(tot[i].v)}</b>${pc(invRet(tot,i))}</td>`).join('')}
+    <td><b>${rp(A0)}</b><div class="it-mut" style="opacity:.8">awal</div></td>${tbhCell(TP,tn,`showInvTopups('*')`).replace('it-tbh','it-tbh it-totc')}
+    ${shown.map(i=>`<td><b>${rp(tot[i].v)}</b>${pc(invRet(tot,i))}</td>`).join('')}
     <td class="it-sep"><b style="color:${cc(hasil)}">${sgn(hasil)}</b><div style="color:${cc(hasilPct)}">${pct(hasilPct)}</div></td></tr>`;
 
   const tabs = `<div class="it-tabs">${years.map(y=>`<button class="it-tab${y===Y?' on':''}" onclick="invSetYear(${y})">${y}</button>`).join('')}</div>`;
   const bar = `<div class="it-bar"><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">${tabs}<span style="font-size:11.5px;color:var(--text3)">Klik <b>kategori</b> untuk membuka · klik <b>tanggal</b> untuk ubah/hapus update${hidden>0?` · ${hidden} update lama disembunyikan`:''}</span></div>
     <div style="display:flex;gap:8px;align-items:center">${rest.length>INV_SHOW_LAST?`<button class="btn" onclick="invToggleAll()">${invShowAll?`Tampilkan ${INV_SHOW_LAST} terakhir`:'Tampilkan semua'}</button>`:''}<button class="btn btn-primary" onclick="openInvUpdate()">＋ Update nilai</button></div></div>`;
-  const minW = 215+125*(vis.length+2);
+  const minW = 215+160*(vis.length+2);
   const table = `<div class="it-wrap"><table class="it-tbl" style="min-width:${minW}px"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>
-    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Nilai = Investasi + Uang Kas · angka abu-abu miring = terbawa dari update sebelumnya · % di tiap tanggal = dibanding update sebelumnya, dihitung dengan memasukkan Tambahan Modal ke dasar tetapi setoran itu sendiri bukan hasil · ROI = (nilai terakhir − Tambahan Modal − Nilai Awal) ÷ Nilai Awal · Transfer Dana di Aset tidak mengubah data ini · versi Investasi v14</p>`;
+    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Nilai = Investasi + Uang Kas · angka abu-abu miring = terbawa dari update sebelumnya · % di tiap tanggal = dibanding update sebelumnya, dihitung dengan memasukkan Tambahan Modal ke dasar tetapi setoran itu sendiri bukan hasil · ROI = (nilai terakhir − Tambahan Modal − Nilai Awal) ÷ Nilai Awal · Transfer Dana di Aset tidak mengubah data ini · versi Investasi v15</p>`;
 
   box.innerHTML = warn + kpi + bar + table + prog;
 }
