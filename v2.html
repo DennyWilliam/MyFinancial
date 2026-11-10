@@ -363,7 +363,7 @@ input[readonly]{color:var(--text2)}
 .it-pill{font-size:9px;font-weight:600;color:#64748b;background:#e9eef6;border-radius:10px;padding:1px 6px;margin-left:7px;font-family:var(--font)}
 .it-tot td{background:linear-gradient(#eff6ff,#e6f0ff);color:#1d4ed8;font-weight:800;font-size:14px;border-top:1px solid #bfdbfe;border-bottom:none;padding-top:10px;padding-bottom:10px}
 .it-tot td:first-child{background:#eaf2ff;font-size:12px;letter-spacing:.6px;text-transform:uppercase}
-.it-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.it-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
 .it-kpi{background:#fff;border:1px solid #e8ecf2;border-radius:14px;padding:12px 14px;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(15,23,42,.04)}
 .it-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--kc,#3b82f6)}
 .it-kpi .l{font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:.7px;text-transform:uppercase}
@@ -3614,7 +3614,6 @@ function renderInvTrack(){
   const awalLbl = s===0 ? 'Agu 2026 · jadi dasar perbandingan' : dLbl(ds[s])+' · akhir tahun lalu, jadi dasar '+Y;
   const kpi = `<div class="it-kpis">
     ${kpiCard('Nilai Awal', rp(A0), awalLbl, '#8b5cf6')}
-    ${kpiCard('Tambahan Modal', (TP>=0?'+':'−')+'Rp '+fmt(Math.abs(TP)), 'setoran baru · bukan bagian dari hasil', '#0ea5e9')}
     ${kpiCard('Nilai Akhir', rp(Ap), idx.length ? 'Update '+dLbl(ds[lastIdx]) : 'belum ada update '+Y, '#3b82f6')}
     ${kpiCard('Hasil', `<span style="color:${cc(hasil)}">${hasil<0?'−':'+'}Rp ${fmt(Math.abs(hasil))} <span style="font-size:12px">(${pct(hasilPct)})</span></span>`, 'Nilai Akhir − Tambahan Modal − Nilai Awal', cc(hasil))}
   </div>`;
@@ -3679,7 +3678,7 @@ function renderInvTrack(){
     <div style="display:flex;gap:8px;align-items:center">${rest.length>INV_SHOW_LAST?`<button class="btn" onclick="invToggleAll()">${invShowAll?`Tampilkan ${INV_SHOW_LAST} terakhir`:'Tampilkan semua'}</button>`:''}<button class="btn btn-primary" onclick="openInvUpdate()">＋ Update nilai</button></div></div>`;
   const minW = 215+125*(vis.length+2);
   const table = `<div class="it-wrap"><table class="it-tbl" style="min-width:${minW}px"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>
-    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Nilai = Investasi + Uang Kas · angka abu-abu miring = terbawa dari update sebelumnya · % di tiap tanggal = dibanding update sebelumnya, dihitung dengan memasukkan Tambahan Modal ke dasar tetapi setoran itu sendiri bukan hasil · ROI = (nilai terakhir − Tambahan Modal − Nilai Awal) ÷ Nilai Awal · Transfer Dana di Aset tidak mengubah data ini · versi Investasi v13</p>`;
+    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Nilai = Investasi + Uang Kas · angka abu-abu miring = terbawa dari update sebelumnya · % di tiap tanggal = dibanding update sebelumnya, dihitung dengan memasukkan Tambahan Modal ke dasar tetapi setoran itu sendiri bukan hasil · ROI = (nilai terakhir − Tambahan Modal − Nilai Awal) ÷ Nilai Awal · Transfer Dana di Aset tidak mengubah data ini · versi Investasi v14</p>`;
 
   box.innerHTML = warn + kpi + bar + table + prog;
 }
