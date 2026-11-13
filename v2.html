@@ -3625,8 +3625,11 @@ function renderInvTrack(){
     ${kpiCard('Hasil', `<span style="color:${cc(hasil)}">${hasil<0?'−':'+'}Rp ${fmt(Math.abs(hasil))} <span style="font-size:12px">(${pct(hasilPct)})</span></span>`, 'Nilai Akhir − Tambahan Modal − Nilai Awal', cc(hasil))}
   </div>`;
   const age = idx.length ? Math.floor((new Date(today()+'T00:00:00')-new Date(ds[lastIdx]+'T00:00:00'))/86400000) : null;
-  const warn = (Y===curY && age===null) ? `<div class="it-warn">Belum ada update ${Y}. Klik <b>＋ Update nilai</b> untuk mengisi nilai dari aplikasi.</div>`
+  const isYE = today().slice(5)==='12-31' && !ds.includes(today());
+  const yeWarn = isYE ? `<div class="it-warn">📅 Hari ini 31 Des. Isi <b>＋ Update nilai</b> sekarang supaya jadi Nilai Awal ${curY+1} (dasar target 10%).</div>` : '';
+  const warn0 = (Y===curY && age===null) ? `<div class="it-warn">Belum ada update ${Y}. Klik <b>＋ Update nilai</b> untuk mengisi nilai dari aplikasi.</div>`
     : ((Y===curY && age>35) ? `<div class="it-warn">⏰ Update terakhir ${dLbl(ds[lastIdx])} (${age} hari lalu). Klik <b>＋ Update nilai</b> untuk mengisi yang terbaru.</div>` : '');
+  const warn = yeWarn + warn0;
 
   // target
   let prog='';
@@ -3685,7 +3688,7 @@ function renderInvTrack(){
     <div style="display:flex;gap:8px;align-items:center">${rest.length>INV_SHOW_LAST?`<button class="btn" onclick="invToggleAll()">${invShowAll?`Tampilkan ${INV_SHOW_LAST} terakhir`:'Tampilkan semua'}</button>`:''}<button class="btn btn-primary" onclick="openInvUpdate()">＋ Update nilai</button></div></div>`;
   const minW = 215+160*(vis.length+2);
   const table = `<div class="it-wrap"><table class="it-tbl" style="min-width:${minW}px"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>
-    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Nilai = Investasi + Uang Kas · angka abu-abu miring = terbawa dari update sebelumnya · % di tiap tanggal = dibanding update sebelumnya, dihitung dengan memasukkan Tambahan Modal ke dasar tetapi setoran itu sendiri bukan hasil · ROI = (nilai terakhir − Tambahan Modal − Nilai Awal) ÷ Nilai Awal · Transfer Dana di Aset tidak mengubah data ini · versi Investasi v18</p>`;
+    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Nilai = Investasi + Uang Kas · angka abu-abu miring = terbawa dari update sebelumnya · % di tiap tanggal = dibanding update sebelumnya, dihitung dengan memasukkan Tambahan Modal ke dasar tetapi setoran itu sendiri bukan hasil · ROI = (nilai terakhir − Tambahan Modal − Nilai Awal) ÷ Nilai Awal · Transfer Dana di Aset tidak mengubah data ini · versi Investasi v19</p>`;
 
   box.innerHTML = warn + kpi + bar + table + prog;
 }
