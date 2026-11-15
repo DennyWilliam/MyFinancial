@@ -1601,20 +1601,48 @@ function setSyncBadge(state, label){
   if(txt) txt.textContent = label;
 }
 
+// Gabungkan data dari cloud ke data lokal tanpa menghapus apa pun (Investasi: gabung per tanggal; transaksi: gabung per id)
+function mergeCloudIntoLocal(cloud, withTx){
+  let added=0;
+  if(withTx){ const lt = new Set((S.transactions||[]).map(t=>String(t.id)));
+    (cloud.transactions||[]).forEach(t=>{ if(!lt.has(String(t.id))){ S.transactions.push(t); added++; } }); }
+  Object.keys(cloud.asetItems||{}).forEach(cat=>{
+    if(!INV_TRACK_NAMES.includes(String(cat).toLowerCase())) return;
+    (cloud.asetItems[cat]||[]).forEach(ci=>{
+      const li=(S.asetItems[cat]||[]).find(x=>x.name===ci.name); if(!li) return;
+      ['invValues','kasValues','topupValues'].forEach(f=>{
+        Object.keys(ci[f]||{}).forEach(k=>{ if(!li[f]) li[f]={}; if(!(k in li[f])){ li[f][k]=ci[f][k]; added++; } });
+      });
+    });
+  });
+  return added;
+}
+window._cloudAt = 0;
 async function supaSave(){
   setSyncBadge('busy', 'Data: Menyimpan...');
   try{
+    const H = { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` };
+    // Pengaman: kalau cloud berubah sejak terakhir kita muat (mis. dari HP / Cowork), gabungkan dulu, jangan menimpa
+    if(window._cloudAt){
+      const chk = await fetch(`${SUPA_URL}/rest/v1/myfinancial_data?id=eq.main&select=updated_at`, {headers:H});
+      if(chk.ok){
+        const r = await chk.json();
+        const ca = r.length ? new Date(r[0].updated_at.replace(' ','T')+(/[zZ]|[+-]\d\d(:?\d\d)?$/.test(r[0].updated_at)?'':'Z')).getTime() : 0;
+        if(ca > window._cloudAt + 1500){
+          const full = await (await fetch(`${SUPA_URL}/rest/v1/myfinancial_data?id=eq.main&select=data`, {headers:H})).json();
+          const n = full.length ? mergeCloudIntoLocal(full[0].data||{}, true) : 0;
+          if(n){ localStorage.setItem(STORE_KEY, JSON.stringify(S)); try{ renderInvTrack(); }catch(e){} }
+        }
+      }
+    }
+    const stamp = new Date().toISOString();
     const res = await fetch(`${SUPA_URL}/rest/v1/myfinancial_data?on_conflict=id`, {
       method: 'POST',
-      headers: {
-        'apikey': SUPA_KEY,
-        'Authorization': `Bearer ${SUPA_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({ id:'main', data:S, updated_at: new Date().toISOString() })
+      headers: { ...H, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ id:'main', data:S, updated_at: stamp })
     });
     if(!res.ok) throw new Error(res.status+' '+(await res.text()));
+    window._cloudAt = new Date(stamp).getTime();
     setSyncBadge('ok', 'Data: Cloud ✓');
     window._pendingSupaFlush = false;
     return true;
@@ -1635,10 +1663,15 @@ async function supaLoad(){
     const rows = await res.json();
     if(!rows.length){ runInvMigrations(); setSyncBadge('', 'Data: Lokal (belum ada di cloud)'); return; }
     const cloud = rows[0].data || {};
+    { const ua=String(rows[0].updated_at||''); window._cloudAt = new Date(ua.replace(' ','T')+(/[zZ]|[+-]\d\d(:?\d\d)?$/.test(ua)?'':'Z')).getTime()||0; }
+    // Update lokal yang belum ada di cloud (mis. belum sempat tersimpan) dipertahankan, bukan ditimpa
+    const localOnlyInv = (()=>{ let n=0; Object.keys(S.asetItems||{}).forEach(cat=>{ if(!INV_TRACK_NAMES.includes(String(cat).toLowerCase())) return; (S.asetItems[cat]||[]).forEach(li=>{ const ci=((cloud.asetItems||{})[cat]||[]).find(x=>x.name===li.name); ['invValues','kasValues','topupValues'].forEach(f=>Object.keys(li[f]||{}).forEach(k=>{ if(!ci||!ci[f]||!(k in ci[f])) n++; })); }); }); return n; })();
     const localTxCount = (S.transactions||[]).length;
     const cloudTxCount = (cloud.transactions||[]).length;
     if(cloudTxCount >= localTxCount){
+      const keepLocal = localOnlyInv ? JSON.parse(JSON.stringify(S)) : null;
       Object.keys(cloud).forEach(k=>{ S[k] = cloud[k]; });
+      if(keepLocal){ mergeCloudIntoLocal(keepLocal, false); persist(); }
       runInvMigrations();
       localStorage.setItem(STORE_KEY, JSON.stringify(S));
       setSyncBadge('ok', 'Data: Cloud ✓');
@@ -1646,6 +1679,7 @@ async function supaLoad(){
       if(activePage) go(activePage.id.replace('page-',''), null);
       updateGitHubUI();
     } else {
+      if(mergeCloudIntoLocal(cloud, false)) persist();
       runInvMigrations();
       setSyncBadge('ok', 'Data: Lokal lebih baru');
     }
@@ -3688,7 +3722,7 @@ function renderInvTrack(){
     <div style="display:flex;gap:8px;align-items:center">${rest.length>INV_SHOW_LAST?`<button class="btn" onclick="invToggleAll()">${invShowAll?`Tampilkan ${INV_SHOW_LAST} terakhir`:'Tampilkan semua'}</button>`:''}<button class="btn btn-primary" onclick="openInvUpdate()">＋ Update nilai</button></div></div>`;
   const minW = 215+160*(vis.length+2);
   const table = `<div class="it-wrap"><table class="it-tbl" style="min-width:${minW}px"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>
-    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Nilai = Investasi + Uang Kas · angka abu-abu miring = terbawa dari update sebelumnya · % di tiap tanggal = dibanding update sebelumnya, dihitung dengan memasukkan Tambahan Modal ke dasar tetapi setoran itu sendiri bukan hasil · ROI = (nilai terakhir − Tambahan Modal − Nilai Awal) ÷ Nilai Awal · Transfer Dana di Aset tidak mengubah data ini · versi Investasi v19</p>`;
+    <p style="font-size:10px;color:var(--text3);line-height:1.6;margin:10px 2px 0">Nilai = Investasi + Uang Kas · angka abu-abu miring = terbawa dari update sebelumnya · % di tiap tanggal = dibanding update sebelumnya, dihitung dengan memasukkan Tambahan Modal ke dasar tetapi setoran itu sendiri bukan hasil · ROI = (nilai terakhir − Tambahan Modal − Nilai Awal) ÷ Nilai Awal · Transfer Dana di Aset tidak mengubah data ini · versi Investasi v20</p>`;
 
   box.innerHTML = warn + kpi + bar + table + prog;
 }
