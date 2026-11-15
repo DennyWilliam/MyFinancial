@@ -478,6 +478,7 @@ input[readonly]{color:var(--text2)}
 .si-ic{cursor:pointer;margin-left:6px;font-size:13px;opacity:.7}.si-ic:hover{opacity:1}
 .si-allfoot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;margin-top:10px}
 @media(max-width:760px){.si-kpis{grid-template-columns:1fr 1fr}.si-kpis .v{font-size:13px}.si-rgrid{grid-template-columns:1fr}}
+.lg-links a{color:var(--accent);text-decoration:none;font-weight:600}
 </style>
 <script>
 window.addEventListener('load', function(){
@@ -559,6 +560,9 @@ window.addEventListener('load', function(){
       </div>
       <div class="nav-item" onclick="go('settings',this)" style="margin:0">
         <span class="nav-icon">⚙️</span>Settings
+      </div>
+      <div class="nav-item" onclick="authLogout()" style="margin:0;font-size:12px" title="Keluar dari akun">
+        <span class="nav-icon">🔓</span><span>Keluar <span id="authEmail" style="display:block;font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;max-width:150px"></span></span>
       </div>
     </div>
   </aside>
@@ -1680,7 +1684,7 @@ window._cloudAt = 0;
 async function supaSave(){
   setSyncBadge('busy', 'Data: Menyimpan...');
   try{
-    const H = { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` };
+    const H = await supaH();
     // Pengaman: kalau cloud berubah sejak terakhir kita muat (mis. dari HP / Cowork), gabungkan dulu, jangan menimpa
     if(window._cloudAt){
       const chk = await fetch(`${SUPA_URL}/rest/v1/myfinancial_data?id=eq.main&select=updated_at`, {headers:H});
@@ -1716,7 +1720,7 @@ async function supaLoad(){
   setSyncBadge('busy', 'Data: Cek cloud...');
   try{
     const res = await fetch(`${SUPA_URL}/rest/v1/myfinancial_data?id=eq.main&select=data,updated_at`, {
-      headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` }
+      headers: await supaH()
     });
     if(!res.ok) throw new Error(res.status+' '+(await res.text()));
     const rows = await res.json();
@@ -1758,10 +1762,9 @@ window.addEventListener('beforeunload', function(){
   if(window._pendingSupaFlush){
     try{
       const payload = JSON.stringify({ id:'main', data:S, updated_at: new Date().toISOString() });
-      navigator.sendBeacon(
-        `${SUPA_URL}/rest/v1/myfinancial_data?on_conflict=id&apikey=${SUPA_KEY}`,
-        new Blob([payload], {type:'text/plain'})
-      );
+      fetch(`${SUPA_URL}/rest/v1/myfinancial_data?on_conflict=id`, { method:'POST', keepalive:true,
+        headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${(_auth&&_auth.access_token)||SUPA_KEY}`, 'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates,return=minimal' },
+        body: payload });
     }catch(e){}
   }
 });
@@ -4215,11 +4218,106 @@ function closeModal(id){
 // ═══════════════════════════════════════
 const CORRECT_PIN = '0124';
 
+// ═══════════════════════════════════════
+// LOGIN (Supabase Auth) — v23
+// Data cloud hanya bisa dibaca/ditulis setelah login. Password tidak pernah disimpan di file ini.
+// ═══════════════════════════════════════
+const AUTH_KEY = 'mf_auth';
+let _auth = null; try{ _auth = JSON.parse(localStorage.getItem(AUTH_KEY)||'null'); }catch(e){ _auth=null; }
+let _appStarted = false;
+function authSave(s){ _auth=s; if(s) localStorage.setItem(AUTH_KEY, JSON.stringify(s)); else localStorage.removeItem(AUTH_KEY); }
+async function authCall(path, body, method, token){
+  const r = await fetch(`${SUPA_URL}/auth/v1/${path}`, { method: method||'POST',
+    headers: { 'apikey': SUPA_KEY, 'Content-Type':'application/json', ...(token?{'Authorization':`Bearer ${token}`}:{}) },
+    body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.error_description||j.msg||j.message||j.error||('HTTP '+r.status));
+  return j;
+}
+function authStore(j){ authSave({ access_token:j.access_token, refresh_token:j.refresh_token, expires_at: Date.now()+(Number(j.expires_in)||3600)*1000, email:(j.user&&j.user.email)||(_auth&&_auth.email)||'' }); }
+let _refreshing = null;
+async function authToken(){
+  if(!_auth) return null;
+  if(Date.now() > (_auth.expires_at||0) - 60000){
+    if(!_refreshing) _refreshing = authCall('token?grant_type=refresh_token', {refresh_token:_auth.refresh_token})
+      .then(j=>{ authStore(j); }).catch(e=>{ console.error('refresh gagal', e); if(/invalid|not found|revoked|expired/i.test(e.message)){ authSave(null); showLogin('Sesi login berakhir. Silakan masuk lagi.'); } })
+      .finally(()=>{ _refreshing=null; });
+    await _refreshing;
+  }
+  return _auth ? _auth.access_token : null;
+}
+async function supaH(){ const t = await authToken(); return { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${t||SUPA_KEY}` }; }
+function startApp(){
+  const ov=document.getElementById('loginOverlay'); if(ov) ov.remove();
+  const em=document.getElementById('authEmail'); if(em) em.textContent=(_auth&&_auth.email)||'';
+  if(_appStarted){ supaLoad(); return; }
+  _appStarted = true; loadState();
+}
+function showLogin(msg, mode){
+  mode = mode||'login';
+  let ov=document.getElementById('loginOverlay');
+  if(!ov){ ov=document.createElement('div'); ov.id='loginOverlay'; ov.style.cssText='position:fixed;inset:0;z-index:5000;background:#f5f6f8;display:flex;align-items:center;justify-content:center;padding:16px'; document.body.appendChild(ov); }
+  const title = mode==='signup'?'Daftar Akun':mode==='reset'?'Lupa Password':mode==='newpass'?'Buat Password Baru':'Masuk';
+  ov.innerHTML = `<div style="background:#fff;border:1px solid var(--border);border-radius:16px;padding:28px;width:360px;max-width:100%;box-shadow:0 8px 32px rgba(15,23,42,.08)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div class="brand-icon">💰</div><div><div style="font-weight:800;font-size:16px">My Financial</div><div style="font-size:11px;color:var(--text3)">${title}</div></div></div>
+    ${mode!=='newpass'?`<div class="fg" style="margin-bottom:10px"><label>Email</label><input id="lgEmail" type="email" autocomplete="username" value="${(_auth&&_auth.email)||''}"></div>`:''}
+    ${mode!=='reset'?`<div class="fg" style="margin-bottom:6px"><label>${mode==='newpass'?'Password Baru':'Password'}</label><input id="lgPass" type="password" autocomplete="${mode==='login'?'current-password':'new-password'}" onkeydown="if(event.key==='Enter')doAuth('${mode}')"></div>`:''}
+    ${mode==='signup'||mode==='newpass'?'<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Minimal 8 karakter.</div>':''}
+    <div id="lgMsg" style="font-size:12px;min-height:16px;margin:8px 0;color:${msg&&/✅/.test(msg)?'var(--green)':'var(--red)'}">${msg||''}</div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px" onclick="doAuth('${mode}')">${mode==='signup'?'Daftar':mode==='reset'?'Kirim Link Reset':mode==='newpass'?'Simpan Password':'Masuk'}</button>
+    <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:12px" class="lg-links">
+      ${mode==='login'?`<a href="#" onclick="showLogin('','signup');return false">Daftar akun</a><a href="#" onclick="showLogin('','reset');return false">Lupa password?</a>`:mode==='newpass'?'':`<a href="#" onclick="showLogin('','login');return false">← Kembali ke Masuk</a>`}
+    </div></div>`;
+  setTimeout(()=>{ const f=document.getElementById(mode==='newpass'?'lgPass':'lgEmail'); if(f) f.focus(); },50);
+}
+async function doAuth(mode){
+  const g=id=>{ const e=document.getElementById(id); return e?e.value.trim():''; };
+  const msg=(m,ok)=>{ const e=document.getElementById('lgMsg'); if(e){ e.style.color=ok?'var(--green)':'var(--red)'; e.textContent=m; } };
+  const email=g('lgEmail'), pass=(document.getElementById('lgPass')||{}).value||'';
+  try{
+    if(mode==='login'){
+      if(!email||!pass) return msg('Isi email dan password.');
+      msg('Memeriksa…',true); authStore(await authCall('token?grant_type=password',{email,password:pass})); startApp();
+    } else if(mode==='signup'){
+      if(!email||pass.length<8) return msg('Isi email dan password minimal 8 karakter.');
+      const j=await authCall('signup?redirect_to='+encodeURIComponent(location.href.split('#')[0]),{email,password:pass});
+      if(j.access_token){ authStore(j); startApp(); }
+      else showLogin('✅ Akun dibuat. Buka email Anda dan klik link konfirmasi, lalu masuk di sini.','login');
+    } else if(mode==='reset'){
+      if(!email) return msg('Isi email.');
+      await authCall('recover?redirect_to='+encodeURIComponent(location.href.split('#')[0]),{email});
+      showLogin('✅ Link reset password sudah dikirim ke email Anda.','login');
+    } else if(mode==='newpass'){
+      if(pass.length<8) return msg('Password minimal 8 karakter.');
+      await authCall('user',{password:pass},'PUT',_auth&&_auth.access_token); startApp();
+    }
+  }catch(e){
+    const m=String(e.message||e);
+    msg(/invalid login/i.test(m)?'Email atau password salah.':/not confirmed/i.test(m)?'Email belum dikonfirmasi. Cek email Anda dan klik link konfirmasi.':/already registered/i.test(m)?'Email sudah terdaftar. Silakan Masuk.':m);
+  }
+}
+function authLogout(){
+  if(!confirm('Keluar dari My Financial di perangkat ini?')) return;
+  const t=_auth&&_auth.access_token; authSave(null);
+  if(t) fetch(`${SUPA_URL}/auth/v1/logout`,{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':`Bearer ${t}`}}).catch(()=>{});
+  location.reload();
+}
+// Link dari email (konfirmasi akun / reset password) kembali ke halaman ini dengan token di URL
+function authFromUrl(){
+  const h=location.hash||''; if(!/access_token=/.test(h)) return null;
+  const p=new URLSearchParams(h.replace(/^#/,''));
+  authStore({access_token:p.get('access_token'), refresh_token:p.get('refresh_token'), expires_in:p.get('expires_in'), user:{email:''}});
+  history.replaceState(null,'',location.pathname+location.search);
+  try{ const pl=JSON.parse(atob(_auth.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); _auth.email=pl.email||''; authSave(_auth); }catch(e){}
+  return p.get('type');
+}
+
 function checkAutoAuth(){
   const overlay = document.getElementById('pinOverlay');
   if(overlay) overlay.remove();
-  localStorage.setItem('mf_authed', Date.now());
-  loadState();
+  const type = authFromUrl();
+  if(type==='recovery'){ showLogin('','newpass'); return; }
+  if(_auth) startApp(); else showLogin('');
 }
 
 function checkPin(){
