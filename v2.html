@@ -3971,13 +3971,13 @@ function renderSahamIndo(){
   const setRows=last(t=>t.type==='topup'||t.type==='tarik',4).map(t=>row(`${siDl(t.date)} · ${t.type==='topup'?(t.id==='si-awal'?'Saldo Awal':'Top Up'):'Tarik'}`,(t.type==='tarik'?'−':'+')+fmt(t.amount),t.type==='tarik'?'si-dn':'')).join('');
   const divRows=last(t=>t.type==='dividen',4).map(t=>row(`${siDl(t.date)} · ${siEsc(t.code)}`,'+'+fmt(t.amount),'si-up')).join('');
   const jualRows=last(t=>t.type==='jual',3).map(t=>row(`${siDl(t.date)} · ${siEsc(t.code)} ${fmt(t.lot)} lot`,siSg(t.pl)+fmt(Math.abs(t.pl)),siCls(t.pl))).join('');
-  const otherRow=row('Sebelum dicatat & lain-lain <span class="si-info" title="Selisih: Return Total − Plus Minus Portfolio − Dividen − Hasil Jual tercatat. Isinya hasil jual lama (sebelum dicatat), fee, meterai, bunga RDN, dll.">ⓘ</span>',siSg(M.other)+fmt(Math.abs(M.other)),siCls(M.other));
+  const otherRow=row('Sebelum dicatat & lain-lain <span class="si-info" title="Selisih: Return Total − Plus Minus Portfolio − Dividen − Jual tercatat. Isinya hasil jual lama (sebelum dicatat), fee, meterai, bunga RDN, dll.">ⓘ</span>',siSg(M.other)+fmt(Math.abs(M.other)),siCls(M.other));
   const card=(title,total,tc,body,tab)=>`<div class="si-rc"><div class="si-rh"><span>${title}</span><span class="${tc||''}">${total}</span></div>${body||'<div class="si-empty">Belum ada catatan</div>'}<div class="si-more" onclick="openSiAll('${tab}')">Lihat Semua →</div></div>`;
-  const rinc=`<div class="it-card si-card"><div class="si-head"><h4>🧾 Rincian</h4><span class="si-mut">Return ${siSg(M.ret)}Rp ${fmt(Math.abs(M.ret))} = Plus Minus Portfolio ${siSg(M.floating)}${siJt(Math.abs(M.floating))} + Dividen +${siJt(M.div)} + Hasil Jual ${siSg(M.realized+M.other)}${siJt(Math.abs(M.realized+M.other))}</span></div>
+  const rinc=`<div class="it-card si-card"><div class="si-head"><h4>🧾 Rincian</h4><span class="si-mut">Return ${siSg(M.ret)}Rp ${fmt(Math.abs(M.ret))} = Plus Minus Portfolio ${siSg(M.floating)}${siJt(Math.abs(M.floating))} + Dividen +${siJt(M.div)} + Jual ${siSg(M.realized+M.other)}${siJt(Math.abs(M.realized+M.other))}</span></div>
     <div class="si-rgrid">
       ${card('Setoran','Rp '+fmt(M.setor),'',setRows,'setoran')}
       ${card('Dividen','+Rp '+fmt(M.div),'si-up',divRows,'dividen')}
-      ${card('Hasil Jual',siSg(M.realized+M.other)+'Rp '+fmt(Math.abs(M.realized+M.other)),siCls(M.realized+M.other),jualRows+otherRow,'jual')}
+      ${card('Jual',siSg(M.realized+M.other)+'Rp '+fmt(Math.abs(M.realized+M.other)),siCls(M.realized+M.other),jualRows+otherRow,'jual')}
     </div></div>`;
 
   box.innerHTML=`<div class="it-bar"><div class="si-mut">${P.snap?'Update terakhir '+siDl(P.snap.date):''}</div>
@@ -4167,7 +4167,7 @@ function openSiAll(tab){ siAllTab=tab||siAllTab; siAllYear='all'; siRenderAll();
 function siRefreshAll(){ const el=document.getElementById('siAllModal'); if(el && el.style.display==='flex') siRenderAll(); }
 function siRenderAll(){
   const d=siData(), M=siSummary();
-  const tabs=[['setoran','Setoran'],['dividen','Dividen'],['jual','Hasil Jual'],['beli','Beli'],['update','Update Portfolio']];
+  const tabs=[['setoran','Setoran'],['dividen','Dividen'],['jual','Jual'],['beli','Beli'],['update','Update Portfolio']];
   const yrs=[...new Set([...d.tx.map(t=>t.date.slice(0,4)),...d.snaps.map(s=>s.date.slice(0,4))])].sort().reverse();
   const inY=dt=>siAllYear==='all'||dt.slice(0,4)===siAllYear;
   const ed=id=>`<span class="si-ic" title="Ubah" onclick="closeModal('siAllModal');openSiTx('${id}')">✏️</span><span class="si-ic" title="Hapus" onclick="siDelTx('${id}')">🗑️</span>`;
