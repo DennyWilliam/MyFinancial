@@ -6,7 +6,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Financial — by Denny</title>
+<title>MyFinance — by Denny</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -499,7 +499,7 @@ window.addEventListener('load', function(){
       <div class="brand-logo">
         <div class="brand-icon">💰</div>
         <div>
-          <div class="brand-name">My Financial</div>
+          <div class="brand-name">MyFinance</div>
           <div class="brand-sub">by Denny · GII Commerce</div>
         </div>
       </div>
@@ -1256,7 +1256,7 @@ window.addEventListener('load', function(){
 
         <div class="settings-section">
           <div class="settings-title">ℹ️ Tentang App</div>
-          <div class="settings-sub">My Financial v1.0 — Personal finance tracker untuk Denny / GII Commerce.<br>Data tersimpan 100% di browser. Tidak ada server, tidak ada cloud by default.</div>
+          <div class="settings-sub">MyFinance v1.0 — Personal finance tracker untuk Denny / GII Commerce.<br>Data tersimpan 100% di browser. Tidak ada server, tidak ada cloud by default.</div>
           <div style="font-size:11px;color:var(--text3);margin-top:8px">
             Instrumen investasi: IPOT (IDX), Pluang (US Stocks), Superbank (Deposito), Emas<br>
             Kategori pengeluaran: Bayi · Belajar · Donasi · Grab · Kesehatan · Liburan · Lainnya · Makan · Rumah · Shopee · Supermarket · Transportasi
@@ -1633,7 +1633,7 @@ async function syncToGitHub(){
     const putRes = await fetch(apiUrl, {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${g.token}`, 'Accept': 'application/vnd.github+json' },
-      body: JSON.stringify({ message: 'Backup dari My Financial - '+new Date().toISOString(), content, branch, sha: sha||undefined })
+      body: JSON.stringify({ message: 'Backup dari MyFinance - '+new Date().toISOString(), content, branch, sha: sha||undefined })
     });
     if(!putRes.ok){ const errBody = await putRes.text(); throw new Error(putRes.status+' '+errBody); }
     S.github.lastSync = Date.now();
@@ -2687,7 +2687,7 @@ function parseUploadedScreenshot(){
     'TANGGAL | KETERANGAN | JUMLAH | DB/CR\n\n' +
     'Contoh:\n01/06/2026 | BUBUR AYAM QR | 16000 | DB\n' +
     '01/06/2026 | BIAYA ADM | 17000 | DB\n\n' +
-    'Setelah kamu reply, saya akan copy hasilnya dan paste ke My Financial app.'
+    'Setelah kamu reply, saya akan copy hasilnya dan paste ke MyFinance app.'
   );
   // Open Claude.ai in new tab
   window.open('https://claude.ai/new?q=' + prompt, '_blank');
@@ -4259,7 +4259,7 @@ function showLogin(msg, mode){
   if(!ov){ ov=document.createElement('div'); ov.id='loginOverlay'; ov.style.cssText='position:fixed;inset:0;z-index:5000;background:#f5f6f8;display:flex;align-items:center;justify-content:center;padding:16px'; document.body.appendChild(ov); }
   const title = mode==='signup'?'Daftar Akun':mode==='reset'?'Lupa Password':mode==='newpass'?'Buat Password Baru':'Masuk';
   ov.innerHTML = `<div style="background:#fff;border:1px solid var(--border);border-radius:16px;padding:28px;width:360px;max-width:100%;box-shadow:0 8px 32px rgba(15,23,42,.08)">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div class="brand-icon">💰</div><div><div style="font-weight:800;font-size:16px">My Financial</div><div style="font-size:11px;color:var(--text3)">${title}</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div class="brand-icon">💰</div><div><div style="font-weight:800;font-size:16px">MyFinance</div><div style="font-size:11px;color:var(--text3)">${title}</div></div></div>
     ${mode!=='newpass'?`<div class="fg" style="margin-bottom:10px"><label>Email</label><input id="lgEmail" type="email" autocomplete="username" value="${(_auth&&_auth.email)||''}"></div>`:''}
     ${mode!=='reset'?`<div class="fg" style="margin-bottom:6px"><label>${mode==='newpass'?'Password Baru':'Password'}</label><input id="lgPass" type="password" autocomplete="${mode==='login'?'current-password':'new-password'}" onkeydown="if(event.key==='Enter')doAuth('${mode}')"></div>`:''}
     ${mode==='signup'||mode==='newpass'?'<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Minimal 8 karakter.</div>':''}
@@ -4297,7 +4297,7 @@ async function doAuth(mode){
   }
 }
 function authLogout(){
-  if(!confirm('Keluar dari My Financial di perangkat ini?')) return;
+  if(!confirm('Keluar dari MyFinance di perangkat ini?')) return;
   const t=_auth&&_auth.access_token; authSave(null);
   if(t) fetch(`${SUPA_URL}/auth/v1/logout`,{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':`Bearer ${t}`}}).catch(()=>{});
   location.reload();
