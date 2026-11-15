@@ -3233,7 +3233,7 @@ function renderTransferList(){
     <tr style="border-bottom:1px solid var(--border)"
       onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
       <td style="padding:10px 14px;font-size:13px;color:var(--text2)">${t.date}</td>
-      <td style="padding:10px 14px;font-size:13.5px;font-weight:500">${t.fromName||t.from||'—'}</td>
+      <td style="padding:10px 14px;font-size:13.5px;font-weight:500">${t.fromName||t.from||'—'}${t.siId?' <span title="Dicatat dari menu Saham Indo" style="font-size:10.5px;font-weight:600;color:#7c3aed;background:#f3efff;padding:1px 7px;border-radius:10px;margin-left:4px">📈 Saham Indo</span>':''}</td>
       <td style="padding:10px 14px">
         <span style="background:var(--bg4);color:var(--accent);font-size:12px;font-weight:500;padding:2px 9px;border-radius:20px">
           ${t.toName||t.to||'—'}
@@ -3258,7 +3258,9 @@ function saveTransfer(){
   if(fromName===toName){ alert('Dari dan Ke tidak boleh sama!'); return; }
   if(!amount){ alert('Isi jumlah!'); return; }
   if(!S.transfers) S.transfers=[];
-  S.transfers.push({date, fromName, toName, amount, note});
+  const tr={date, fromName, toName, amount, note};
+  S.transfers.push(tr);
+  try{ siFromTransfer(tr); }catch(e){ console.error(e); }
   // reset form
   document.getElementById('trAmt').value='';
   document.getElementById('trNote').value='';
@@ -3267,7 +3269,9 @@ function saveTransfer(){
 }
 
 function deleteTransfer(idx){
-  if(!confirm('Hapus transfer ini?')) return;
+  const tr=S.transfers[idx];
+  if(!confirm(tr&&tr.siId?'Hapus transfer ini? Catatan Top Up/Tarik-nya di Saham Indo juga ikut dihapus.':'Hapus transfer ini?')) return;
+  try{ siOnTransferDelete(tr); }catch(e){ console.error(e); }
   S.transfers.splice(idx,1);
   persist(); renderTransferList();
 }
@@ -3889,6 +3893,37 @@ function siSyncSnap(snap, remove){
   it.invValues[snap.date]=mv; it.kasValues[snap.date]=siN(snap.kas);
 }
 
+// Tautan ke Transfer Dana (menu Aset): Top Up = Rekening → IPOT, Tarik = IPOT → Rekening
+function siRekOptions(sel){
+  const ipot=siInvItem(), names=[];
+  Object.keys(S.asetItems||{}).forEach(cat=>visibleAssetItems(cat).forEach(i=>{ if(i&&i.name&&(!ipot||i.name!==ipot.name)) names.push([i.name,cat]); }));
+  return `<option value="">— Tidak dicatat di Transfer Dana —</option>`+names.map(([n,c])=>`<option value="${siEsc(n)}" ${n===sel?'selected':''}>${siEsc(n)} (${siEsc(c)})</option>`).join('');
+}
+function siDefaultRek(){
+  const d=siData(); if(d.lastRek!==undefined) return d.lastRek;
+  const cat=Object.keys(S.asetItems||{}).find(c=>c.toLowerCase()==='rekening'); const it=cat?visibleAssetItems(cat)[0]:null; return it?it.name:'';
+}
+function siSyncTransfer(t){
+  if(!S.transfers) S.transfers=[];
+  const i=S.transfers.findIndex(x=>x.siId===t.id), ipot=siInvItem();
+  if(!t._del && (t.type==='topup'||t.type==='tarik') && t.rek && ipot){
+    const o={date:t.date, fromName:t.type==='topup'?t.rek:ipot.name, toName:t.type==='topup'?ipot.name:t.rek, amount:Math.round(t.amount), note:t.note||(t.type==='topup'?'Top Up Saham Indo':'Tarik Saham Indo'), siId:t.id};
+    if(i>=0) S.transfers[i]=o; else S.transfers.push(o);
+  } else if(i>=0) S.transfers.splice(i,1);
+}
+// Dipanggil dari Transfer Dana: transfer ke/dari IPOT otomatis jadi Top Up/Tarik di Saham Indo
+function siFromTransfer(tr){
+  const ipot=siInvItem(); if(!ipot || tr.siId) return;
+  const isTop=tr.toName===ipot.name, isTar=tr.fromName===ipot.name; if(isTop===isTar) return;
+  const t={id:siUid(isTop?'topup':'tarik'), ts:Date.now(), date:tr.date, type:isTop?'topup':'tarik', amount:Math.round(tr.amount), note:tr.note||'', rek:isTop?tr.fromName:tr.toName};
+  siData().tx.push(t); tr.siId=t.id; siSyncTopup(t.date);
+}
+function siOnTransferDelete(tr){
+  if(!tr || !tr.siId) return;
+  const d=siData(), t=d.tx.find(x=>x.id===tr.siId); if(!t) return;
+  d.tx=d.tx.filter(x=>x.id!==t.id); d.deleted.push(t.id); siSyncTopup(t.date);
+}
+
 // ── Halaman ──
 function renderSahamIndo(){
   const box=document.getElementById('sahamIndoBody'); if(!box) return;
@@ -3945,7 +3980,7 @@ function renderSahamIndo(){
   box.innerHTML=`<div class="it-bar"><div class="si-mut">${P.snap?'Update terakhir '+siDl(P.snap.date):''}</div>
     <div style="display:flex;gap:8px"><button class="btn" onclick="openSiTx()">＋ Catat Transaksi</button><button class="btn btn-primary" onclick="openSiUpdate()">🔄 Update Portfolio</button></div></div>
     ${warn}${kpi}${port}${rinc}
-    <p class="si-foot">Plus Minus = (Harga Terakhir − Harga Rata-Rata) × lot × 100 · Return Total = Nilai Sekarang (saham + kas RDN) − Total Setor Bersih · Update Portfolio & Top Up/Tarik otomatis mengisi baris Saham Indo (IPOT) di menu Investasi · versi Saham Indo v21</p>`;
+    <p class="si-foot">Plus Minus = (Harga Terakhir − Harga Rata-Rata) × lot × 100 · Return Total = Nilai Sekarang (saham + kas RDN) − Total Setor Bersih · Update Portfolio & Top Up/Tarik otomatis mengisi baris Saham Indo (IPOT) di menu Investasi · versi Saham Indo v22</p>`;
 }
 function siSetSort(k){ if(siSort.k===k) siSort.dir=-siSort.dir; else siSort={k, dir:k==='c'?1:-1}; renderSahamIndo(); }
 
@@ -3975,8 +4010,9 @@ function siRenderTx(t){
   const fv=n=>n==null||n===''?'':fmt(n);
   const dl=`<datalist id="sit-codes">${codes.map(c=>`<option value="${c}">`).join('')}</datalist>`;
   let f='';
-  if(type==='topup'||type==='tarik') f=`<div class="form-grid">${date}${siLab('Nominal',siInp('sit-amt',fv(t.amount)))}${siLab('Catatan (opsional)',`<input id="sit-note" type="text" value="${siEsc(t.note||'')}" placeholder="${type==='topup'?'Dari BCA':'Ke BCA'}">`,1)}</div>
-    <div class="si-note">ℹ️ ${type==='topup'?'Menambah Total Setor & mengisi Tambahan Modal Saham Indo di menu Investasi (tanggal setelah Agu 2026).':'Mengurangi Total Setor bersih (Tambahan Modal di menu Investasi jadi minus di tanggal itu).'}</div>`;
+  if(type==='topup'||type==='tarik') f=`<div class="form-grid">${date}${siLab('Nominal',siInp('sit-amt',fv(t.amount)))}
+    ${siLab(type==='topup'?'Dari Rekening':'Ke Rekening',`<select id="sit-rek">${siRekOptions(isEdit?(t.rek||''):siDefaultRek())}</select>`)}${siLab('Catatan (opsional)',`<input id="sit-note" type="text" value="${siEsc(t.note||'')}" placeholder="${type==='topup'?'Top up mingguan':'Untuk kebutuhan …'}">`)}</div>
+    <div class="si-note">ℹ️ ${type==='topup'?'Menambah Total Setor, mengisi Tambahan Modal Saham Indo di menu Investasi, dan otomatis dicatat di <b>Transfer Dana</b> (Rekening → IPOT).':'Mengurangi Total Setor bersih, Tambahan Modal di menu Investasi jadi minus, dan otomatis dicatat di <b>Transfer Dana</b> (IPOT → Rekening).'}</div>`;
   else if(type==='beli') f=`<div class="form-grid">${date}${siLab('Kode Saham',`<input id="sit-code" list="sit-codes" type="text" value="${siEsc(t.code||'')}" placeholder="BBCA" style="text-transform:uppercase" oninput="siTxPreview()">${dl}`)}
     ${siLab('Lot',siInp('sit-lot',fv(t.lot),'oninput="siTxPreview()"'))}${siLab('Harga Beli',siInp('sit-price',fv(t.price),'oninput="siTxPreview()"'))}
     ${siLab('Total Bayar (dari IPOT, termasuk fee)',siInp('sit-amt',fv(t.amount),'oninput="siTxPreview()" placeholder="kosong = lot × 100 × harga"'),1)}</div><div class="si-note" id="sit-prev"></div>`;
@@ -3998,7 +4034,7 @@ function siTxRead(){
   let amt=invNum(g('sit-amt'));
   const plTxt=String(g('sit-pl')).trim(); let pl=plTxt===''?null:invNum(plTxt.replace(/^[−-]/,'')); if(pl!=null && /^[−-]/.test(plTxt)) pl=-pl;
   if((siTxType==='beli'||siTxType==='jual') && amt==null && lot && price) amt=lot*100*price;
-  return {date:g('sit-date'), code, lot, price, amt, pl, note:String(g('sit-note')||'').trim()};
+  return {date:g('sit-date'), code, lot, price, amt, pl, note:String(g('sit-note')||'').trim(), rek:g('sit-rek')};
 }
 // posisi sebelum transaksi yang sedang diubah (tanpa transaksi itu sendiri)
 function siPosExcluding(id){ const d=siData(); const keep=d.tx; d.tx=keep.filter(x=>x.id!==id); const P=siPositions(); d.tx=keep; return P; }
@@ -4033,8 +4069,9 @@ function saveSiTx(){
   if(T==='beli'||T==='jual'||T==='dividen') t.code=r.code; else delete t.code;
   if(T==='beli'||T==='jual'){ t.lot=r.lot; t.price=r.price; } else { delete t.lot; delete t.price; }
   if(T==='jual') t.pl=Math.round(r.pl); else delete t.pl;
-  if(T==='topup'||T==='tarik') t.note=r.note; else delete t.note;
+  if(T==='topup'||T==='tarik'){ t.note=r.note; t.rek=r.rek||''; d.lastRek=t.rek; } else { delete t.note; delete t.rek; }
   if(!old) d.tx.push(t);
+  siSyncTransfer(t);
   siSyncTopup(t.date);
   if(siTxOldDate && siTxOldDate!==t.date) siSyncTopup(siTxOldDate);
   persist(); closeModal('siTxModal'); renderSahamIndo(); siRefreshAll();
@@ -4043,7 +4080,7 @@ function siDelTx(id){
   const d=siData(), t=d.tx.find(x=>x.id===id); if(!t) return;
   if(!confirm(`Hapus ${SI_TYPES.find(x=>x[0]===t.type)[1]} ${siDl(t.date)}${t.code?' · '+t.code:''}?${t.type==='beli'||t.type==='jual'?'\n\nLot & harga rata-rata akan dihitung ulang (hanya berpengaruh kalau transaksi ini sesudah Update Portfolio terakhir).':''}`)) return;
   d.tx=d.tx.filter(x=>x.id!==id); d.deleted.push(id);
-  if(t.type==='topup'||t.type==='tarik') siSyncTopup(t.date);
+  if(t.type==='topup'||t.type==='tarik'){ siSyncTopup(t.date); siSyncTransfer({...t,_del:true}); }
   persist(); closeModal('siTxModal'); renderSahamIndo(); siRefreshAll();
 }
 
@@ -4135,7 +4172,7 @@ function siRenderAll(){
   const tx=f=>d.tx.filter(t=>f(t)&&inY(t.date)).sort(siCmp).reverse();
   if(siAllTab==='setoran'){ const L=tx(t=>t.type==='topup'||t.type==='tarik'); const tot=L.reduce((a,t)=>a+(t.type==='tarik'?-1:1)*t.amount,0);
     head='<th class="si-l">Tanggal</th><th class="si-l">Keterangan</th><th>Nominal</th><th></th>';
-    body=L.map(t=>`<tr><td class="si-l">${siDl(t.date)}</td><td class="si-l">${t.id==='si-awal'?'Saldo Awal':t.type==='topup'?'Top Up':'Tarik'}${t.note?` <span class="si-mut">· ${siEsc(t.note)}</span>`:''}</td><td class="${t.type==='tarik'?'si-dn':''}">${t.type==='tarik'?'−':'+'}${fmt(t.amount)}</td><td>${ed(t.id)}</td></tr>`).join('');
+    body=L.map(t=>`<tr><td class="si-l">${siDl(t.date)}</td><td class="si-l">${t.id==='si-awal'?'Saldo Awal':t.type==='topup'?'Top Up':'Tarik'}${t.rek?` <span class="si-mut">· ${t.type==='topup'?'dari':'ke'} ${siEsc(t.rek)}</span>`:''}${t.note?` <span class="si-mut">· ${siEsc(t.note)}</span>`:''}</td><td class="${t.type==='tarik'?'si-dn':''}">${t.type==='tarik'?'−':'+'}${fmt(t.amount)}</td><td>${ed(t.id)}</td></tr>`).join('');
     foot=`Setor bersih ${siAllYear==='all'?'':siAllYear+' '}<b>Rp ${fmt(tot)}</b> · ${L.length} catatan`; }
   else if(siAllTab==='dividen'){ const L=tx(t=>t.type==='dividen'); const tot=L.reduce((a,t)=>a+t.amount,0);
     head='<th class="si-l">Tanggal</th><th class="si-l">Saham</th><th>Nilai</th><th></th>';
