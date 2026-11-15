@@ -432,6 +432,52 @@ input[readonly]{color:var(--text2)}
   padding:7px 24px;display:flex;align-items:center;gap:7px;
   display:none;
 }
+/* ─── SAHAM INDO (v21) ─── */
+.si-kpis{grid-template-columns:repeat(4,1fr)}
+.si-card{padding:14px 16px}
+.si-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}.si-head h4{margin:0}
+.si-mut{font-size:11px;color:#94a3b8;font-weight:500}
+.si-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.si-tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+.si-tbl th{font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.4px;text-align:right;padding:10px 10px;border-bottom:1px solid #eef1f6;white-space:nowrap;cursor:pointer;user-select:none}
+.si-tbl th:hover,.si-tbl th.si-on{color:var(--accent)}
+.si-tbl th .si-ar{font-size:11px;opacity:.8}
+.si-tbl td{text-align:right;padding:11px 10px;border-bottom:1px solid #f4f6fa;white-space:nowrap;font-variant-numeric:tabular-nums;color:#334155}
+.si-tbl .si-l{text-align:left}
+.si-tbl tbody tr:hover td{background:#fafbfd}
+.si-tbl tfoot td{background:#eff6ff;color:#1d4ed8;font-weight:800;border-bottom:none}
+.si-up{color:#059669!important}.si-dn{color:#dc2626!important}
+.si-closed{margin-top:10px;background:#f8fafc;border-radius:10px;padding:9px 12px;font-size:12px;color:#475569}
+.si-closed summary{cursor:pointer;font-weight:600}
+.si-closed-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 16px;margin-top:8px}
+.si-closed-list div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #e2e8f0;padding:4px 0}
+.si-rgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.si-rc{border:1px solid #eef1f6;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column}
+.si-rh{display:flex;justify-content:space-between;font-weight:700;font-size:12.5px;padding-bottom:7px;border-bottom:1px solid #eef1f6;color:#0f172a}
+.si-rr{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:6px 0;border-bottom:1px solid #f4f6fa;font-variant-numeric:tabular-nums}
+.si-rr span:first-child{color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.si-empty{font-size:12px;color:#94a3b8;padding:10px 0}
+.si-more{margin-top:auto;padding-top:8px;font-size:12px;color:var(--accent);font-weight:600;cursor:pointer}
+.si-info{cursor:help;color:#94a3b8}
+.si-foot{font-size:10px;color:var(--text3);line-height:1.6;margin:4px 2px 0}
+.si-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.si-chip{font-size:12.5px;padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:#fff;color:var(--text2);cursor:pointer;font-family:var(--font);font-weight:600}
+.si-chip.on{background:#eff4ff;color:var(--accent);border-color:var(--accent)}
+.si-chip:disabled{opacity:.4;cursor:default}
+.si-note{margin-top:4px;padding:9px 12px;border-radius:8px;background:#eff6ff;color:#1e40af;font-size:12px;line-height:1.5}
+.si-note.si-ok{background:#ecfdf5;color:#047857}.si-note.si-bad{background:#fef2f2;color:#b91c1c}
+.si-err{color:var(--red);font-size:12px;margin-top:8px;min-height:1px}
+.si-modal input,.si-modal select{width:100%}
+.si-upd{min-width:600px}.si-upd td{padding:6px 6px}.si-upd input{padding:7px 8px;text-align:right;font-size:13px}
+.si-upd input.si-hl{border-color:#93c5fd;background:#f8fbff}
+.si-x{cursor:pointer;color:#94a3b8;padding:4px}.si-x:hover{color:var(--red)}
+.si-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:8px;overflow-x:auto}
+.si-tabs span{padding:8px 12px;font-size:12.5px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-weight:600}
+.si-tabs span.on{color:var(--accent);border-color:var(--accent)}
+.si-all th{cursor:default}.si-all td{padding:9px 8px}
+.si-ic{cursor:pointer;margin-left:6px;font-size:13px;opacity:.7}.si-ic:hover{opacity:1}
+.si-allfoot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;margin-top:10px}
+@media(max-width:760px){.si-kpis{grid-template-columns:1fr 1fr}.si-kpis .v{font-size:13px}.si-rgrid{grid-template-columns:1fr}}
 </style>
 <script>
 window.addEventListener('load', function(){
@@ -495,6 +541,9 @@ window.addEventListener('load', function(){
       <div class="nav-section">Investasi</div>
       <div class="nav-item" onclick="go('invtrack',this)">
         <span class="nav-icon">🚀</span>Investasi
+      </div>
+      <div class="nav-item nav-sub" onclick="go('sahamindo',this)">
+        <span class="nav-icon">📈</span>Saham Indo
       </div>
 
       <div class="nav-section">Master Data</div>
@@ -851,6 +900,15 @@ window.addEventListener('load', function(){
           <div class="sec-sub">Hasil investasi per tanggal update · Agu 2026 = nilai awal dari menu Aset · klik ＋ Update nilai untuk mengisi Investasi, Uang Kas &amp; Tambahan Modal</div>
         </div>
         <div id="invTrackBody"></div>
+      </div>
+
+      <!-- ══ SAHAM INDO (IPOT) ══ -->
+      <div class="page" id="page-sahamindo">
+        <div class="sec-head">
+          <div class="sec-title">📈 Saham Indo · IPOT</div>
+          <div class="sec-sub">Portfolio, setoran, dividen &amp; hasil jual · update mingguan lewat tombol Update Portfolio</div>
+        </div>
+        <div id="sahamIndoBody"></div>
       </div>
 
             <!-- ══ ASET RANGKUMAN ══ -->
@@ -1615,6 +1673,7 @@ function mergeCloudIntoLocal(cloud, withTx){
       });
     });
   });
+  added += siMergeFrom(cloud);
   return added;
 }
 window._cloudAt = 0;
@@ -1631,7 +1690,7 @@ async function supaSave(){
         if(ca > window._cloudAt + 1500){
           const full = await (await fetch(`${SUPA_URL}/rest/v1/myfinancial_data?id=eq.main&select=data`, {headers:H})).json();
           const n = full.length ? mergeCloudIntoLocal(full[0].data||{}, true) : 0;
-          if(n){ localStorage.setItem(STORE_KEY, JSON.stringify(S)); try{ renderInvTrack(); }catch(e){} }
+          if(n){ localStorage.setItem(STORE_KEY, JSON.stringify(S)); try{ renderInvTrack(); }catch(e){} try{ if(currentPage==='sahamindo') renderSahamIndo(); }catch(e){} }
         }
       }
     }
@@ -1666,10 +1725,11 @@ async function supaLoad(){
     { const ua=String(rows[0].updated_at||''); window._cloudAt = new Date(ua.replace(' ','T')+(/[zZ]|[+-]\d\d(:?\d\d)?$/.test(ua)?'':'Z')).getTime()||0; }
     // Update lokal yang belum ada di cloud (mis. belum sempat tersimpan) dipertahankan, bukan ditimpa
     const localOnlyInv = (()=>{ let n=0; Object.keys(S.asetItems||{}).forEach(cat=>{ if(!INV_TRACK_NAMES.includes(String(cat).toLowerCase())) return; (S.asetItems[cat]||[]).forEach(li=>{ const ci=((cloud.asetItems||{})[cat]||[]).find(x=>x.name===li.name); ['invValues','kasValues','topupValues'].forEach(f=>Object.keys(li[f]||{}).forEach(k=>{ if(!ci||!ci[f]||!(k in ci[f])) n++; })); }); }); return n; })();
+    const localOnlySI = siLocalOnlyCount(cloud);
     const localTxCount = (S.transactions||[]).length;
     const cloudTxCount = (cloud.transactions||[]).length;
     if(cloudTxCount >= localTxCount){
-      const keepLocal = localOnlyInv ? JSON.parse(JSON.stringify(S)) : null;
+      const keepLocal = (localOnlyInv || localOnlySI) ? JSON.parse(JSON.stringify(S)) : null;
       Object.keys(cloud).forEach(k=>{ S[k] = cloud[k]; });
       if(keepLocal){ mergeCloudIntoLocal(keepLocal, false); persist(); }
       runInvMigrations();
@@ -1728,6 +1788,7 @@ const PAGE_TITLES = {
   aset:'Laporan Aset',
   investasi:'Portofolio',
   invtrack:'Investasi',
+  sahamindo:'Saham Indo',
   settings:'Settings',
   rekening:'Rekening',
 };
@@ -1752,6 +1813,7 @@ function go(name, el) {
   if (name === 'transfer')     setTimeout(initTransfer, 50);
   if (name === 'aset-rangkuman') setTimeout(renderAsetRangkuman, 50);
   if (name === 'invtrack')     setTimeout(renderInvTrack, 50);
+  if (name === 'sahamindo')    setTimeout(renderSahamIndo, 50);
   if (name === 'saham-idx')    setTimeout(()=>renderAsetPage('saham_idx','Saham Indo','📊'), 50);
   if (name === 'saham-us')     setTimeout(()=>renderAsetPage('saham_us','Saham Luar','🌍'), 50);
   if (name === 'deposito')     setTimeout(()=>renderDepositoPage(), 50);
@@ -3516,7 +3578,7 @@ function migrateInvTopups(){
   persist();
   return changed;
 }
-function runInvMigrations(){ migrateInvestasi(); shiftInvOctToSep(); migrateInvDates(); migrateInvTopups(); }
+function runInvMigrations(){ migrateInvestasi(); shiftInvOctToSep(); migrateInvDates(); migrateInvTopups(); seedSahamIndo(); }
 
 // ── Hitung seluruh seri (kolom = tanggal update) ──
 function invSeries(){
@@ -3728,6 +3790,380 @@ function renderInvTrack(){
 }
 
 // ── Modal helpers ──────────────────────────────────────────────
+// ═══════════════════════════════════════
+// SAHAM INDO (IPOT) — v21
+// S.sahamIndo = { v, tx:[{id,ts,date,type:'topup'|'tarik'|'beli'|'jual'|'dividen',code,lot,price,amount,pl,note}],
+//                 snaps:[{id,ts,date,rows:[{code,lot,avg,price}],kas,total}], deleted:[ids] }
+// Posisi = snapshot terakhir + Beli/Jual sesudahnya. Update Portfolio & Top Up/Tarik ikut mengisi baris IPOT di menu Investasi.
+// ═══════════════════════════════════════
+const SI_SEED = {"v":1,"tx":[{"id":"si-awal","date":"2023-12-31","type":"topup","amount":139350000,"note":"Saldo awal sebelum 2024 & penyesuaian (agar total setor = modal IPOT di Aset Rp 1.700.000.000)"},{"id":"si-s1","date":"2024-03-07","type":"topup","amount":10000000,"note":"Mutasi IPOT"},{"id":"si-d2","date":"2024-03-07","type":"dividen","code":"BJTM","amount":543900,"note":"Mutasi IPOT"},{"id":"si-d3","date":"2024-04-04","type":"dividen","code":"BBCA","amount":2275000,"note":"Mutasi IPOT"},{"id":"si-s4","date":"2024-04-07","type":"topup","amount":10000000,"note":"Mutasi IPOT"},{"id":"si-s5","date":"2024-04-07","type":"topup","amount":20000000,"note":"Mutasi IPOT"},{"id":"si-d6","date":"2024-04-25","type":"dividen","code":"ITMG","amount":3843400,"note":"Mutasi IPOT"},{"id":"si-d7","date":"2024-04-30","type":"dividen","code":"AVIA","amount":495000,"note":"Mutasi IPOT"},{"id":"si-d8","date":"2024-04-30","type":"dividen","code":"TMAS","amount":1000000,"note":"Mutasi IPOT"},{"id":"si-s9","date":"2024-05-22","type":"topup","amount":10000000,"note":"Mutasi IPOT"},{"id":"si-d10","date":"2024-05-30","type":"dividen","code":"TLKM","amount":1963545,"note":"Mutasi IPOT"},{"id":"si-s11","date":"2024-05-31","type":"topup","amount":20000000,"note":"Mutasi IPOT"},{"id":"si-d12","date":"2024-06-28","type":"dividen","code":"CLEO","amount":75750,"note":"Mutasi IPOT"},{"id":"si-d13","date":"2024-09-25","type":"dividen","code":"ITMG","amount":2701600,"note":"Mutasi IPOT"},{"id":"si-d14","date":"2024-11-21","type":"dividen","code":"AVIA","amount":605000,"note":"Mutasi IPOT"},{"id":"si-d15","date":"2024-12-11","type":"dividen","code":"BBCA","amount":625000,"note":"Mutasi IPOT"},{"id":"si-s16","date":"2024-12-20","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-s17","date":"2025-01-09","type":"topup","amount":10000000,"note":"Mutasi IPOT"},{"id":"si-s18","date":"2025-01-09","type":"topup","amount":40000000,"note":"Mutasi IPOT"},{"id":"si-s19","date":"2025-03-06","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-s20","date":"2025-04-08","type":"topup","amount":20000000,"note":"Mutasi IPOT"},{"id":"si-d21","date":"2025-04-11","type":"dividen","code":"BBCA","amount":5900000,"note":"Mutasi IPOT"},{"id":"si-s22","date":"2025-04-20","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-d23","date":"2025-04-23","type":"dividen","code":"BMRI","amount":5128027,"note":"Mutasi IPOT"},{"id":"si-d24","date":"2025-04-30","type":"dividen","code":"AVIA","amount":1100000,"note":"Mutasi IPOT"},{"id":"si-s25","date":"2025-05-07","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-s26","date":"2025-05-08","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-s27","date":"2025-05-21","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-d28","date":"2025-06-10","type":"dividen","code":"PANI","amount":18000,"note":"Mutasi IPOT"},{"id":"si-d29","date":"2025-06-19","type":"dividen","code":"BJTM","amount":1641300,"note":"Mutasi IPOT"},{"id":"si-s30","date":"2025-06-20","type":"topup","amount":10000000,"note":"Mutasi IPOT"},{"id":"si-s31","date":"2025-06-20","type":"topup","amount":40000000,"note":"Mutasi IPOT"},{"id":"si-d32","date":"2025-06-20","type":"dividen","code":"TLKM","amount":5099196,"note":"Mutasi IPOT"},{"id":"si-d33","date":"2025-06-26","type":"dividen","code":"CLEO","amount":105000,"note":"Mutasi IPOT"},{"id":"si-s34","date":"2025-07-22","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-s35","date":"2025-08-03","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-s36","date":"2025-09-03","type":"topup","amount":70650000,"note":"Mutasi IPOT"},{"id":"si-s37","date":"2025-09-21","type":"topup","amount":100000000,"note":"Mutasi IPOT"},{"id":"si-s38","date":"2025-09-21","type":"topup","amount":100000000,"note":"Mutasi IPOT"},{"id":"si-s39","date":"2025-10-19","type":"topup","amount":100000000,"note":"Mutasi IPOT"},{"id":"si-d40","date":"2025-12-22","type":"dividen","code":"BBCA","amount":4433000,"note":"Mutasi IPOT"},{"id":"si-s41","date":"2025-12-29","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-d42","date":"2026-01-14","type":"dividen","code":"BMRI","amount":6300000,"note":"Mutasi IPOT"},{"id":"si-d43","date":"2026-01-15","type":"dividen","code":"BBRI","amount":3562000,"note":"Mutasi IPOT"},{"id":"si-s44","date":"2026-01-20","type":"topup","amount":30000000,"note":"Mutasi IPOT"},{"id":"si-s45","date":"2026-01-26","type":"topup","amount":20000000,"note":"Mutasi IPOT"},{"id":"si-s46","date":"2026-01-28","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-s47","date":"2026-02-09","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-s48","date":"2026-02-16","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-s49","date":"2026-02-25","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-s50","date":"2026-03-02","type":"topup","amount":30000000,"note":"Mutasi IPOT"},{"id":"si-s51","date":"2026-03-26","type":"topup","amount":20000000,"note":"Mutasi IPOT"},{"id":"si-d52","date":"2026-04-08","type":"dividen","code":"BBCA","amount":28100000,"note":"Mutasi IPOT"},{"id":"si-s53","date":"2026-04-28","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-d54","date":"2026-05-08","type":"dividen","code":"BBRI","amount":11704000,"note":"Mutasi IPOT"},{"id":"si-s55","date":"2026-05-17","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-d56","date":"2026-05-25","type":"dividen","code":"BMRI","amount":18847845,"note":"Mutasi IPOT"},{"id":"si-s57","date":"2026-05-30","type":"topup","amount":100000000,"note":"Mutasi IPOT"},{"id":"si-s58","date":"2026-06-18","type":"topup","amount":50000000,"note":"Mutasi IPOT"},{"id":"si-d59","date":"2026-06-26","type":"dividen","code":"BBCA","amount":2300000,"note":"Mutasi IPOT"},{"id":"si-d60","date":"2026-07-08","type":"dividen","code":"PANI","amount":55000,"note":"Mutasi IPOT"},{"id":"si-d61","date":"2026-07-22","type":"dividen","code":"CLEO","amount":987500,"note":"Mutasi IPOT"},{"id":"si-d62","date":"2026-09-16","type":"dividen","code":"BBCA","amount":2875000,"note":"Mutasi IPOT"},{"id":"si-d63","date":"2026-10-02","type":"dividen","code":"BMRI","amount":3696000,"note":"Mutasi IPOT"}],"snaps":[{"id":"si-snap-20261115","date":"2026-11-15","ts":1,"rows":[{"code":"AVIA","lot":4200,"price":304,"avg":342.1837},{"code":"CLEO","lot":4250,"price":370,"avg":414.5744},{"code":"BBRI","lot":660,"price":3060,"avg":3702.47589394},{"code":"BMRI","lot":590,"price":3890,"avg":4764.68},{"code":"PANI","lot":110,"price":3790,"avg":10039.49354545},{"code":"BBCA","lot":1170,"price":5500,"avg":7627.67579487}],"kas":22114188,"total":1423704188}]};
+const SI_INV_MIN = '2026-08-31';
+let siSort = {k:'v', dir:-1};
+let siAllTab = 'setoran', siAllYear = 'all';
+let siTxType = 'topup', siTxEdit = null, siTxOldDate = null;
+
+function seedSahamIndo(){
+  if(S.sahamIndo) return;
+  S.sahamIndo = JSON.parse(JSON.stringify(SI_SEED));
+  S.sahamIndo.deleted = [];
+  persist();
+}
+function siData(){ if(!S.sahamIndo) S.sahamIndo={v:1,tx:[],snaps:[],deleted:[]}; const d=S.sahamIndo; d.tx=d.tx||[]; d.snaps=d.snaps||[]; d.deleted=d.deleted||[]; return d; }
+function siUid(p){ return 'si-'+p+'-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+const siCmp = (a,b) => a.date<b.date?-1:a.date>b.date?1:(a.ts||0)-(b.ts||0);
+const siN = v => Number(v)||0;
+function siFmtDec(n){ return new Intl.NumberFormat('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0); }
+function siJt(n){ const a=Math.abs(n); if(a>=1e9) return (n/1e9).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})+' M'; if(a>=1e6) return (n/1e6).toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1})+' jt'; return fmt(n); }
+const siSg = n => n<0?'−':'+';
+const siCls = n => n<0?'si-dn':(n>0?'si-up':'');
+const siDl = d => d ? new Date(d+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) : '';
+const siEsc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// Gabung data Saham Indo dari sumber lain (cloud/lokal) per id, tanpa menghidupkan lagi yang sudah dihapus
+function siMergeFrom(src){
+  if(!src || !src.sahamIndo) return 0;
+  if(!S.sahamIndo){ S.sahamIndo = JSON.parse(JSON.stringify(src.sahamIndo)); return 1; }
+  const d=siData(), o=src.sahamIndo; let n=0;
+  const del=new Set([...(d.deleted||[]), ...(o.deleted||[])]); d.deleted=[...del];
+  ['tx','snaps'].forEach(f=>{
+    const have=new Set(d[f].map(x=>x.id));
+    (o[f]||[]).forEach(x=>{ if(!have.has(x.id) && !del.has(x.id)){ d[f].push(x); n++; } });
+    const before=d[f].length; d[f]=d[f].filter(x=>!del.has(x.id)); n+=before-d[f].length;
+  });
+  return n;
+}
+function siLocalOnlyCount(cloud){
+  if(!S.sahamIndo) return 0;
+  const o=(cloud&&cloud.sahamIndo)||{tx:[],snaps:[]}; let n=0;
+  ['tx','snaps'].forEach(f=>{ const have=new Set((o[f]||[]).map(x=>x.id)); (S.sahamIndo[f]||[]).forEach(x=>{ if(!have.has(x.id)) n++; }); });
+  return n;
+}
+
+function siLastSnap(){ const s=[...siData().snaps].sort(siCmp); return s[s.length-1]||null; }
+function siAfter(t,snap){ return !snap || t.date>snap.date || (t.date===snap.date && (t.ts||0)>(snap.ts||0)); }
+// Posisi saat ini + kas perkiraan
+function siPositions(){
+  const d=siData(), snap=siLastSnap(), pos={};
+  (snap?snap.rows:[]).forEach(r=>{ if(siN(r.lot)>0) pos[r.code]={code:r.code,lot:siN(r.lot),avg:siN(r.avg),price:siN(r.price)}; });
+  let kas = snap ? siN(snap.kas) : 0, nAfter=0;
+  [...d.tx].sort(siCmp).forEach(t=>{
+    if(!siAfter(t,snap)) return; nAfter++;
+    const a=siN(t.amount);
+    if(t.type==='topup') kas+=a;
+    else if(t.type==='tarik') kas-=a;
+    else if(t.type==='dividen') kas+=a;
+    else if(t.type==='beli'){ kas-=a; const p=pos[t.code]||{code:t.code,lot:0,avg:0,price:siN(t.price)}; const cost=p.lot*100*p.avg+a; p.lot+=siN(t.lot); p.avg=p.lot>0?cost/(p.lot*100):0; if(!p.price) p.price=siN(t.price); pos[t.code]=p; }
+    else if(t.type==='jual'){ kas+=a; const p=pos[t.code]; if(p){ p.lot-=siN(t.lot); if(p.lot<=0) delete pos[t.code]; } }
+  });
+  const list=Object.values(pos).map(p=>{ const v=p.lot*100*p.price, cost=p.lot*100*p.avg; return {...p, v, cost, pl:v-cost, pp:cost>0?(v-cost)/cost*100:0}; });
+  return {snap, list, kas, nAfter};
+}
+function siSummary(){
+  const d=siData(), P=siPositions();
+  const sum=(type)=>d.tx.filter(t=>t.type===type).reduce((a,t)=>a+siN(t.amount),0);
+  const setor=sum('topup')-sum('tarik');
+  const div=sum('dividen');
+  const realized=d.tx.filter(t=>t.type==='jual').reduce((a,t)=>a+siN(t.pl),0);
+  const mv=P.list.reduce((a,r)=>a+r.v,0), floating=P.list.reduce((a,r)=>a+r.pl,0), cost=P.list.reduce((a,r)=>a+r.cost,0);
+  const nilai=mv+P.kas, ret=nilai-setor, other=ret-floating-div-realized;
+  const Y=today().slice(0,4), divY=d.tx.filter(t=>t.type==='dividen'&&t.date.slice(0,4)===Y);
+  return {P,setor,div,realized,mv,floating,cost,nilai,ret,retPct:setor>0?ret/setor*100:0,other,Y,divY:divY.reduce((a,t)=>a+siN(t.amount),0),divYn:divY.length};
+}
+// Tautan ke menu Investasi (baris Saham Indo · IPOT)
+function siInvItem(){
+  const cat=Object.keys(S.asetItems||{}).find(c=>c.toLowerCase()==='saham indo'); if(!cat) return null;
+  const items=(S.asetItems[cat]||[]).filter(i=>isVisibleOwner(i.owner));
+  return items.find(i=>String(i.name).toUpperCase()==='IPOT') || items[0] || null;
+}
+function siSyncTopup(date){
+  if(!date || date<=SI_INV_MIN) return;
+  const it=siInvItem(); if(!it) return; if(!it.topupValues) it.topupValues={};
+  const net=siData().tx.filter(t=>t.date===date&&(t.type==='topup'||t.type==='tarik')).reduce((a,t)=>a+(t.type==='topup'?1:-1)*siN(t.amount),0);
+  if(net) it.topupValues[date]=net; else delete it.topupValues[date];
+}
+function siSyncSnap(snap, remove){
+  if(!snap || snap.date<=SI_INV_MIN) return;
+  const it=siInvItem(); if(!it) return; if(!it.invValues) it.invValues={}; if(!it.kasValues) it.kasValues={};
+  const mv=snap.rows.reduce((a,r)=>a+siN(r.lot)*100*siN(r.price),0);
+  if(remove){ if(it.invValues[snap.date]===mv) delete it.invValues[snap.date]; if(it.kasValues[snap.date]===siN(snap.kas)) delete it.kasValues[snap.date]; return; }
+  it.invValues[snap.date]=mv; it.kasValues[snap.date]=siN(snap.kas);
+}
+
+// ── Halaman ──
+function renderSahamIndo(){
+  const box=document.getElementById('sahamIndoBody'); if(!box) return;
+  const d=siData(), M=siSummary(), P=M.P;
+  const k=(l,v,sub,c,vc)=>`<div class="it-kpi" style="--kc:${c}"><div class="l">${l}</div><div class="v" ${vc?`style="color:${vc}"`:''}>${v}</div><div class="s">${sub||'&nbsp;'}</div></div>`;
+  const red='#dc2626', green='#059669';
+  const kpi=`<div class="it-kpis si-kpis">
+    ${k('Total Setor Bersih','Rp '+fmt(M.setor),'Setor − Tarik','#8b5cf6')}
+    ${k('Nilai Sekarang','Rp '+fmt(M.nilai),'Saham '+siJt(M.mv)+' · Kas '+siJt(P.kas),'#3b82f6')}
+    ${k('Return Total',siSg(M.ret)+'Rp '+fmt(Math.abs(M.ret))+` <span style="font-size:12px">(${siSg(M.ret)}${Math.abs(M.retPct).toFixed(2).replace('.',',')}%)</span>`,'Nilai Sekarang − Total Setor Bersih',M.ret<0?red:green,M.ret<0?red:green)}
+    ${k('Dividen '+M.Y,'+Rp '+fmt(M.divY),M.divYn+' kali terima','#10b981',green)}
+  </div>`;
+  const stale = P.snap ? Math.floor((new Date(today()+'T00:00:00')-new Date(P.snap.date+'T00:00:00'))/86400000) : null;
+  const warn = !P.snap ? `<div class="it-warn">Belum ada data Portfolio. Klik <b>Update Portfolio</b>.</div>`
+    : (stale>8 ? `<div class="it-warn">⏰ Update Portfolio terakhir ${siDl(P.snap.date)} (${stale} hari lalu). Waktunya update mingguan.</div>` : '')
+    + (P.nAfter ? `<div class="it-warn" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af">ℹ️ Ada ${P.nAfter} transaksi sesudah update terakhir — lot, harga rata-rata & kas sudah ikut dihitung, harga terakhir masih dari ${siDl(P.snap.date)}.</div>` : '');
+
+  // Portfolio
+  const cols=[['c','Saham','l'],['lot','Lot'],['price','Harga Terakhir'],['avg','Harga Rata-Rata'],['v','Total Nilai'],['pl','Plus Minus'],['pp','%']];
+  const L=[...P.list].sort((a,b)=>siSort.k==='c'?siSort.dir*a.code.localeCompare(b.code):siSort.dir*(a[siSort.k]-b[siSort.k]));
+  const arrow=key=>siSort.k===key?(siSort.dir<0?'↓':'↑'):'⇅';
+  const th=cols.map(([key,lbl,al])=>`<th class="${al?'si-l':''} ${siSort.k===key?'si-on':''}" onclick="siSetSort('${key}')">${lbl} <span class="si-ar">${arrow(key)}</span></th>`).join('');
+  const tr=L.map(r=>`<tr><td class="si-l"><b>${siEsc(r.code)}</b></td><td>${fmt(r.lot)}</td><td>${fmt(r.price)}</td><td>${siFmtDec(r.avg)}</td><td>${fmt(r.v)}</td><td class="${siCls(r.pl)}">${siSg(r.pl)}${fmt(Math.abs(r.pl))}</td><td class="${siCls(r.pl)}">${siSg(r.pp)}${Math.abs(r.pp).toFixed(2).replace('.',',')}%</td></tr>`).join('')
+    || `<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">Belum ada saham</td></tr>`;
+  const totPct=M.cost>0?M.floating/M.cost*100:0;
+  // posisi yang sudah tidak dipegang
+  const held=new Set(P.list.map(r=>r.code)), closed={};
+  d.tx.forEach(t=>{ if(!t.code||held.has(t.code)) return; if(t.type!=='dividen'&&t.type!=='jual') return; const c=closed[t.code]||(closed[t.code]={div:0,pl:0}); if(t.type==='dividen') c.div+=siN(t.amount); else c.pl+=siN(t.pl); });
+  const cl=Object.entries(closed).sort((a,b)=>(b[1].div+b[1].pl)-(a[1].div+a[1].pl));
+  const closedHtml = cl.length ? `<details class="si-closed"><summary>📦 Sudah tidak dimiliki (${cl.length}) · hasil tercatat ${siSg(cl.reduce((a,[,c])=>a+c.div+c.pl,0))}Rp ${fmt(Math.abs(cl.reduce((a,[,c])=>a+c.div+c.pl,0)))}</summary>
+      <div class="si-closed-list">${cl.map(([c,v])=>`<div><b>${siEsc(c)}</b><span>${v.pl?`Jual <span class="${siCls(v.pl)}">${siSg(v.pl)}${siJt(Math.abs(v.pl))}</span> · `:''}Dividen <span class="si-up">+${siJt(v.div)}</span></span></div>`).join('')}</div></details>` : '';
+  const port=`<div class="it-card si-card">
+    <div class="si-head"><h4>💼 Portfolio</h4><span class="si-mut">${P.snap?'Harga per '+siDl(P.snap.date):''}</span></div>
+    <div class="si-scroll"><table class="si-tbl"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody>
+    <tfoot><tr><td class="si-l">Total</td><td></td><td></td><td></td><td>${fmt(M.mv)}</td><td class="${siCls(M.floating)}">${siSg(M.floating)}${fmt(Math.abs(M.floating))}</td><td class="${siCls(M.floating)}">${siSg(totPct)}${Math.abs(totPct).toFixed(2).replace('.',',')}%</td></tr></tfoot></table></div>
+    ${closedHtml}
+  </div>`;
+
+  // Rincian
+  const last=(f,n)=>d.tx.filter(f).sort(siCmp).reverse().slice(0,n);
+  const row=(l,v,c)=>`<div class="si-rr"><span>${l}</span><span class="${c||''}">${v}</span></div>`;
+  const setRows=last(t=>t.type==='topup'||t.type==='tarik',4).map(t=>row(`${siDl(t.date)} · ${t.type==='topup'?(t.id==='si-awal'?'Saldo Awal':'Top Up'):'Tarik'}`,(t.type==='tarik'?'−':'+')+fmt(t.amount),t.type==='tarik'?'si-dn':'')).join('');
+  const divRows=last(t=>t.type==='dividen',4).map(t=>row(`${siDl(t.date)} · ${siEsc(t.code)}`,'+'+fmt(t.amount),'si-up')).join('');
+  const jualRows=last(t=>t.type==='jual',3).map(t=>row(`${siDl(t.date)} · ${siEsc(t.code)} ${fmt(t.lot)} lot`,siSg(t.pl)+fmt(Math.abs(t.pl)),siCls(t.pl))).join('');
+  const otherRow=row('Sebelum dicatat & lain-lain <span class="si-info" title="Selisih: Return Total − Plus Minus Portfolio − Dividen − Hasil Jual tercatat. Isinya hasil jual lama (sebelum dicatat), fee, meterai, bunga RDN, dll.">ⓘ</span>',siSg(M.other)+fmt(Math.abs(M.other)),siCls(M.other));
+  const card=(title,total,tc,body,tab)=>`<div class="si-rc"><div class="si-rh"><span>${title}</span><span class="${tc||''}">${total}</span></div>${body||'<div class="si-empty">Belum ada catatan</div>'}<div class="si-more" onclick="openSiAll('${tab}')">Lihat Semua →</div></div>`;
+  const rinc=`<div class="it-card si-card"><div class="si-head"><h4>🧾 Rincian</h4><span class="si-mut">Return ${siSg(M.ret)}Rp ${fmt(Math.abs(M.ret))} = Plus Minus Portfolio ${siSg(M.floating)}${siJt(Math.abs(M.floating))} + Dividen +${siJt(M.div)} + Hasil Jual ${siSg(M.realized+M.other)}${siJt(Math.abs(M.realized+M.other))}</span></div>
+    <div class="si-rgrid">
+      ${card('Setoran','Rp '+fmt(M.setor),'',setRows,'setoran')}
+      ${card('Dividen','+Rp '+fmt(M.div),'si-up',divRows,'dividen')}
+      ${card('Hasil Jual',siSg(M.realized+M.other)+'Rp '+fmt(Math.abs(M.realized+M.other)),siCls(M.realized+M.other),jualRows+otherRow,'jual')}
+    </div></div>`;
+
+  box.innerHTML=`<div class="it-bar"><div class="si-mut">${P.snap?'Update terakhir '+siDl(P.snap.date):''}</div>
+    <div style="display:flex;gap:8px"><button class="btn" onclick="openSiTx()">＋ Catat Transaksi</button><button class="btn btn-primary" onclick="openSiUpdate()">🔄 Update Portfolio</button></div></div>
+    ${warn}${kpi}${port}${rinc}
+    <p class="si-foot">Plus Minus = (Harga Terakhir − Harga Rata-Rata) × lot × 100 · Return Total = Nilai Sekarang (saham + kas RDN) − Total Setor Bersih · Update Portfolio & Top Up/Tarik otomatis mengisi baris Saham Indo (IPOT) di menu Investasi · versi Saham Indo v21</p>`;
+}
+function siSetSort(k){ if(siSort.k===k) siSort.dir=-siSort.dir; else siSort={k, dir:k==='c'?1:-1}; renderSahamIndo(); }
+
+function siModal(id, html, width){
+  let el=document.getElementById(id);
+  if(!el){ el=document.createElement('div'); el.className='overlay'; el.id=id; el.addEventListener('click',e=>{ if(e.target===el) closeModal(id); }); document.body.appendChild(el); }
+  el.innerHTML=`<div class="modal si-modal" style="width:${width||520}px">${html}</div>`;
+  openModal(id);
+  return el;
+}
+const siInp=(id,v,extra)=>`<input id="${id}" type="text" inputmode="decimal" value="${v==null||v===''?'':v}" onfocus="this.select()" ${extra||''}>`;
+const siLab=(t,inner,full)=>`<div class="fg ${full?'full':''}"><label>${t}</label>${inner}</div>`;
+
+// ── Catat Transaksi ──
+const SI_TYPES=[['topup','Top Up'],['tarik','Tarik'],['beli','Beli'],['jual','Jual'],['dividen','Dividen']];
+function openSiTx(id){
+  const t = id ? siData().tx.find(x=>x.id===id) : null;
+  siTxEdit = t ? t.id : null; siTxOldDate = t ? t.date : null; if(t) siTxType=t.type;
+  siRenderTx(t);
+}
+function siRenderTx(t){
+  t=t||{};
+  const P=siPositions(), codes=P.list.map(r=>r.code).sort();
+  const isEdit=!!siTxEdit, type=siTxType;
+  const chips=SI_TYPES.map(([k,l])=>`<button class="si-chip ${k===type?'on':''}" ${isEdit&&k!==type?'disabled':''} onclick="siTxType='${k}';siRenderTx()">${l}</button>`).join('');
+  const date=siLab('Tanggal',`<input id="sit-date" type="date" value="${t.date||today()}">`);
+  const fv=n=>n==null||n===''?'':fmt(n);
+  const dl=`<datalist id="sit-codes">${codes.map(c=>`<option value="${c}">`).join('')}</datalist>`;
+  let f='';
+  if(type==='topup'||type==='tarik') f=`<div class="form-grid">${date}${siLab('Nominal',siInp('sit-amt',fv(t.amount)))}${siLab('Catatan (opsional)',`<input id="sit-note" type="text" value="${siEsc(t.note||'')}" placeholder="${type==='topup'?'Dari BCA':'Ke BCA'}">`,1)}</div>
+    <div class="si-note">ℹ️ ${type==='topup'?'Menambah Total Setor & mengisi Tambahan Modal Saham Indo di menu Investasi (tanggal setelah Agu 2026).':'Mengurangi Total Setor bersih (Tambahan Modal di menu Investasi jadi minus di tanggal itu).'}</div>`;
+  else if(type==='beli') f=`<div class="form-grid">${date}${siLab('Kode Saham',`<input id="sit-code" list="sit-codes" type="text" value="${siEsc(t.code||'')}" placeholder="BBCA" style="text-transform:uppercase" oninput="siTxPreview()">${dl}`)}
+    ${siLab('Lot',siInp('sit-lot',fv(t.lot),'oninput="siTxPreview()"'))}${siLab('Harga Beli',siInp('sit-price',fv(t.price),'oninput="siTxPreview()"'))}
+    ${siLab('Total Bayar (dari IPOT, termasuk fee)',siInp('sit-amt',fv(t.amount),'oninput="siTxPreview()" placeholder="kosong = lot × 100 × harga"'),1)}</div><div class="si-note" id="sit-prev"></div>`;
+  else if(type==='jual') f=`<div class="form-grid">${date}${siLab('Kode Saham',`<select id="sit-code" onchange="siTxPreview()">${[...new Set([...codes,...(t.code?[t.code]:[])])].map(c=>`<option ${c===t.code?'selected':''}>${c}</option>`).join('')}</select>`)}
+    ${siLab('Lot',siInp('sit-lot',fv(t.lot),'oninput="siTxPreview()"'))}${siLab('Harga Jual',siInp('sit-price',fv(t.price),'oninput="siTxPreview()"'))}
+    ${siLab('Total Diterima (dari IPOT)',siInp('sit-amt',fv(t.amount),'oninput="siTxPreview()" placeholder="kosong = lot × 100 × harga"'))}${siLab('Plus Minus (dari IPOT)',siInp('sit-pl',t.pl==null?'':(t.pl<0?'-':'')+fmt(Math.abs(t.pl)),'placeholder="kosong = hitungan aplikasi"'))}</div><div class="si-note" id="sit-prev"></div>`;
+  else f=`<div class="form-grid">${date}${siLab('Kode Saham',`<input id="sit-code" list="sit-codes" type="text" value="${siEsc(t.code||'')}" placeholder="TLKM" style="text-transform:uppercase">${dl}`)}
+    ${siLab('Nilai Diterima (bersih pajak)',siInp('sit-amt',fv(t.amount)),1)}</div>`;
+  siModal('siTxModal',`<div class="modal-title">${isEdit?'Ubah Transaksi':'＋ Catat Transaksi'} · Saham Indo</div>
+    <div class="modal-sub">Catat transaksi dulu, baru Update Portfolio. Angka boleh pakai titik ribuan; desimal pakai koma.</div>
+    <div class="si-chips">${chips}</div>${f}<div class="si-err" id="sit-err"></div>
+    <div class="modal-foot">${isEdit?`<button class="btn" style="margin-right:auto;color:var(--red)" onclick="siDelTx('${siTxEdit}')">Hapus</button>`:''}<button class="btn" onclick="closeModal('siTxModal')">Batal</button><button class="btn btn-primary" onclick="saveSiTx()">Simpan</button></div>`, 520);
+  siTxPreview();
+}
+function siTxRead(){
+  const g=id=>{ const e=document.getElementById(id); return e?e.value:''; };
+  const code=String(g('sit-code')).trim().toUpperCase();
+  const lot=invNum(g('sit-lot')), price=invNum(g('sit-price'));
+  let amt=invNum(g('sit-amt'));
+  const plTxt=String(g('sit-pl')).trim(); let pl=plTxt===''?null:invNum(plTxt.replace(/^[−-]/,'')); if(pl!=null && /^[−-]/.test(plTxt)) pl=-pl;
+  if((siTxType==='beli'||siTxType==='jual') && amt==null && lot && price) amt=lot*100*price;
+  return {date:g('sit-date'), code, lot, price, amt, pl, note:String(g('sit-note')||'').trim()};
+}
+// posisi sebelum transaksi yang sedang diubah (tanpa transaksi itu sendiri)
+function siPosExcluding(id){ const d=siData(); const keep=d.tx; d.tx=keep.filter(x=>x.id!==id); const P=siPositions(); d.tx=keep; return P; }
+function siTxPreview(){
+  const box=document.getElementById('sit-prev'); if(!box) return;
+  const r=siTxRead(), P=siPosExcluding(siTxEdit), p=P.list.find(x=>x.code===r.code);
+  if(siTxType==='beli'){
+    if(!r.code||!r.lot||!r.amt){ box.innerHTML='🧮 Isi kode, lot & harga untuk melihat harga rata-rata baru.'; return; }
+    const lot=(p?p.lot:0)+r.lot, avg=((p?p.cost:0)+r.amt)/(lot*100);
+    box.innerHTML=`🧮 ${r.code} jadi <b>${fmt(lot)} lot</b> · harga rata-rata <b>${siFmtDec(avg)}</b>${p?` (sebelumnya ${siFmtDec(p.avg)})`:' (saham baru)'}`;
+  } else if(siTxType==='jual'){
+    if(!p){ box.innerHTML='Pilih saham yang dimiliki.'; return; }
+    if(!r.lot||!r.amt){ box.innerHTML=`Punya <b>${fmt(p.lot)} lot</b> ${p.code} · rata-rata ${siFmtDec(p.avg)}`; return; }
+    const calc=r.amt-p.avg*r.lot*100, pct=calc/(p.avg*r.lot*100)*100;
+    box.innerHTML=`Punya <b>${fmt(p.lot)} lot</b> · hitungan aplikasi <b class="${siCls(calc)}">${siSg(calc)}${fmt(Math.abs(calc))} (${siSg(pct)}${Math.abs(pct).toFixed(1).replace('.',',')}%)</b>. Kalau beda dengan IPOT, isi Plus Minus dari IPOT — angka IPOT yang dipakai.`;
+  }
+}
+function saveSiTx(){
+  const r=siTxRead(), err=m=>{ document.getElementById('sit-err').textContent=m; };
+  const T=siTxType;
+  if(!invIsDate(r.date)) return err('Tanggal belum diisi.');
+  if(T==='topup'||T==='tarik'){ if(!(r.amt>0)) return err('Nominal belum diisi.'); }
+  else if(T==='dividen'){ if(!r.code) return err('Kode saham belum diisi.'); if(!(r.amt>0)) return err('Nilai dividen belum diisi.'); }
+  else {
+    if(!r.code) return err('Kode saham belum diisi.'); if(!(r.lot>0)) return err('Lot belum diisi.'); if(!(r.price>0)) return err('Harga belum diisi.');
+    if(T==='jual'){ const p=siPosExcluding(siTxEdit).list.find(x=>x.code===r.code); if(!p) return err('Saham ini tidak ada di Portfolio.'); if(r.lot>p.lot) return err(`Lot melebihi yang dimiliki (${fmt(p.lot)} lot).`);
+      if(r.pl==null) r.pl=Math.round(r.amt-p.avg*r.lot*100); }
+  }
+  const d=siData(); const old=siTxEdit?d.tx.find(x=>x.id===siTxEdit):null;
+  const t=old||{id:siUid(T), ts:Date.now()};
+  Object.assign(t,{date:r.date,type:T,amount:Math.round(r.amt)});
+  if(T==='beli'||T==='jual'||T==='dividen') t.code=r.code; else delete t.code;
+  if(T==='beli'||T==='jual'){ t.lot=r.lot; t.price=r.price; } else { delete t.lot; delete t.price; }
+  if(T==='jual') t.pl=Math.round(r.pl); else delete t.pl;
+  if(T==='topup'||T==='tarik') t.note=r.note; else delete t.note;
+  if(!old) d.tx.push(t);
+  siSyncTopup(t.date);
+  if(siTxOldDate && siTxOldDate!==t.date) siSyncTopup(siTxOldDate);
+  persist(); closeModal('siTxModal'); renderSahamIndo(); siRefreshAll();
+}
+function siDelTx(id){
+  const d=siData(), t=d.tx.find(x=>x.id===id); if(!t) return;
+  if(!confirm(`Hapus ${SI_TYPES.find(x=>x[0]===t.type)[1]} ${siDl(t.date)}${t.code?' · '+t.code:''}?${t.type==='beli'||t.type==='jual'?'\n\nLot & harga rata-rata akan dihitung ulang (hanya berpengaruh kalau transaksi ini sesudah Update Portfolio terakhir).':''}`)) return;
+  d.tx=d.tx.filter(x=>x.id!==id); d.deleted.push(id);
+  if(t.type==='topup'||t.type==='tarik') siSyncTopup(t.date);
+  persist(); closeModal('siTxModal'); renderSahamIndo(); siRefreshAll();
+}
+
+// ── Update Portfolio ──
+let siUpdRows=[];
+function openSiUpdate(snapId){
+  const d=siData(); const edit=snapId?d.snaps.find(s=>s.id===snapId):null;
+  const P=siPositions();
+  siUpdRows = edit ? edit.rows.map(r=>({...r})) : P.list.sort((a,b)=>b.v-a.v).map(r=>({code:r.code,lot:r.lot,avg:r.avg,price:r.price}));
+  const kas = edit ? edit.kas : Math.round(P.kas);
+  siModal('siUpdModal',`<div class="modal-title">🔄 ${edit?'Ubah':'Update'} Portfolio · Saham Indo</div>
+    <div class="modal-sub">1) Buka IPOT → Portfolio. 2) Isi <b>Harga Terakhir</b> tiap saham (lot & harga rata-rata sudah terisi dari data terakhir + transaksi yang dicatat; ubah hanya kalau beda). 3) Isi Kas RDN & Total dari IPOT, cek selisih, lalu Simpan.</div>
+    <div class="form-grid" style="grid-template-columns:180px 1fr">${siLab('Tanggal',`<input id="siu-date" type="date" value="${edit?edit.date:today()}">`)}<div></div></div>
+    <div class="si-scroll"><table class="si-tbl si-upd"><thead><tr><th class="si-l">Saham</th><th>Lot</th><th>Harga Rata-Rata</th><th>Harga Terakhir</th><th>Total Nilai</th><th></th></tr></thead><tbody id="siu-body"></tbody></table></div>
+    <button class="btn" style="margin-top:8px" onclick="siUpdAdd()">＋ Tambah Saham</button>
+    <div class="form-grid" style="margin-top:14px">${siLab('Kas RDN',siInp('siu-kas',fmt(kas),'oninput="siUpdCheck()"'))}${siLab('Total di IPOT (saham + kas, opsional)',siInp('siu-ipot',edit&&edit.total?fmt(edit.total):'','oninput="siUpdCheck()" placeholder="untuk cek selisih"'))}</div>
+    <div id="siu-check" class="si-note"></div><div class="si-err" id="siu-err"></div>
+    <div class="modal-foot">${edit?`<button class="btn" style="margin-right:auto;color:var(--red)" onclick="siDelSnap('${edit.id}')">Hapus Update</button>`:''}<button class="btn" onclick="closeModal('siUpdModal')">Batal</button><button class="btn btn-primary" onclick="saveSiUpdate(${edit?`'${edit.id}'`:'null'})">Simpan</button></div>`, 720);
+  siUpdDraw();
+}
+function siUpdDraw(){
+  const b=document.getElementById('siu-body'); if(!b) return;
+  b.innerHTML=siUpdRows.map((r,i)=>`<tr>
+    <td class="si-l">${r.isNew?`<input id="siu-c${i}" value="${siEsc(r.code||'')}" placeholder="KODE" style="width:72px;text-transform:uppercase" oninput="siUpdRows[${i}].code=this.value.toUpperCase().trim()">`:`<b>${siEsc(r.code)}</b>`}</td>
+    <td><input id="siu-l${i}" value="${r.lot==null?'':fmt(r.lot)}" inputmode="numeric" onfocus="this.select()" oninput="siUpdCheck()"></td>
+    <td><input id="siu-a${i}" value="${r.avg==null||r.avg===''?'':siFmtDec(r.avg)}" inputmode="decimal" onfocus="this.select()" oninput="siUpdCheck()"></td>
+    <td><input id="siu-p${i}" class="si-hl" value="${r.price==null||r.price===''?'':fmt(r.price)}" inputmode="numeric" onfocus="this.select()" oninput="siUpdCheck()"></td>
+    <td id="siu-v${i}" class="si-mut"></td>
+    <td><span class="si-x" title="Hapus baris (saham sudah dijual habis)" onclick="siUpdDel(${i})">✕</span></td></tr>`).join('');
+  siUpdCheck();
+}
+function siUpdSync(){ siUpdRows.forEach((r,i)=>{ const g=id=>(document.getElementById(id)||{}).value; const c=document.getElementById('siu-c'+i); if(c) r.code=c.value.toUpperCase().trim(); r.lot=invNum(g('siu-l'+i)); r.avg=invNum(g('siu-a'+i)); r.price=invNum(g('siu-p'+i)); }); }
+function siUpdAdd(){ siUpdSync(); siUpdRows.push({code:'',lot:null,avg:null,price:null,isNew:true}); siUpdDraw(); }
+function siUpdDel(i){ siUpdSync(); siUpdRows.splice(i,1); siUpdDraw(); }
+function siUpdCheck(){
+  siUpdSync(); let mv=0;
+  siUpdRows.forEach((r,i)=>{ const v=(r.lot||0)*100*(r.price||0); mv+=v; const c=document.getElementById('siu-v'+i); if(c) c.textContent=v?fmt(v):''; });
+  const kas=invNum((document.getElementById('siu-kas')||{}).value)||0, ipot=invNum((document.getElementById('siu-ipot')||{}).value);
+  const box=document.getElementById('siu-check'); if(!box) return;
+  const tot=mv+kas;
+  if(ipot==null){ box.className='si-note'; box.innerHTML=`Total aplikasi <b>Rp ${fmt(tot)}</b> (saham ${fmt(mv)} + kas ${fmt(kas)}). Isi Total di IPOT untuk cek selisih.`; return; }
+  const diff=tot-ipot;
+  if(Math.abs(diff)<=10000){ box.className='si-note si-ok'; box.innerHTML=`✅ Cocok dengan IPOT · selisih Rp ${fmt(diff)}`; }
+  else { box.className='si-note si-bad'; box.innerHTML=`⚠️ Selisih <b>${siSg(diff)}Rp ${fmt(Math.abs(diff))}</b> (aplikasi ${fmt(tot)} vs IPOT ${fmt(ipot)}). Biasanya ada lot/harga yang salah atau transaksi yang belum dicatat.`; }
+}
+function saveSiUpdate(editId){
+  siUpdSync();
+  const err=m=>{ document.getElementById('siu-err').textContent=m; };
+  const date=(document.getElementById('siu-date')||{}).value;
+  if(!invIsDate(date)) return err('Tanggal belum diisi.');
+  const rows=[], seen=new Set();
+  for(const r of siUpdRows){
+    if(!r.code && !r.lot && !r.price) continue;
+    if(!r.code) return err('Ada baris tanpa kode saham.');
+    if(seen.has(r.code)) return err(`Kode ${r.code} dobel.`); seen.add(r.code);
+    if(!(r.lot>0)) return err(`Lot ${r.code} belum diisi.`);
+    if(!(r.avg>0)) return err(`Harga rata-rata ${r.code} belum diisi.`);
+    if(!(r.price>0)) return err(`Harga terakhir ${r.code} belum diisi.`);
+    rows.push({code:r.code,lot:r.lot,avg:r.avg,price:r.price});
+  }
+  const kas=invNum(document.getElementById('siu-kas').value)||0, ipot=invNum(document.getElementById('siu-ipot').value);
+  const d=siData();
+  let snap = editId ? d.snaps.find(s=>s.id===editId) : d.snaps.find(s=>s.date===date);
+  if(!editId && snap && !confirm(`Sudah ada Update Portfolio tanggal ${siDl(date)}. Timpa?`)) return;
+  if(snap && snap.date!==date) siSyncSnap(snap,true);
+  if(!snap){ snap={id:siUid('snap')}; d.snaps.push(snap); }
+  Object.assign(snap,{date,ts:Date.now(),rows,kas:Math.round(kas),total:ipot==null?null:Math.round(ipot)});
+  siSyncSnap(snap,false);
+  persist(); closeModal('siUpdModal'); renderSahamIndo(); siRefreshAll();
+}
+function siDelSnap(id){
+  const d=siData(), s=d.snaps.find(x=>x.id===id); if(!s) return;
+  if(d.snaps.length<=1){ alert('Ini satu-satunya data Portfolio, tidak bisa dihapus. Pakai Ubah saja.'); return; }
+  if(!confirm(`Hapus Update Portfolio ${siDl(s.date)}? Nilai di menu Investasi tanggal itu juga dihapus.`)) return;
+  siSyncSnap(s,true); d.snaps=d.snaps.filter(x=>x.id!==id); d.deleted.push(id);
+  persist(); closeModal('siUpdModal'); renderSahamIndo(); siRefreshAll();
+}
+
+// ── Lihat Semua ──
+function openSiAll(tab){ siAllTab=tab||siAllTab; siAllYear='all'; siRenderAll(); }
+function siRefreshAll(){ const el=document.getElementById('siAllModal'); if(el && el.style.display==='flex') siRenderAll(); }
+function siRenderAll(){
+  const d=siData(), M=siSummary();
+  const tabs=[['setoran','Setoran'],['dividen','Dividen'],['jual','Hasil Jual'],['beli','Beli'],['update','Update Portfolio']];
+  const yrs=[...new Set([...d.tx.map(t=>t.date.slice(0,4)),...d.snaps.map(s=>s.date.slice(0,4))])].sort().reverse();
+  const inY=dt=>siAllYear==='all'||dt.slice(0,4)===siAllYear;
+  const ed=id=>`<span class="si-ic" title="Ubah" onclick="closeModal('siAllModal');openSiTx('${id}')">✏️</span><span class="si-ic" title="Hapus" onclick="siDelTx('${id}')">🗑️</span>`;
+  let head='', body='', foot='';
+  const tx=f=>d.tx.filter(t=>f(t)&&inY(t.date)).sort(siCmp).reverse();
+  if(siAllTab==='setoran'){ const L=tx(t=>t.type==='topup'||t.type==='tarik'); const tot=L.reduce((a,t)=>a+(t.type==='tarik'?-1:1)*t.amount,0);
+    head='<th class="si-l">Tanggal</th><th class="si-l">Keterangan</th><th>Nominal</th><th></th>';
+    body=L.map(t=>`<tr><td class="si-l">${siDl(t.date)}</td><td class="si-l">${t.id==='si-awal'?'Saldo Awal':t.type==='topup'?'Top Up':'Tarik'}${t.note?` <span class="si-mut">· ${siEsc(t.note)}</span>`:''}</td><td class="${t.type==='tarik'?'si-dn':''}">${t.type==='tarik'?'−':'+'}${fmt(t.amount)}</td><td>${ed(t.id)}</td></tr>`).join('');
+    foot=`Setor bersih ${siAllYear==='all'?'':siAllYear+' '}<b>Rp ${fmt(tot)}</b> · ${L.length} catatan`; }
+  else if(siAllTab==='dividen'){ const L=tx(t=>t.type==='dividen'); const tot=L.reduce((a,t)=>a+t.amount,0);
+    head='<th class="si-l">Tanggal</th><th class="si-l">Saham</th><th>Nilai</th><th></th>';
+    body=L.map(t=>`<tr><td class="si-l">${siDl(t.date)}</td><td class="si-l"><b>${siEsc(t.code)}</b></td><td class="si-up">+${fmt(t.amount)}</td><td>${ed(t.id)}</td></tr>`).join('');
+    const per={}; L.forEach(t=>per[t.code]=(per[t.code]||0)+t.amount);
+    foot=`Total <b class="si-up">+Rp ${fmt(tot)}</b> · ${L.length} kali · ${Object.entries(per).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([c,v])=>c+' '+siJt(v)).join(', ')}`; }
+  else if(siAllTab==='jual'){ const L=tx(t=>t.type==='jual'); const tot=L.reduce((a,t)=>a+siN(t.pl),0);
+    head='<th class="si-l">Tanggal</th><th class="si-l">Saham</th><th>Lot</th><th>Harga Jual</th><th>Plus Minus</th><th>%</th><th></th>';
+    body=L.map(t=>{ const cost=t.amount-t.pl, pct=cost>0?t.pl/cost*100:0; return `<tr><td class="si-l">${siDl(t.date)}</td><td class="si-l"><b>${siEsc(t.code)}</b></td><td>${fmt(t.lot)}</td><td>${fmt(t.price)}</td><td class="${siCls(t.pl)}">${siSg(t.pl)}${fmt(Math.abs(t.pl))}</td><td class="${siCls(t.pl)}">${siSg(pct)}${Math.abs(pct).toFixed(1).replace('.',',')}%</td><td>${ed(t.id)}</td></tr>`; }).join('');
+    if(siAllYear==='all') body+=`<tr><td class="si-l si-mut" colspan="4">Sebelum dicatat & lain-lain (selisih)</td><td class="${siCls(M.other)}">${siSg(M.other)}${fmt(Math.abs(M.other))}</td><td></td><td></td></tr>`;
+    foot=`Tercatat <b class="${siCls(tot)}">${siSg(tot)}Rp ${fmt(Math.abs(tot))}</b>${siAllYear==='all'?` · termasuk selisih <b class="${siCls(tot+M.other)}">${siSg(tot+M.other)}Rp ${fmt(Math.abs(tot+M.other))}</b>`:''}`; }
+  else if(siAllTab==='beli'){ const L=tx(t=>t.type==='beli'); const tot=L.reduce((a,t)=>a+t.amount,0);
+    head='<th class="si-l">Tanggal</th><th class="si-l">Saham</th><th>Lot</th><th>Harga</th><th>Total Bayar</th><th></th>';
+    body=L.map(t=>`<tr><td class="si-l">${siDl(t.date)}</td><td class="si-l"><b>${siEsc(t.code)}</b></td><td>${fmt(t.lot)}</td><td>${fmt(t.price)}</td><td>${fmt(t.amount)}</td><td>${ed(t.id)}</td></tr>`).join('');
+    foot=`Total beli <b>Rp ${fmt(tot)}</b> · ${L.length} transaksi`; }
+  else { const L=d.snaps.filter(s=>inY(s.date)).sort(siCmp).reverse();
+    head='<th class="si-l">Tanggal</th><th>Saham</th><th>Nilai Saham</th><th>Kas RDN</th><th>Total</th><th></th>';
+    body=L.map(s=>{ const mv=s.rows.reduce((a,r)=>a+r.lot*100*r.price,0); return `<tr><td class="si-l">${siDl(s.date)}</td><td>${s.rows.length}</td><td>${fmt(mv)}</td><td>${fmt(s.kas)}</td><td><b>${fmt(mv+s.kas)}</b></td><td><span class="si-ic" title="Ubah" onclick="closeModal('siAllModal');openSiUpdate('${s.id}')">✏️</span></td></tr>`; }).join('');
+    foot=`${L.length} kali update`; }
+  const nc=(head.match(/<th/g)||[]).length;
+  siModal('siAllModal',`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px"><div class="modal-title" style="margin:0">🧾 Rincian Saham Indo</div>
+      <select onchange="siAllYear=this.value;siRenderAll()" style="padding:6px 10px;width:auto"><option value="all">Semua Tahun</option>${yrs.map(y=>`<option ${y===siAllYear?'selected':''}>${y}</option>`).join('')}</select></div>
+    <div class="si-tabs">${tabs.map(([k,l])=>`<span class="${k===siAllTab?'on':''}" onclick="siAllTab='${k}';siRenderAll()">${l}</span>`).join('')}</div>
+    <div class="si-scroll" style="max-height:55vh;overflow:auto"><table class="si-tbl si-all"><thead><tr>${head}</tr></thead><tbody>${body||`<tr><td colspan="${nc}" style="text-align:center;color:var(--text3);padding:24px">Belum ada catatan</td></tr>`}</tbody></table></div>
+    <div class="si-allfoot"><span class="si-mut">✏️ ubah · 🗑️ hapus</span><span>${foot}</span></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('siAllModal')">Tutup</button></div>`, 720);
+}
+
 function openModal(id){
   const el = document.getElementById(id);
   if(el){ el.style.display='flex'; el.style.pointerEvents='auto'; }
