@@ -1706,6 +1706,7 @@ async function supaSave(){
         if(ca > window._cloudAt + 1500){
           const full = await (await fetch(`${SUPA_URL}/rest/v1/myfinancial_data?id=eq.main&select=data`, {headers:H})).json();
           const n = full.length ? mergeCloudIntoLocal(full[0].data||{}, true) : 0;
+          try{ fixPluangTopupDates(); }catch(e){}
           if(n){ localStorage.setItem(STORE_KEY, JSON.stringify(S)); try{ renderInvTrack(); }catch(e){} try{ if(currentPage==='sahamindo') renderSaham('indo'); if(currentPage==='sahamluar') renderSaham('luar'); }catch(e){} }
         }
       }
@@ -3599,7 +3600,15 @@ function migrateInvTopups(){
   persist();
   return changed;
 }
-function runInvMigrations(){ migrateInvestasi(); shiftInvOctToSep(); migrateInvDates(); migrateInvTopups(); seedSahamIndo(); }
+// Perbaikan: Tambahan Modal Saham Luar sempat dipindah ke 11 Sep & 23 Okt lalu dikembalikan ke 30 Sep & 31 Okt — hapus tanggal 11 Sep & 23 Okt yang tersisa di perangkat mana pun
+function fixPluangTopupDates(){
+  const cat=Object.keys(S.asetItems||{}).find(c=>c.toLowerCase()==='saham luar'); if(!cat) return;
+  let ch=false;
+  (S.asetItems[cat]||[]).forEach(it=>{ const tp=it.topupValues; if(!tp) return;
+    [['2026-09-11','2026-09-30'],['2026-10-23','2026-10-31']].forEach(([a,b])=>{ if(a in tp && b in tp && tp[a]===tp[b]){ delete tp[a]; ch=true; } }); });
+  if(ch) persist();
+}
+function runInvMigrations(){ migrateInvestasi(); shiftInvOctToSep(); migrateInvDates(); migrateInvTopups(); seedSahamIndo(); fixPluangTopupDates(); }
 
 // ── Hitung seluruh seri (kolom = tanggal update) ──
 function invSeries(){
