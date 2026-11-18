@@ -3855,7 +3855,10 @@ let siAllTab = 'setoran', siAllYear = 'all';
 let siTxType = 'topup', siTxEdit = null, siTxOldDate = null;
 
 function seedSahamIndo(){ /* data awal sudah di cloud */ }
-function siData(){ const K=SIC.key; if(!S[K]) S[K]={v:1,tx:[],snaps:[],deleted:[]}; const d=S[K]; d.tx=d.tx||[]; d.snaps=d.snaps||[]; d.deleted=d.deleted||[]; return d; }
+// Data per pemilik: Denny pakai kunci lama (sahamIndo, sahamLuar, deposito); pemilik lain pakai kunci + '__Nama'
+function siKey(c){ return (!activeOwner||activeOwner==='Denny') ? c.key : c.key+'__'+activeOwner; }
+const siKeysOf = (c,obj) => Object.keys(obj||{}).filter(k=>k===c.key||k.startsWith(c.key+'__'));
+function siData(){ const K=siKey(SIC); if(!S[K]) S[K]={v:1,tx:[],snaps:[],deleted:[]}; const d=S[K]; d.tx=d.tx||[]; d.snaps=d.snaps||[]; d.deleted=d.deleted||[]; return d; }
 function siUid(p){ return 'si-'+p+'-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 const siCmp = (a,b) => a.date<b.date?-1:a.date>b.date?1:(a.ts||0)-(b.ts||0);
 const siN = v => Number(v)||0;
@@ -3876,26 +3879,25 @@ const siPct = n => siSg(n)+Math.abs(n).toFixed(2).replace('.',',')+'%';
 // Gabung data Saham dari sumber lain (cloud/lokal) per id, tanpa menghidupkan lagi yang sudah dihapus
 function siMergeFrom(src){
   if(!src) return 0; let n=0;
-  Object.values(SI_CFG).forEach(c=>{
-    const o=src[c.key]; if(!o) return;
-    if(!S[c.key]){ S[c.key]=JSON.parse(JSON.stringify(o)); n++; return; }
-    const d=S[c.key]; d.tx=d.tx||[]; d.snaps=d.snaps||[];
+  Object.values(SI_CFG).forEach(c=>siKeysOf(c,src).forEach(K=>{
+    const o=src[K]; if(!o) return;
+    if(!S[K]){ S[K]=JSON.parse(JSON.stringify(o)); n++; return; }
+    const d=S[K]; d.tx=d.tx||[]; d.snaps=d.snaps||[];
     const del=new Set([...(d.deleted||[]), ...(o.deleted||[])]); d.deleted=[...del];
     ['tx','snaps'].forEach(f=>{
       const have=new Set(d[f].map(x=>x.id));
       (o[f]||[]).forEach(x=>{ if(!have.has(x.id) && !del.has(x.id)){ d[f].push(x); n++; } });
       const before=d[f].length; d[f]=d[f].filter(x=>!del.has(x.id)); n+=before-d[f].length;
     });
-  });
+  }));
   return n;
 }
 function siLocalOnlyCount(cloud){
   let n=0;
-  Object.values(SI_CFG).forEach(c=>{
-    if(!S[c.key]) return;
-    const o=(cloud&&cloud[c.key])||{tx:[],snaps:[]};
-    ['tx','snaps'].forEach(f=>{ const have=new Set((o[f]||[]).map(x=>x.id)); (S[c.key][f]||[]).forEach(x=>{ if(!have.has(x.id)) n++; }); });
-  });
+  Object.values(SI_CFG).forEach(c=>siKeysOf(c,S).forEach(K=>{
+    const o=(cloud&&cloud[K])||{tx:[],snaps:[]};
+    ['tx','snaps'].forEach(f=>{ const have=new Set((o[f]||[]).map(x=>x.id)); (S[K][f]||[]).forEach(x=>{ if(!have.has(x.id)) n++; }); });
+  }));
   return n;
 }
 
@@ -3993,7 +3995,7 @@ function siFromTransfer(tr){
 function siOnTransferDelete(tr){
   if(!tr || !tr.siId) return;
   Object.values(SI_CFG).forEach(c=>siWith(c,()=>{
-    const d=S[c.key]; if(!d||!d.tx) return; const t=d.tx.find(x=>x.id===tr.siId); if(!t) return;
+    const d=S[siKey(c)]; if(!d||!d.tx) return; const t=d.tx.find(x=>x.id===tr.siId); if(!t) return;
     d.tx=d.tx.filter(x=>x.id!==t.id); (d.deleted=d.deleted||[]).push(t.id); siSyncTopup(t.date);
   }));
 }
