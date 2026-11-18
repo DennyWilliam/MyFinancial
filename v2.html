@@ -935,7 +935,7 @@ window.addEventListener('load', function(){
       <div class="page" id="page-depoinv">
         <div class="sec-head">
           <div class="sec-title">🏦 Deposito · Superbank</div>
-          <div class="sec-sub">Daftar deposito, bunga &amp; jatuh tempo · update bulanan lewat tombol Update Saldo</div>
+          <div class="sec-sub">Setoran, daftar deposito, bunga &amp; jatuh tempo · update bulanan lewat tombol Update Saldo</div>
         </div>
         <div id="depositoBody"></div>
       </div>
@@ -3943,11 +3943,11 @@ function siInvItem(){
 function siSyncTopup(date){
   if(!date || date<=SI_INV_MIN) return;
   const it=siInvItem(); if(!it) return; if(!it.topupValues) it.topupValues={};
-  const net=siData().tx.filter(t=>t.date===date&&(t.type==='topup'||t.type==='tarik')&&(!SIC.depo||t.rek)).reduce((a,t)=>a+(t.type==='topup'?1:-1)*siN(t.amount),0);
+  const net=siData().tx.filter(t=>t.date===date&&(t.type==='topup'||t.type==='tarik')).reduce((a,t)=>a+(t.type==='topup'?1:-1)*siN(t.amount),0);
   if(net) it.topupValues[date]=net; else delete it.topupValues[date];
 }
 function siSnapIdr(snap){
-  if(SIC.depo) return {mv:Math.round(snap.rows.reduce((a,r)=>a+siN(r.price),0)), kas:null};
+  if(SIC.depo) return {mv:Math.round(snap.rows.reduce((a,r)=>a+siN(r.price),0)), kas:Math.round(siN(snap.kas))};
   const k=SIC.usd ? siN(snap.kurs)||1 : 1;
   const mv=Math.round(snap.rows.reduce((a,r)=>a+siN(r.lot)*SIC.mult*siN(r.price),0)*k);
   const kas=Math.round(siN(snap.kas)*k+siN(snap.kasIdr));
@@ -3984,7 +3984,6 @@ function siWith(c, fn){ const prev=SIC; SIC=c; try{ return fn(); } finally { SIC
 function siFromTransfer(tr){
   if(tr.siId) return;
   Object.values(SI_CFG).some(c=>siWith(c,()=>{
-    if(c.depo) return false;
     const own=siInvItem(); if(!own) return false;
     const isTop=tr.toName===own.name, isTar=tr.fromName===own.name; if(isTop===isTar) return false;
     const t={id:siUid(isTop?'topup':'tarik'), ts:Date.now(), date:tr.date, type:isTop?'topup':'tarik', amount:Math.round(tr.amount), note:tr.note||'', rek:isTop?tr.fromName:tr.toName};
@@ -4297,10 +4296,12 @@ function siRenderAll(){
 }
 
 // ═══════════════════════════════════════
-// DEPOSITO (Superbank) — v25
-// S.deposito = { tx:[{id,ts,date,type:'topup'(Penempatan)|'tarik'(Pencairan)|'dividen'(Bunga dibayar),code(No. deposito),amount,pl(bunga ikut cair),tenor,rate,aro,rek,note}],
-//                snaps:[{id,ts,date,rows:[{code,lot:1,avg:pokok,price:saldo,tenor,rate,start,aro}],total}], deleted:[] }
-// Return = Σ saldo deposito − (Penempatan − Pencairan). Bunga tertahan = saldo − pokok; bunga cair = diterima − pokok saat pencairan.
+// DEPOSITO (Superbank) — v26 (mengikuti pola Saham Indo)
+// S.deposito = { tx:[{id,ts,date,type,code,amount,pl,tenor,rate,aro,rek,note}], snaps:[{id,ts,date,rows:[{code,lot:1,avg:pokok,price:saldo,tenor,rate,start,aro}],kas,total}], deleted:[] }
+//   topup = Setor (rekening pribadi → Superbank) · tarik = Tarik (Superbank → rekening pribadi)
+//   beli  = Penempatan deposito (tabungan → deposito) · jual = Pencairan (deposito → tabungan, pl = bunga ikut cair)
+//   dividen = Bunga tabungan / hadiah (masuk ke tabungan)
+// Nilai = Σ saldo deposito + kas tabungan · Return = Nilai − (Setor − Tarik).
 // ═══════════════════════════════════════
 const SI_TAX = 0.2;
 function depoAddMonths(d, m){ const x=new Date(d+'T00:00:00'); const day=x.getDate(); x.setMonth(x.getMonth()+m); if(x.getDate()<day) x.setDate(0); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; }
@@ -4310,22 +4311,24 @@ const depoRate = n => n ? siFmtDec(n).replace(/,00$/,'')+'%' : '—';
 function depoPositions(){
   const d=siData(), snap=siLastSnap(), pos={};
   (snap?snap.rows:[]).forEach(r=>{ pos[r.code]={...r, lot:1, avg:siN(r.avg), price:siN(r.price)}; });
-  let nAfter=0;
+  let nAfter=0, kas=snap?siN(snap.kas):0;
   [...d.tx].sort(siCmp).forEach(t=>{
     if(!siAfter(t,snap)) return; nAfter++;
-    if(t.type==='topup' && t.code){ pos[t.code]={code:t.code, lot:1, avg:siN(t.amount), price:siN(t.amount), tenor:t.tenor, rate:t.rate, aro:t.aro!==false, start:t.date}; }
-    else if(t.type==='tarik' && t.code){ delete pos[t.code]; }
+    const a=siN(t.amount);
+    if(t.type==='topup') kas+=a; else if(t.type==='tarik') kas-=a; else if(t.type==='dividen') kas+=a;
+    else if(t.type==='beli' && t.code){ kas-=a; pos[t.code]={code:t.code, lot:1, avg:a, price:a, tenor:t.tenor, rate:t.rate, aro:t.aro!==false, start:t.date}; }
+    else if(t.type==='jual' && t.code){ kas+=a; delete pos[t.code]; }
   });
   const list=Object.values(pos).map(p=>{ const v=p.price, cost=p.avg, due=depoNextDue(p); return {...p, v, cost, pl:v-cost, pp:cost>0?(v-cost)/cost*100:0, due, est:v*siN(p.rate)/100/12*(1-SI_TAX)}; });
-  return {snap, list, kas:0, kasIdr:0, kurs:1, nAfter};
+  return {snap, list, kas, kasIdr:0, kurs:1, nAfter};
 }
 function depoSummary(){
   const d=siData(), P=depoPositions(), X=n=>n;
   const sum=type=>d.tx.filter(t=>t.type===type).reduce((a,t)=>a+siN(t.amount),0);
   const setor=sum('topup')-sum('tarik'), div=sum('dividen');
-  const realized=d.tx.filter(t=>t.type==='tarik').reduce((a,t)=>a+siN(t.pl),0);
+  const realized=d.tx.filter(t=>t.type==='jual').reduce((a,t)=>a+siN(t.pl),0);
   const mv=P.list.reduce((a,r)=>a+r.v,0), floating=P.list.reduce((a,r)=>a+r.pl,0), cost=P.list.reduce((a,r)=>a+r.cost,0);
-  const nilai=mv, ret=nilai+div-setor, other=ret-floating-div-realized;
+  const nilai=mv+P.kas, ret=nilai-setor, other=ret-floating-div-realized;
   const est=P.list.reduce((a,r)=>a+r.est,0);
   const Y=today().slice(0,4);
   return {P,X,setor,div,realized,mv,floating,cost,nilai,ret,retPct:setor>0?ret/setor*100:0,other,est,Y};
@@ -4336,15 +4339,15 @@ function depoRender(box){
   const green='#059669', red='#dc2626';
   const avgRate=M.mv?P.list.reduce((a,r)=>a+r.v*siN(r.rate),0)/M.mv:0;
   const kpi=`<div class="it-kpis si-kpis">
-    ${k('Total Setor Bersih','Rp '+fmt(M.setor),'Penempatan − Pencairan','#8b5cf6')}
-    ${k('Nilai Sekarang','Rp '+fmt(M.nilai),P.list.length+' deposito aktif · pokok '+siJt(M.cost),'#3b82f6')}
-    ${k('Return Total',siSg(M.ret)+'Rp '+fmt(Math.abs(M.ret))+` <span style="font-size:12px">(${siPct(M.retPct)})</span>`,'Bunga bersih pajak sejak data dicatat',M.ret<0?red:green,M.ret<0?red:green)}
+    ${k('Total Setor Bersih','Rp '+fmt(M.setor),'Setor − Tarik (rekening pribadi)','#8b5cf6')}
+    ${k('Nilai Sekarang','Rp '+fmt(M.nilai),'Deposito '+siJt(M.mv)+' · Kas tabungan '+siJt(P.kas),'#3b82f6')}
+    ${k('Return Total',siSg(M.ret)+'Rp '+fmt(Math.abs(M.ret))+` <span style="font-size:12px">(${siPct(M.retPct)})</span>`,'Nilai Sekarang − Total Setor Bersih','#10b981',M.ret<0?red:green)}
     ${k('Estimasi Bunga / Bulan','+Rp '+fmt(M.est),'bersih pajak 20% · rata-rata '+depoRate(avgRate)+' p.a.','#10b981',green)}
   </div>`;
   const stale = P.snap ? depoDays(P.snap.date)*-1 : null;
   const soon = P.list.filter(r=>r.due && depoDays(r.due)>=0 && depoDays(r.due)<=30).sort((a,b)=>a.due<b.due?-1:1);
   const warn = (!P.snap ? `<div class="it-warn">Belum ada data deposito. Klik <b>Update Saldo</b>.</div>` : (stale>35 ? `<div class="it-warn">⏰ Update Saldo terakhir ${siDl(P.snap.date)} (${stale} hari lalu). Waktunya update dari aplikasi Superbank.</div>` : ''))
-    + (P.nAfter ? `<div class="it-warn" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af">ℹ️ Ada ${P.nAfter} penempatan/pencairan sesudah update terakhir — daftar deposito sudah ikut menyesuaikan, saldo masih dari ${siDl(P.snap.date)}.</div>` : '')
+    + (P.nAfter ? `<div class="it-warn" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af">ℹ️ Ada ${P.nAfter} transaksi sesudah update terakhir — daftar deposito & kas sudah ikut menyesuaikan, saldo masih dari ${siDl(P.snap.date)}.</div>` : '')
     + (soon.length ? `<div class="it-warn" style="background:#fffbeb;border-color:#fde68a;color:#92400e">🔔 ${soon.length} deposito jatuh tempo dalam 30 hari: ${soon.map(r=>`${siEsc(r.code)} (${siDl(r.due)}${r.aro!==false?', ARO':''})`).join(', ')}</div>` : '');
   const cols=[['c','Deposito','l'],['tenor','Tenor'],['rate','Bunga'],['cost','Pokok'],['v','Saldo'],['pl','Bunga Tertahan'],['due','Jatuh Tempo'],['est','Est. / Bulan']];
   const key=siSort.k==='c'?'c':(['tenor','rate','cost','v','pl','due','est'].includes(siSort.k)?siSort.k:'v');
@@ -4359,25 +4362,25 @@ function depoRender(box){
   const last=(f,n)=>d.tx.filter(f).sort(siCmp).reverse().slice(0,n);
   const row=(l,v,c)=>`<div class="si-rr"><span>${l}</span><span class="${c||''}">${v}</span></div>`;
   const card=(title,total,tc,body,tab)=>`<div class="si-rc"><div class="si-rh"><span>${title}</span><span class="${tc||''}">${total}</span></div>${body||'<div class="si-empty">Belum ada catatan</div>'}<div class="si-more" onclick="openSiAll('${tab}')">Lihat Semua →</div></div>`;
-  const tops=d.tx.filter(t=>t.type==='topup'), tars=d.tx.filter(t=>t.type==='tarik');
-  const penRows=last(t=>t.type==='topup',4).map(t=>row(`${siDl(t.date)} · ${t.id.endsWith('-awal')||/saldo awal/i.test(t.note||'')?'Saldo Awal':siEsc(t.code||'')}`,'+'+fmt(t.amount))).join('');
-  const cairRows=last(t=>t.type==='tarik',4).map(t=>row(`${siDl(t.date)} · ${siEsc(t.code||'')}`,'−'+fmt(t.amount),'si-dn')).join('');
+  const setRows=last(t=>t.type==='topup'||t.type==='tarik',4).map(t=>row(`${siDl(t.date)} · ${t.type==='topup'?'Setor':'Tarik'}`,(t.type==='tarik'?'−':'+')+fmt(t.amount),t.type==='tarik'?'si-dn':'')).join('');
+  const pcRows=last(t=>t.type==='beli'||t.type==='jual',4).map(t=>row(`${siDl(t.date)} · ${t.type==='beli'?'Tempatkan':'Cairkan'} ${siEsc(t.code||'')}`,(t.type==='jual'?'−':'+')+siJt(t.amount),t.type==='jual'?'si-dn':'')).join('');
   const bungaRows=[...P.list].sort((a,b)=>b.pl-a.pl).slice(0,3).map(r=>row(`Tertahan · ${siEsc(r.code)}`,siSg(r.pl)+fmt(Math.abs(r.pl)),siCls(r.pl))).join('')
     + row('Ikut cair saat pencairan',siSg(M.realized)+fmt(Math.abs(M.realized)),siCls(M.realized))
-    + (Math.abs(M.other)>=1 ? row('Lain-lain / pembulatan <span class="si-info" title="Selisih: Return − bunga tertahan − bunga ikut cair − bunga dibayar.">ⓘ</span>',siSg(M.other)+fmt(Math.abs(M.other)),siCls(M.other)) : '');
-  const rinc=`<div class="it-card si-card"><div class="si-head"><h4>🧾 Rincian</h4><span class="si-mut">Return ${siSg(M.ret)}Rp ${fmt(Math.abs(M.ret))} = Bunga tertahan ${siSg(M.floating)}${siJt(Math.abs(M.floating))} + Bunga ikut cair ${siSg(M.realized)}${siJt(Math.abs(M.realized))}${M.div?' + Bunga dibayar +'+siJt(M.div):''}${Math.abs(M.other)>=1?' + lain-lain '+siSg(M.other)+fmt(Math.abs(M.other)):''}</span></div>
+    + (M.div ? row('Bunga tabungan & hadiah','+'+fmt(M.div),'si-up') : '')
+    + (Math.abs(M.other)>=100 ? row('Lain-lain / pembulatan <span class="si-info" title="Selisih: Return − bunga tertahan − bunga ikut cair − bunga tabungan & hadiah.">ⓘ</span>',siSg(M.other)+fmt(Math.abs(M.other)),siCls(M.other)) : '');
+  const rinc=`<div class="it-card si-card"><div class="si-head"><h4>🧾 Rincian</h4><span class="si-mut">Return ${siSg(M.ret)}Rp ${fmt(Math.abs(M.ret))} = Bunga tertahan ${siSg(M.floating)}${siJt(Math.abs(M.floating))} + Bunga ikut cair ${siSg(M.realized)}${siJt(Math.abs(M.realized))}${M.div?' + Bunga tabungan & hadiah +'+siJt(M.div):''}${Math.abs(M.other)>=100?' + lain-lain '+siSg(M.other)+fmt(Math.abs(M.other)):''}</span></div>
     <div class="si-rgrid">
-      ${card('Penempatan','Rp '+fmt(tops.reduce((a,t)=>a+siN(t.amount),0)),'',penRows,'setoran')}
-      ${card('Pencairan','Rp '+fmt(tars.reduce((a,t)=>a+siN(t.amount),0)),'si-dn',cairRows,'jual')}
+      ${card('Setoran','Rp '+fmt(M.setor),'',setRows,'setoran')}
+      ${card('Penempatan & Pencairan',P.list.length+' aktif','',pcRows,'beli')}
       ${card('Bunga',siSg(M.ret)+'Rp '+fmt(Math.abs(M.ret)),siCls(M.ret),bungaRows,'dividen')}
     </div></div>`;
   box.innerHTML=`<div class="it-bar"><div class="si-mut">${P.snap?'Update terakhir '+siDl(P.snap.date):''}</div>
     <div style="display:flex;gap:8px"><button class="btn" onclick="openSiTx()">＋ Catat Transaksi</button><button class="btn btn-primary" onclick="openSiUpdate()">🔄 Update Saldo</button></div></div>
     ${warn}${kpi}${port}${rinc}
-    <p class="si-foot">Saldo = pokok + bunga bersih yang tertahan (deposito ARO menambah bunga ke saldo) · Return = Saldo semua deposito − (Penempatan − Pencairan) · Estimasi bunga = saldo × bunga p.a. ÷ 12 × 80% · Update Saldo otomatis mengisi nilai Deposito (Superbank) di menu Investasi; Kas di menu Investasi tidak diubah · versi Deposito v25</p>`;
+    <p class="si-foot">Setor/Tarik = uang dari/ke rekening pribadi · Penempatan/Pencairan = perpindahan di dalam Superbank (tabungan ↔ deposito) · Saldo deposito = pokok + bunga bersih yang tertahan · Return = (Deposito + Kas tabungan) − Total Setor Bersih · Estimasi bunga = saldo × bunga p.a. ÷ 12 × 80% · Update Saldo & Setor/Tarik otomatis mengisi baris Deposito (Superbank) di menu Investasi · versi Deposito v26</p>`;
 }
 // ── Catat Transaksi (Deposito) ──
-const DEPO_TYPES=[['topup','Penempatan'],['tarik','Pencairan'],['dividen','Bunga Dibayar']];
+const DEPO_TYPES=[['topup','Setor'],['tarik','Tarik'],['beli','Penempatan'],['jual','Pencairan'],['dividen','Bunga Tabungan']];
 function depoRenderTx(t){
   t=t||{};
   const P=depoPositions(), isEdit=!!siTxEdit, type=siTxType;
@@ -4385,21 +4388,24 @@ function depoRenderTx(t){
   const date=siLab('Tanggal',`<input id="sit-date" type="date" value="${t.date||today()}">`);
   const fv=n=>n==null||n===''?'':fmt(n);
   const codes=[...new Set([...P.list.map(r=>r.code),...(t.code?[t.code]:[])])];
-  const rek=(lbl)=>siLab(lbl,`<select id="sit-rek">${siRekOptions(isEdit?(t.rek||''):'')}</select>`);
+  const rek=(lbl)=>siLab(lbl,`<select id="sit-rek">${siRekOptions(isEdit?(t.rek||''):siDefaultRek())}</select>`);
   let f='';
-  if(type==='topup') f=`<div class="form-grid">${date}${siLab('No. Deposito',`<input id="sit-code" type="text" value="${siEsc(t.code||'')}" placeholder="No. 0500…">`)}
+  if(type==='topup'||type==='tarik') f=`<div class="form-grid">${date}${siLab('Nominal',siInp('sit-amt',fv(t.amount)))}
+    ${rek(type==='topup'?'Dari Rekening':'Ke Rekening')}${siLab('Catatan (opsional)',`<input id="sit-note" type="text" value="${siEsc(t.note||'')}">`)}</div>
+    <div class="si-note">ℹ️ ${type==='topup'?'Uang dari rekening pribadi masuk ke tabungan Superbank. Menambah Total Setor & Tambahan Modal Deposito di menu Investasi, dan otomatis dicatat di <b>Transfer Dana</b>.':'Uang dari tabungan Superbank keluar ke rekening pribadi. Mengurangi Total Setor bersih, dan otomatis dicatat di <b>Transfer Dana</b>.'}</div>`;
+  else if(type==='beli') f=`<div class="form-grid">${date}${siLab('No. Deposito',`<input id="sit-code" type="text" value="${siEsc(t.code||'')}" placeholder="No. 0500…">`)}
     ${siLab('Pokok',siInp('sit-amt',fv(t.amount),'oninput="siTxPreview()"'))}${siLab('Bunga (% p.a.)',siInp('sit-rate',t.rate?siFmtDec(t.rate):'','oninput="siTxPreview()" placeholder="7,50"'))}
     ${siLab('Tenor',`<select id="sit-tenor" onchange="siTxPreview()">${[1,3,6,12].map(n=>`<option value="${n}" ${siN(t.tenor||1)===n?'selected':''}>${n} bulan</option>`).join('')}</select>`)}
     ${siLab('Perpanjang Otomatis (ARO)',`<select id="sit-aro"><option value="1" ${t.aro!==false?'selected':''}>Ya</option><option value="0" ${t.aro===false?'selected':''}>Tidak</option></select>`)}
-    ${rek('Dana dari luar Superbank? (Transfer Dana)')}${siLab('Catatan (opsional)',`<input id="sit-note" type="text" value="${siEsc(t.note||'')}">`)}</div>
+    ${siLab('Catatan (opsional)',`<input id="sit-note" type="text" value="${siEsc(t.note||'')}">`,1)}</div>
     <div class="si-note" id="sit-prev"></div>`;
-  else if(type==='tarik') f=`<div class="form-grid">${date}${siLab('No. Deposito',`<select id="sit-code" onchange="siTxPreview()">${codes.map(c=>`<option ${c===t.code?'selected':''}>${siEsc(c)}</option>`).join('')}</select>`)}
+  else if(type==='jual') f=`<div class="form-grid">${date}${siLab('No. Deposito',`<select id="sit-code" onchange="siTxPreview()">${codes.map(c=>`<option ${c===t.code?'selected':''}>${siEsc(c)}</option>`).join('')}</select>`)}
     ${siLab('Total Diterima (pokok + bunga)',siInp('sit-amt',fv(t.amount),'oninput="siTxPreview()"'))}${siLab('Bunga ikut cair',siInp('sit-pl',t.pl==null?'':fmt(t.pl),'placeholder="kosong = diterima − pokok"'))}
-    ${rek('Dana keluar dari Superbank? (Transfer Dana)')}${siLab('Catatan (opsional)',`<input id="sit-note" type="text" value="${siEsc(t.note||'')}">`)}</div>
+    ${siLab('Catatan (opsional)',`<input id="sit-note" type="text" value="${siEsc(t.note||'')}">`,1)}</div>
     <div class="si-note" id="sit-prev"></div>`;
-  else f=`<div class="form-grid">${date}${siLab('No. Deposito',`<select id="sit-code">${codes.map(c=>`<option ${c===t.code?'selected':''}>${siEsc(c)}</option>`).join('')}</select>`)}
-    ${siLab('Bunga Bersih Dibayar ke Tabungan',siInp('sit-amt',fv(t.amount)),1)}</div>
-    <div class="si-note">ℹ️ Hanya untuk deposito yang bunganya dibayar ke tabungan (tidak menambah saldo deposito). Bunga ARO yang masuk ke saldo cukup lewat Update Saldo.</div>`;
+  else f=`<div class="form-grid">${date}${siLab('Jenis',`<select id="sit-code"><option value="TABUNGAN" ${t.code!=='HADIAH'?'selected':''}>Bunga tabungan</option><option value="HADIAH" ${t.code==='HADIAH'?'selected':''}>Hadiah / bonus</option></select>`)}
+    ${siLab('Nilai Bersih (setelah pajak)',siInp('sit-amt',fv(t.amount)),1)}</div>
+    <div class="si-note">ℹ️ Bunga tabungan biasanya kecil; boleh dilewati — saat Update Saldo, selisihnya masuk ke Kas tabungan.</div>`;
   siModal('siTxModal',`<div class="modal-title">${isEdit?'Ubah Transaksi':'＋ Catat Transaksi'} · Deposito</div>
     <div class="modal-sub">Angka boleh pakai titik ribuan; desimal pakai koma.</div>
     <div class="si-chips">${chips}</div>${f}<div class="si-err" id="sit-err"></div>
@@ -4409,10 +4415,10 @@ function depoRenderTx(t){
 function depoTxPreview(){
   const box=document.getElementById('sit-prev'); if(!box) return;
   const g=id=>(document.getElementById(id)||{}).value||'';
-  if(siTxType==='topup'){
+  if(siTxType==='beli'){
     const amt=invNum(g('sit-amt'))||0, rate=invNum(g('sit-rate'))||0, ten=siN(g('sit-tenor'))||1, dt=g('sit-date');
     box.innerHTML=`🧮 Jatuh tempo <b>${invIsDate(dt)?siDl(depoAddMonths(dt,ten)):'—'}</b> · estimasi bunga bersih <b>Rp ${fmt(amt*rate/100/12*(1-SI_TAX))}/bulan</b> (pajak 20%)`;
-  } else if(siTxType==='tarik'){
+  } else if(siTxType==='jual'){
     const p=siWith(SIC,()=>{ const d=siData(), keep=d.tx; d.tx=keep.filter(x=>x.id!==siTxEdit); const P=depoPositions(); d.tx=keep; return P; }).list.find(r=>r.code===g('sit-code'));
     const amt=invNum(g('sit-amt'));
     box.innerHTML = p ? `Pokok <b>${fmt(p.cost)}</b> · saldo terakhir ${fmt(p.v)}${amt?` · bunga ikut cair <b class="si-up">${fmt(amt-p.cost)}</b>`:''}` : 'Pilih deposito yang aktif.';
@@ -4422,15 +4428,17 @@ function depoSaveTx(){
   const g=id=>(document.getElementById(id)||{}).value||'', err=m=>{ document.getElementById('sit-err').textContent=m; };
   const T=siTxType, date=g('sit-date'), code=String(g('sit-code')).trim(), amt=invNum(g('sit-amt'));
   if(!invIsDate(date)) return err('Tanggal belum diisi.');
-  if(!code) return err('No. deposito belum diisi.');
+  if((T==='beli'||T==='jual') && !code) return err('No. deposito belum diisi.');
   if(!(amt>0)) return err('Nominal belum diisi.');
   const d=siData(), old=siTxEdit?d.tx.find(x=>x.id===siTxEdit):null;
   const t=old||{id:siUid(T), ts:Date.now()};
-  Object.assign(t,{date,type:T,code,amount:Math.round(amt),note:String(g('sit-note')).trim()});
-  ['tenor','rate','aro','pl','rek'].forEach(k=>delete t[k]);
-  if(T==='topup'){ t.tenor=siN(g('sit-tenor'))||1; t.rate=invNum(g('sit-rate'))||0; t.aro=g('sit-aro')!=='0'; t.rek=g('sit-rek'); }
-  if(T==='tarik'){ const P=siWith(SIC,()=>{ const keep=d.tx; d.tx=keep.filter(x=>x.id!==t.id); const r=depoPositions(); d.tx=keep; return r; }); const p=P.list.find(r=>r.code===code);
-    const plTxt=g('sit-pl').trim(); t.pl=plTxt!==''?Math.round(invNum(plTxt)||0):Math.round(amt-(p?p.cost:amt)); t.rek=g('sit-rek'); }
+  Object.assign(t,{date,type:T,amount:Math.round(amt),note:String(g('sit-note')).trim()});
+  ['code','tenor','rate','aro','pl','rek'].forEach(k=>delete t[k]);
+  if(T!=='topup'&&T!=='tarik') t.code=code;
+  if(T==='topup'||T==='tarik'){ t.rek=g('sit-rek'); d.lastRek=t.rek; }
+  if(T==='beli'){ t.tenor=siN(g('sit-tenor'))||1; t.rate=invNum(g('sit-rate'))||0; t.aro=g('sit-aro')!=='0'; }
+  if(T==='jual'){ const P=siWith(SIC,()=>{ const keep=d.tx; d.tx=keep.filter(x=>x.id!==t.id); const r=depoPositions(); d.tx=keep; return r; }); const p=P.list.find(r=>r.code===code);
+    const plTxt=g('sit-pl').trim(); t.pl=plTxt!==''?Math.round(invNum(plTxt)||0):Math.round(amt-(p?p.cost:amt)); }
   if(!old) d.tx.push(t);
   siSyncTransfer(t); siSyncTopup(t.date); if(siTxOldDate && siTxOldDate!==t.date) siSyncTopup(siTxOldDate);
   persist(); closeModal('siTxModal'); siRender(); siRefreshAll();
@@ -4440,11 +4448,11 @@ function depoOpenUpdate(snapId){
   const d=siData(), edit=snapId?d.snaps.find(s=>s.id===snapId):null, P=depoPositions();
   siUpdRows = edit ? edit.rows.map(r=>({...r})) : P.list.sort((a,b)=>b.v-a.v).map(r=>({code:r.code,lot:1,avg:r.avg,price:r.price,tenor:r.tenor,rate:r.rate,start:r.start,aro:r.aro}));
   siModal('siUpdModal',`<div class="modal-title">🔄 ${edit?'Ubah':'Update'} Saldo · Deposito</div>
-    <div class="modal-sub">Buka aplikasi Superbank → Deposito. Isi <b>Saldo Sekarang</b> tiap deposito (pokok + bunga yang sudah masuk). Pokok & bunga % sudah terisi; ubah hanya kalau beda. Deposito yang sudah cair, hapus barisnya (atau catat Pencairan).</div>
+    <div class="modal-sub">Buka aplikasi Superbank → Deposito. Isi <b>Saldo Sekarang</b> tiap deposito (pokok + bunga yang sudah masuk) dan <b>Kas Tabungan</b>. Pokok & bunga % sudah terisi; ubah hanya kalau beda. Deposito yang sudah cair, hapus barisnya (atau catat Pencairan).</div>
     <div class="form-grid" style="grid-template-columns:180px 1fr">${siLab('Tanggal',`<input id="siu-date" type="date" value="${edit?edit.date:today()}">`)}<div></div></div>
     <div class="si-scroll"><table class="si-tbl si-upd"><thead><tr><th class="si-l">No. Deposito</th><th>Pokok</th><th>Bunga % p.a.</th><th>Saldo Sekarang</th><th>Bunga Tertahan</th><th></th></tr></thead><tbody id="siu-body"></tbody></table></div>
     <button class="btn" style="margin-top:8px" onclick="siUpdAdd()">＋ Tambah Deposito</button>
-    <div class="form-grid" style="margin-top:14px">${siLab('Total deposito di Superbank (opsional)',siInp('siu-ipot',edit&&edit.total?fmt(edit.total):'','oninput="siUpdCheck()" placeholder="untuk cek selisih"'),1)}</div>
+    <div class="form-grid" style="margin-top:14px">${siLab('Kas Tabungan Superbank',siInp('siu-kas',fmt(edit?siN(edit.kas):Math.round(P.kas)),'oninput="siUpdCheck()"'))}${siLab('Total saldo di Superbank (opsional)',siInp('siu-ipot',edit&&edit.total?fmt(edit.total):'','oninput="siUpdCheck()" placeholder="untuk cek selisih"'))}</div>
     <div id="siu-check" class="si-note"></div><div class="si-err" id="siu-err"></div>
     <div class="modal-foot">${edit?`<button class="btn" style="margin-right:auto;color:var(--red)" onclick="siDelSnap('${edit.id}')">Hapus Update</button>`:''}<button class="btn" onclick="closeModal('siUpdModal')">Batal</button><button class="btn btn-primary" onclick="saveSiUpdate(${edit?`'${edit.id}'`:'null'})">Simpan</button></div>`, 720);
   siUpdDraw();
@@ -4452,19 +4460,19 @@ function depoOpenUpdate(snapId){
 function depoUpdDraw(b){
   b.innerHTML=siUpdRows.map((r,i)=>`<tr>
     <td class="si-l">${r.isNew?`<input id="siu-c${i}" value="${siEsc(r.code||'')}" placeholder="No. 0500…" style="width:150px">`:`<b>${siEsc(r.code)}</b><br><span class="si-mut">${r.tenor?r.tenor+' bln':''}${r.aro!==false?' · ARO':''}</span>`}</td>
-    <td><input id="siu-a${i}" style="min-width:125px" value="${r.avg==null||r.avg===''?'':fmt(r.avg)}" inputmode="numeric" onfocus="this.select()" oninput="siUpdCheck()"></td>
-    <td><input id="siu-l${i}" style="max-width:80px" value="${r.rate?siFmtDec(r.rate):''}" inputmode="decimal" onfocus="this.select()" oninput="siUpdCheck()" placeholder="7,50"></td>
-    <td><input id="siu-p${i}" class="si-hl" style="min-width:125px" value="${r.price==null||r.price===''?'':fmt(r.price)}" inputmode="numeric" onfocus="this.select()" oninput="siUpdCheck()"></td>
+    <td><input id="siu-a${i}" value="${r.avg==null||r.avg===''?'':fmt(r.avg)}" inputmode="numeric" onfocus="this.select()" oninput="siUpdCheck()"></td>
+    <td><input id="siu-l${i}" value="${r.rate?siFmtDec(r.rate):''}" inputmode="decimal" onfocus="this.select()" oninput="siUpdCheck()" placeholder="7,50"></td>
+    <td><input id="siu-p${i}" class="si-hl" value="${r.price==null||r.price===''?'':fmt(r.price)}" inputmode="numeric" onfocus="this.select()" oninput="siUpdCheck()"></td>
     <td id="siu-v${i}" class="si-mut"></td>
     <td><span class="si-x" title="Hapus baris (deposito sudah cair)" onclick="siUpdDel(${i})">✕</span></td></tr>`).join('');
   siUpdCheck();
 }
 function depoUpdSync(){ siUpdRows.forEach((r,i)=>{ const g=id=>(document.getElementById(id)||{}).value; const c=document.getElementById('siu-c'+i); if(c) r.code=c.value.trim(); r.avg=invNum(g('siu-a'+i)); r.rate=invNum(g('siu-l'+i)); r.price=invNum(g('siu-p'+i)); }); }
 function depoUpdCheck(){
-  depoUpdSync(); let tot=0;
+  depoUpdSync(); let tot=invNum((document.getElementById('siu-kas')||{}).value)||0;
   siUpdRows.forEach((r,i)=>{ tot+=r.price||0; const c=document.getElementById('siu-v'+i); if(c) c.textContent=(r.price&&r.avg)?fmt(r.price-r.avg):''; });
   const ipot=invNum((document.getElementById('siu-ipot')||{}).value), box=document.getElementById('siu-check'); if(!box) return;
-  if(ipot==null){ box.className='si-note'; box.innerHTML=`Total saldo deposito <b>Rp ${fmt(tot)}</b>.`; return; }
+  if(ipot==null){ box.className='si-note'; box.innerHTML=`Total saldo (deposito + kas) <b>Rp ${fmt(tot)}</b>. Isi Total saldo di Superbank untuk cek selisih.`; return; }
   const diff=tot-ipot;
   if(Math.abs(diff)<=1000){ box.className='si-note si-ok'; box.innerHTML=`✅ Cocok dengan Superbank · selisih Rp ${fmt(diff)}`; }
   else { box.className='si-note si-bad'; box.innerHTML=`⚠️ Selisih <b>${siSg(diff)}Rp ${fmt(Math.abs(diff))}</b> (aplikasi ${fmt(tot)} vs Superbank ${fmt(ipot)}).`; }
@@ -4480,41 +4488,45 @@ function depoSaveUpdate(editId){
     if(!(r.avg>0)) return err(`Pokok ${r.code} belum diisi.`); if(!(r.price>0)) return err(`Saldo ${r.code} belum diisi.`);
     rows.push({code:r.code,lot:1,avg:Math.round(r.avg),price:Math.round(r.price),tenor:r.tenor||null,rate:r.rate||0,start:r.start||null,aro:r.aro!==false});
   }
-  const ipot=invNum(document.getElementById('siu-ipot').value), d=siData();
+  const ipot=invNum(document.getElementById('siu-ipot').value), kas=invNum(document.getElementById('siu-kas').value)||0, d=siData();
   let snap = editId ? d.snaps.find(s=>s.id===editId) : d.snaps.find(s=>s.date===date);
   if(!editId && snap && !confirm(`Sudah ada Update Saldo tanggal ${siDl(date)}. Timpa?`)) return;
   if(snap && snap.date!==date) siSyncSnap(snap,true);
   if(!snap){ snap={id:siUid('snap')}; d.snaps.push(snap); }
-  Object.assign(snap,{date,ts:Date.now(),rows,kas:0,total:ipot==null?null:Math.round(ipot)});
+  Object.assign(snap,{date,ts:Date.now(),rows,kas:Math.round(kas),total:ipot==null?null:Math.round(ipot)});
   siSyncSnap(snap,false);
   persist(); closeModal('siUpdModal'); siRender(); siRefreshAll();
 }
 // ── Lihat Semua (Deposito) ──
 function depoRenderAll(){
   const d=siData(), M=depoSummary();
-  const tabs=[['setoran','Penempatan'],['jual','Pencairan'],['dividen','Bunga'],['update','Update Saldo']];
+  const tabs=[['setoran','Setoran'],['beli','Penempatan'],['jual','Pencairan'],['dividen','Bunga'],['update','Update Saldo']];
   const yrs=[...new Set([...d.tx.map(t=>t.date.slice(0,4)),...d.snaps.map(s=>s.date.slice(0,4))])].sort().reverse();
   const inY=dt=>siAllYear==='all'||dt.slice(0,4)===siAllYear;
   const ed=id=>`<span class="si-ic" title="Ubah" onclick="closeModal('siAllModal');openSiTx('${id}')">✏️</span><span class="si-ic" title="Hapus" onclick="siDelTx('${id}')">🗑️</span>`;
   const tx=f=>d.tx.filter(t=>f(t)&&inY(t.date)).sort(siCmp).reverse();
   let head='', body='', foot='';
-  if(siAllTab==='setoran'){ const L=tx(t=>t.type==='topup');
+  if(siAllTab==='setoran'){ const L=tx(t=>t.type==='topup'||t.type==='tarik'); const tot=L.reduce((a,t)=>a+(t.type==='tarik'?-1:1)*t.amount,0);
+    head='<th class="si-l">Tanggal</th><th class="si-l">Keterangan</th><th>Nominal</th><th></th>';
+    body=L.map(t=>`<tr><td class="si-l">${siDl(t.date)}</td><td class="si-l">${t.type==='topup'?'Setor':'Tarik'}${t.rek?` <span class="si-mut">· ${t.type==='topup'?'dari':'ke'} ${siEsc(t.rek)}</span>`:''}${t.note?` <span class="si-mut">· ${siEsc(t.note)}</span>`:''}</td><td class="${t.type==='tarik'?'si-dn':''}">${t.type==='tarik'?'−':'+'}${fmt(t.amount)}</td><td>${ed(t.id)}</td></tr>`).join('');
+    foot=`Setor bersih ${siAllYear==='all'?'':siAllYear+' '}<b>Rp ${fmt(tot)}</b> · ${L.length} catatan`; }
+  else if(siAllTab==='beli'){ const L=tx(t=>t.type==='beli');
     head='<th class="si-l">Tanggal</th><th class="si-l">No. Deposito</th><th>Tenor</th><th>Bunga</th><th>Pokok</th><th></th>';
     body=L.map(t=>`<tr><td class="si-l">${siDl(t.date)}</td><td class="si-l"><b>${siEsc(t.code||'')}</b>${t.note?` <span class="si-mut">· ${siEsc(t.note)}</span>`:''}</td><td>${t.tenor?t.tenor+' bln':'—'}</td><td>${depoRate(t.rate)}</td><td>+${fmt(t.amount)}</td><td>${ed(t.id)}</td></tr>`).join('');
     foot=`Total penempatan <b>Rp ${fmt(L.reduce((a,t)=>a+t.amount,0))}</b> · ${L.length} kali`; }
-  else if(siAllTab==='jual'){ const L=tx(t=>t.type==='tarik');
+  else if(siAllTab==='jual'){ const L=tx(t=>t.type==='jual');
     head='<th class="si-l">Tanggal</th><th class="si-l">No. Deposito</th><th>Diterima</th><th>Bunga Ikut Cair</th><th></th>';
     body=L.map(t=>`<tr><td class="si-l">${siDl(t.date)}</td><td class="si-l"><b>${siEsc(t.code||'')}</b>${t.note?` <span class="si-mut">· ${siEsc(t.note)}</span>`:''}</td><td class="si-dn">−${fmt(t.amount)}</td><td class="${siCls(t.pl)}">${siSg(t.pl||0)}${fmt(Math.abs(t.pl||0))}</td><td>${ed(t.id)}</td></tr>`).join('');
     foot=`Total pencairan <b>Rp ${fmt(L.reduce((a,t)=>a+t.amount,0))}</b> · bunga ikut cair <b class="si-up">+Rp ${fmt(L.reduce((a,t)=>a+siN(t.pl),0))}</b>`; }
   else if(siAllTab==='dividen'){ const P=M.P;
     head='<th class="si-l">Sumber</th><th class="si-l">No. Deposito</th><th>Bunga Bersih</th><th></th>';
     body=P.list.map(r=>`<tr><td class="si-l">Tertahan di saldo</td><td class="si-l"><b>${siEsc(r.code)}</b></td><td class="${siCls(r.pl)}">${siSg(r.pl)}${fmt(Math.abs(r.pl))}</td><td></td></tr>`).join('')
-      + tx(t=>t.type==='tarik'&&t.pl).map(t=>`<tr><td class="si-l">Ikut cair ${siDl(t.date)}</td><td class="si-l"><b>${siEsc(t.code)}</b></td><td class="si-up">+${fmt(t.pl)}</td><td>${ed(t.id)}</td></tr>`).join('')
-      + tx(t=>t.type==='dividen').map(t=>`<tr><td class="si-l">Dibayar ${siDl(t.date)}</td><td class="si-l"><b>${siEsc(t.code)}</b></td><td class="si-up">+${fmt(t.amount)}</td><td>${ed(t.id)}</td></tr>`).join('');
-    foot=`Total bunga bersih <b class="${siCls(M.ret)}">${siSg(M.ret)}Rp ${fmt(Math.abs(M.ret))}</b>`; }
+      + tx(t=>t.type==='jual'&&t.pl).map(t=>`<tr><td class="si-l">Ikut cair ${siDl(t.date)}</td><td class="si-l"><b>${siEsc(t.code)}</b></td><td class="si-up">+${fmt(t.pl)}</td><td>${ed(t.id)}</td></tr>`).join('')
+      + tx(t=>t.type==='dividen').map(t=>`<tr><td class="si-l">${t.code==='HADIAH'?'Hadiah':'Bunga tabungan'} ${siDl(t.date)}</td><td class="si-l">—</td><td class="si-up">+${fmt(t.amount)}</td><td>${ed(t.id)}</td></tr>`).join('');
+    foot=`Total bunga bersih & hadiah <b class="${siCls(M.ret)}">${siSg(M.ret)}Rp ${fmt(Math.abs(M.ret))}</b>`; }
   else { const L=d.snaps.filter(s=>inY(s.date)).sort(siCmp).reverse();
-    head='<th class="si-l">Tanggal</th><th>Deposito</th><th>Pokok</th><th>Total Saldo</th><th></th>';
-    body=L.map(s=>`<tr><td class="si-l">${siDl(s.date)}</td><td>${s.rows.length}</td><td>${fmt(s.rows.reduce((a,r)=>a+siN(r.avg),0))}</td><td><b>${fmt(s.rows.reduce((a,r)=>a+siN(r.price),0))}</b></td><td><span class="si-ic" title="Ubah" onclick="closeModal('siAllModal');openSiUpdate('${s.id}')">✏️</span></td></tr>`).join('');
+    head='<th class="si-l">Tanggal</th><th>Deposito</th><th>Saldo Deposito</th><th>Kas</th><th>Total</th><th></th>';
+    body=L.map(s=>{ const dv=s.rows.reduce((a,r)=>a+siN(r.price),0); return `<tr><td class="si-l">${siDl(s.date)}</td><td>${s.rows.length}</td><td>${fmt(dv)}</td><td>${fmt(siN(s.kas))}</td><td><b>${fmt(dv+siN(s.kas))}</b></td><td><span class="si-ic" title="Ubah" onclick="closeModal('siAllModal');openSiUpdate('${s.id}')">✏️</span></td></tr>`; }).join('');
     foot=`${L.length} kali update`; }
   const nc=(head.match(/<th/g)||[]).length;
   siModal('siAllModal',`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px"><div class="modal-title" style="margin:0">🧾 Rincian Deposito</div>
