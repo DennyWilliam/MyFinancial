@@ -1404,6 +1404,9 @@ function isVisibleOwner(ownerVal){
 }
 function visibleTx(){ return S.transactions.filter(t=>isVisibleOwner(t.owner)); }
 function visibleAssetItems(cat){ return (S.asetItems[cat]||[]).filter(i=>isVisibleOwner(i.owner)); }
+// Transfer milik siapa: transfer baru menyimpan owner; transfer lama (tanpa owner) dicocokkan lewat nama saja seperti sebelumnya
+function trFor(t, owner){ return t && t.owner ? t.owner===(owner||'Denny') : true; }
+function findVisibleItem(cat, name){ const L=S.asetItems&&S.asetItems[cat]||[]; return L.find(i=>i.name===name&&isVisibleOwner(i.owner)); }
 
 function applyOwnerTheme(){
   document.body.classList.toggle('owner-lauren', activeOwner==='Lauren');
@@ -3254,7 +3257,7 @@ function renderTransferList(){
   const visibleNames = new Set();
   if(S.asetItems) Object.keys(S.asetItems).forEach(cat=>visibleAssetItems(cat).forEach(i=>visibleNames.add(i.name)));
   const transfers = [...(S.transfers||[])]
-    .filter(t=>visibleNames.has(t.fromName||t.from)||visibleNames.has(t.toName||t.to))
+    .filter(t=>t.owner ? t.owner===activeOwner : (visibleNames.has(t.fromName||t.from)||visibleNames.has(t.toName||t.to)))
     .sort((a,b)=>b.date.localeCompare(a.date));
   if(!transfers.length){
     tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text3)">Belum ada riwayat transfer</td></tr>';
@@ -3291,7 +3294,7 @@ function saveTransfer(){
   if(fromName===toName){ alert('Dari dan Ke tidak boleh sama!'); return; }
   if(!amount){ alert('Isi jumlah!'); return; }
   if(!S.transfers) S.transfers=[];
-  const tr={date, fromName, toName, amount, note};
+  const tr={date, fromName, toName, amount, note, owner:activeOwner};
   S.transfers.push(tr);
   try{ siFromTransfer(tr); }catch(e){ console.error(e); }
   // reset form
@@ -3320,7 +3323,7 @@ function saveAsetAdd(){
   if(!name){ alert('Isi nama akun!'); return; }
   if(!S.asetItems) S.asetItems={};
   if(!S.asetItems[sec]) S.asetItems[sec]=[];
-  if(S.asetItems[sec].find(i=>i.name===name)){ alert('Nama sudah ada!'); return; }
+  if(S.asetItems[sec].find(i=>i.name===name&&isVisibleOwner(i.owner))){ alert('Nama sudah ada!'); return; }
 
   // Build history from main value + historical rows
   const history = [];
@@ -3425,7 +3428,7 @@ function saveInlineAset(){
 
   if(!S.asetItems) S.asetItems = {};
   if(!S.asetItems[cat]) S.asetItems[cat] = [];
-  if(S.asetItems[cat].find(i=>i.name===name)){
+  if(S.asetItems[cat].find(i=>i.name===name&&isVisibleOwner(i.owner))){
     alert('Nama sudah ada di kategori ini!'); return;
   }
 
@@ -3601,7 +3604,7 @@ function migrateInvTopups(){
     if(!INV_TRACK_NAMES.includes(String(cat).toLowerCase())) return;
     (S.asetItems[cat]||[]).forEach(item=>{
       (S.transfers||[]).forEach(t=>{
-        if(!t.date||t.date.slice(0,7)<=INV_START_MONTH) return;
+        if(!t.date||t.date.slice(0,7)<=INV_START_MONTH||!trFor(t,item.owner)) return;
         const amt=(t.toName===item.name?1:0)*(t.amount||0)-(t.fromName===item.name?1:0)*(t.amount||0);
         if(!amt) return;
         const mo=t.date.slice(0,7), key = mo<nowM ? invMonthEnd(mo) : t.date;
@@ -3623,7 +3626,14 @@ function fixPluangTopupDates(){
     [['2026-09-11','2026-09-30'],['2026-10-23','2026-10-31']].forEach(([a,b])=>{ if(a in tp && b in tp && tp[a]===tp[b]){ delete tp[a]; ch=true; } }); });
   if(ch) persist();
 }
-function runInvMigrations(){ migrateInvestasi(); shiftInvOctToSep(); migrateInvDates(); migrateInvTopups(); seedSahamIndo(); fixPluangTopupDates(); }
+// Transfer lama belum punya owner: tetapkan dari pemilik akun yang namanya cocok (nama masih unik saat migrasi ini dibuat)
+function migrateTransferOwner(){
+  let ch=false; const own={};
+  Object.keys(S.asetItems||{}).forEach(c=>(S.asetItems[c]||[]).forEach(i=>{ if(i&&i.name){ (own[i.name]=own[i.name]||new Set()).add(i.owner||'Denny'); } }));
+  (S.transfers||[]).forEach(t=>{ if(t.owner) return; const o=new Set([...(own[t.fromName]||[]),...(own[t.toName]||[])]); t.owner=(o.size===1&&o.has('Lauren'))?'Lauren':'Denny'; ch=true; });
+  if(ch) persist();
+}
+function runInvMigrations(){ migrateInvestasi(); shiftInvOctToSep(); migrateInvDates(); migrateInvTopups(); seedSahamIndo(); fixPluangTopupDates(); migrateTransferOwner(); }
 
 // ── Hitung seluruh seri (kolom = tanggal update) ──
 function invSeries(){
@@ -3977,7 +3987,7 @@ function siSyncTransfer(t){
   if(!S.transfers) S.transfers=[];
   const i=S.transfers.findIndex(x=>x.siId===t.id), own=siInvItem();
   if(!t._del && (t.type==='topup'||t.type==='tarik') && t.rek && own){
-    const o={date:t.date, fromName:t.type==='topup'?t.rek:own.name, toName:t.type==='topup'?own.name:t.rek, amount:Math.round(t.amount), note:t.note||(t.type==='topup'?'Top Up ':'Tarik ')+SIC.name, siId:t.id};
+    const o={date:t.date, fromName:t.type==='topup'?t.rek:own.name, toName:t.type==='topup'?own.name:t.rek, amount:Math.round(t.amount), note:t.note||(t.type==='topup'?'Top Up ':'Tarik ')+SIC.name, siId:t.id, owner:activeOwner};
     if(i>=0) S.transfers[i]=o; else S.transfers.push(o);
   } else if(i>=0) S.transfers.splice(i,1);
 }
@@ -4821,7 +4831,7 @@ function renderAsetRangkuman(){
             const v = isFuture ? 0 : getAcctMonthVal(cat,item.name,m);
             const last = m===nowM;
             // Get transfers for this month for this account
-            const monthTransfers = (S.transfers||[]).filter(t=>t.date&&t.date.slice(0,7)===m&&(t.toName===item.name||t.fromName===item.name));
+            const monthTransfers = (S.transfers||[]).filter(t=>t.date&&t.date.slice(0,7)===m&&trFor(t,item.owner)&&(t.toName===item.name||t.fromName===item.name));
             return `<td style="text-align:right;padding:10px 16px;font-size:13px;font-weight:${last?'500':'400'};color:var(--text);font-family:var(--mono)">
               <span style="cursor:pointer" onclick="editMonthVal('${cat}',${realIdx},'${m}')" title="Klik untuk edit nilai bulan ${m}">
                 ${v?'Rp '+fmt(v):'<span style="color:var(--text3)">—</span>'}
@@ -4854,7 +4864,7 @@ function renderAsetRangkuman(){
 
 function showTransferPopup(cat, acctName, month){
   const transfers = (S.transfers||[]).filter(t=>
-    t.date && t.date.slice(0,7)===month &&
+    t.date && t.date.slice(0,7)===month && trFor(t,activeOwner) &&
     (t.toName===acctName || t.fromName===acctName)
   );
   const panel = document.getElementById('aset-detail-panel');
@@ -4920,14 +4930,14 @@ function addHistRow(){
 
 // Nilai akun pada suatu bulan = nilai manual terakhir (<= bulan itu) + transfer masuk - transfer keluar sejak bulan itu
 function acctMonthVal(catName, acctName, month){
-  const acct = (S.asetItems[catName]||[]).find(i=>i.name===acctName);
+  const acct = findVisibleItem(catName, acctName);
   if(!acct) return 0;
   const entries = (acct.monthValues||{});
   const relevantMonths = Object.keys(entries).filter(m=>m<=month).sort();
   const hasBaseline = relevantMonths.length>0;
   const lastMonth = hasBaseline ? relevantMonths[relevantMonths.length-1] : '0000-00';
   const baseVal = hasBaseline ? entries[lastMonth] : 0;
-  const transfers = S.transfers||[];
+  const transfers = (S.transfers||[]).filter(t=>trFor(t,acct.owner));
   const inflow  = transfers.filter(t=>t.toName===acctName   && t.date.slice(0,7)>=lastMonth && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
   const outflow = transfers.filter(t=>t.fromName===acctName && t.date.slice(0,7)>=lastMonth && t.date.slice(0,7)<=month).reduce((a,t)=>a+(t.amount||0),0);
   return baseVal + inflow - outflow;
@@ -4952,7 +4962,7 @@ function editMonthVal(cat, idx, month){
   if(newVal===shown) return;                             // tidak ada perubahan = jangan tulis apa pun
   // Simpan sebagai nilai awal bulan: kurangi transfer bulan itu, supaya angka yang tampil = angka yang diketik
   const net = (S.transfers||[]).reduce((a,t)=>{
-    if(t.date.slice(0,7)!==month) return a;
+    if(t.date.slice(0,7)!==month || !trFor(t,item.owner)) return a;
     if(t.toName===item.name)   return a+(t.amount||0);
     if(t.fromName===item.name) return a-(t.amount||0);
     return a;
@@ -4965,12 +4975,12 @@ function editMonthVal(cat, idx, month){
 function deleteAkunAset(cat, idx){
   const item=(S.asetItems[cat]||[])[idx];
   if(!item) return;
-  const relatedTransfers = (S.transfers||[]).filter(t=>t.fromName===item.name||t.toName===item.name);
+  const relatedTransfers = (S.transfers||[]).filter(t=>trFor(t,item.owner)&&(t.fromName===item.name||t.toName===item.name));
   const warn = relatedTransfers.length ? `\n\n⚠️ Ada ${relatedTransfers.length} transfer yang melibatkan akun ini — transfer itu juga akan dihapus.` : '';
   if(!confirm(`Hapus akun "${item.name}" dari kategori ${cat}?${warn}`)) return;
   S.asetItems[cat].splice(idx,1);
   if(relatedTransfers.length){
-    S.transfers = (S.transfers||[]).filter(t=>t.fromName!==item.name && t.toName!==item.name);
+    S.transfers = (S.transfers||[]).filter(t=>!relatedTransfers.includes(t));
   }
   persist(); renderAsetRangkuman();
 }
@@ -4985,6 +4995,7 @@ function editAkunAset(cat,idx){
   // cascade rename in transfers
   if(oldName!==item.name){
     (S.transfers||[]).forEach(t=>{
+      if(!trFor(t,item.owner)) return;
       if(t.fromName===oldName) t.fromName=item.name;
       if(t.toName===oldName)   t.toName=item.name;
     });
@@ -5010,7 +5021,7 @@ function showAsetMonthDetail(key,itemIdx,month){
   const diff=prevVal!==null?currVal-prevVal:null;
   const transfers=(S.transfers||[]).filter(t=>{
     const tM=(t.date||'').slice(0,7);
-    return tM===month&&(t.toName===item.name||t.fromName===item.name);
+    return tM===month&&trFor(t,item.owner)&&(t.toName===item.name||t.fromName===item.name);
   });
   const panel=document.getElementById('aset-detail-panel');
   let html=`<div class="card"><div class="card-head">
